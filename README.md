@@ -8,6 +8,17 @@ saves, skills, AC, initiative, spell save DC and attack, and spell slots (includ
 multiclassing and Pact Magic). It also tracks HP, hit dice, death saves, slots, feature
 uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it.
 
+Items, features and spells can carry **modifiers** (AC, attack and damage bonuses, damage
+riders such as Hunter's Mark or once-per-turn ones such as Slash Draw, speed, saves, max HP,
+resistances, notes) and **actions** that spend uses, charges or quantity, roll dice, heal and
+apply **effects** to the character. Equipped weapons become attacks with every modifier worked
+in, including reloading and choosable ammunition. The Combat tab is the play surface: the
+round counter, active effects and concentration, and every action grouped by Action, Bonus
+Action and Reaction.
+
+`examples/sable.json` is a complete level 6 Ronin Ranger built this way; import it from the
+library page to see everything in use.
+
 ## Building
 
 Fedora packages needed:

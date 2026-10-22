@@ -1,11 +1,15 @@
 use crate::abilities::{Ability, Proficiency, Skill, modifier, proficiency_bonus};
 use crate::armor::ArmorKind;
 use crate::classes::{self, CasterKind, ClassId};
+use crate::effects::{
+    Action, Activation, Cost, Effect, Modifier, ModifierKind, Outcome, RollEffect,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
-pub const SCHEMA_VERSION: u32 = 1;
+/// 2 added items with weapon stats, modifiers and actions, plus active effects.
+pub const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -88,6 +92,15 @@ pub struct Spell {
     pub ritual: bool,
     pub concentration: bool,
     pub notes: String,
+    pub casting_time: Activation,
+    /// Casts that cost no slot, recharging on a long rest (Favored Enemy).
+    pub free_uses_max: u32,
+    pub free_uses_spent: u32,
+    /// Dice rolled when cast, e.g. `2d8+2`; empty for none.
+    pub roll: String,
+    pub roll_effect: RollEffect,
+    /// Applied to the character when cast.
+    pub effect: Option<Effect>,
 }
 
 impl Default for Spell {
@@ -99,6 +112,12 @@ impl Default for Spell {
             ritual: false,
             concentration: false,
             notes: String::new(),
+            casting_time: Activation::Action,
+            free_uses_max: 0,
+            free_uses_spent: 0,
+            roll: String::new(),
+            roll_effect: RollEffect::None,
+            effect: None,
         }
     }
 }
@@ -113,6 +132,62 @@ pub struct Currency {
     pub pp: i64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ItemKind {
+    #[default]
+    Gear,
+    Weapon,
+    Armor,
+    Shield,
+    Ammunition,
+    Consumable,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct WeaponStats {
+    /// Damage dice without modifiers, e.g. `1d8`.
+    pub damage: String,
+    pub damage_type: String,
+    pub finesse: bool,
+    /// A ranged weapon (bow, firearm), as opposed to a melee weapon that can be thrown.
+    pub ranged: bool,
+    pub thrown: bool,
+    pub light: bool,
+    /// e.g. `60/240`.
+    pub range: String,
+    pub mastery: String,
+    /// Bonus to attack and damage rolls.
+    pub magic_bonus: i32,
+    pub proficient: bool,
+    /// Shots before reloading (the Reload property); 0 if it never needs reloading.
+    pub capacity: u32,
+    pub loaded: u32,
+    /// Name of the ammunition item fired and used up; empty for untracked ammunition.
+    pub ammo: String,
+}
+
+impl Default for WeaponStats {
+    fn default() -> Self {
+        WeaponStats {
+            damage: "1d6".into(),
+            damage_type: String::new(),
+            finesse: false,
+            ranged: false,
+            thrown: false,
+            light: false,
+            range: String::new(),
+            mastery: String::new(),
+            magic_bonus: 0,
+            proficient: true,
+            capacity: 0,
+            loaded: 0,
+            ammo: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Item {
@@ -123,6 +198,19 @@ pub struct Item {
     pub requires_attunement: bool,
     pub attuned: bool,
     pub notes: String,
+    pub kind: ItemKind,
+    pub equipped: bool,
+    pub weapon: Option<WeaponStats>,
+    pub armor: Option<ArmorKind>,
+    /// Magic bonus to AC for armor and shields.
+    pub ac_bonus: i32,
+    pub charges_max: u32,
+    pub charges_spent: u32,
+    pub recharge: Recharge,
+    /// Apply while equipped (and attuned, if it needs attunement). Ammunition modifiers
+    /// apply to the weapon firing it instead.
+    pub modifiers: Vec<Modifier>,
+    pub actions: Vec<Action>,
 }
 
 impl Default for Item {
@@ -134,7 +222,24 @@ impl Default for Item {
             requires_attunement: false,
             attuned: false,
             notes: String::new(),
+            kind: ItemKind::Gear,
+            equipped: false,
+            weapon: None,
+            armor: None,
+            ac_bonus: 0,
+            charges_max: 0,
+            charges_spent: 0,
+            recharge: Recharge::None,
+            modifiers: Vec::new(),
+            actions: Vec::new(),
         }
+    }
+}
+
+impl Item {
+    /// Whether the item's modifiers currently apply.
+    pub fn active(&self) -> bool {
+        self.equipped && (!self.requires_attunement || self.attuned) && self.quantity > 0
     }
 }
 
@@ -156,6 +261,9 @@ pub struct Feature {
     pub uses_max: u32,
     pub uses_spent: u32,
     pub recharge: Recharge,
+    /// Always apply.
+    pub modifiers: Vec<Modifier>,
+    pub actions: Vec<Action>,
 }
 
 impl Default for Feature {
@@ -167,8 +275,53 @@ impl Default for Feature {
             uses_max: 0,
             uses_spent: 0,
             recharge: Recharge::None,
+            modifiers: Vec::new(),
+            actions: Vec::new(),
         }
     }
+}
+
+/// A damage rider on a weapon attack, such as Hunter's Mark or Slash Draw.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Rider {
+    /// Unique per character; also what `riders_used` records.
+    pub name: String,
+    pub dice: String,
+    pub damage_type: String,
+    pub once_per_turn: bool,
+    pub used: bool,
+}
+
+/// An attack with an equipped weapon, with every modifier worked in.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct WeaponAttack {
+    pub item: usize,
+    pub name: String,
+    pub thrown: bool,
+    pub ranged: bool,
+    pub ability: Ability,
+    pub to_hit: i32,
+    /// Base damage with flat bonuses, e.g. `1d8+4`; riders are listed separately.
+    pub damage: String,
+    pub damage_type: String,
+    pub range: String,
+    pub mastery: String,
+    pub riders: Vec<Rider>,
+    /// Notes from the loaded ammunition and note modifiers on the weapon.
+    pub notes: Vec<String>,
+    pub capacity: u32,
+    pub loaded: u32,
+    pub ammo: String,
+    /// How many of the tracked ammunition are left, if it's tracked.
+    pub ammo_left: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum PlayError {
+    #[error("no such {0}")]
+    NotFound(&'static str),
+    #[error("{0}")]
+    Unavailable(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -251,6 +404,12 @@ pub struct Character {
     pub appearance: String,
     pub backstory: String,
     pub notes: String,
+    /// Effects currently on the character.
+    pub effects: Vec<Effect>,
+    /// Combat round, 0 outside combat.
+    pub round: u32,
+    /// Once-per-turn riders already used this turn.
+    pub riders_used: BTreeSet<String>,
 }
 
 impl Default for Character {
@@ -295,6 +454,9 @@ impl Default for Character {
             appearance: String::new(),
             backstory: String::new(),
             notes: String::new(),
+            effects: Vec::new(),
+            round: 0,
+            riders_used: BTreeSet::new(),
         }
     }
 }
@@ -352,7 +514,12 @@ impl Character {
         } else {
             0
         };
-        self.ability_mod(ability) + prof + self.d20_penalty()
+        let bonus: i32 = self
+            .modifiers_of(ModifierKind::Save)
+            .filter(|m| m.ability.is_none_or(|a| a == ability))
+            .map(|m| m.value)
+            .sum();
+        self.ability_mod(ability) + prof + bonus + self.d20_penalty()
     }
 
     pub fn skill_proficiency(&self, skill: Skill) -> Proficiency {
@@ -377,31 +544,538 @@ impl Character {
         } else {
             0
         };
-        self.ability_mod(Ability::Dex) + self.initiative_bonus + joat + self.d20_penalty()
+        let bonus = self.modifier_total(ModifierKind::Initiative);
+        self.ability_mod(Ability::Dex) + self.initiative_bonus + bonus + joat + self.d20_penalty()
     }
 
     pub fn speed(&self) -> i32 {
-        (self.speed - 5 * self.exhaustion as i32).max(0)
+        let bonus = self.modifier_total(ModifierKind::Speed);
+        (self.speed + bonus - 5 * self.exhaustion as i32).max(0)
     }
 
     pub fn armor_class(&self) -> i32 {
         let dex = self.ability_mod(Ability::Dex);
-        let shield = if self.shield { 2 } else { 0 };
-        let base = match self.armor {
-            Some(armor) => armor.ac(dex),
-            None => {
+        let worn = self
+            .inventory
+            .iter()
+            .find(|i| i.kind == ItemKind::Armor && i.armor.is_some() && i.active());
+        let shield_item = self
+            .inventory
+            .iter()
+            .find(|i| i.kind == ItemKind::Shield && i.active());
+        let has_shield = self.shield || shield_item.is_some();
+        let shield = if has_shield {
+            2 + shield_item.map_or(0, |i| i.ac_bonus)
+        } else {
+            0
+        };
+        let base = match (worn, self.armor) {
+            (Some(item), _) => item.armor.map_or(10 + dex, |a| a.ac(dex)) + item.ac_bonus,
+            (None, Some(armor)) => armor.ac(dex),
+            (None, None) => {
                 let mut best = 10 + dex;
                 if self.class_level(ClassId::Barbarian) > 0 {
                     best = best.max(10 + dex + self.ability_mod(Ability::Con));
                 }
                 // Monk Unarmored Defense requires no shield.
-                if self.class_level(ClassId::Monk) > 0 && !self.shield {
+                if self.class_level(ClassId::Monk) > 0 && !has_shield {
                     best = best.max(10 + dex + self.ability_mod(Ability::Wis));
                 }
                 best
             }
         };
-        base + shield + self.ac_bonus
+        base + shield + self.ac_bonus + self.modifier_total(ModifierKind::ArmorClass)
+    }
+
+    // --- Modifiers and effects --------------------------------------------------------
+
+    /// Every modifier in force, with the name of what it comes from: features, equipped
+    /// items and active effects. Ammunition is left out; it only affects the weapon firing it.
+    pub fn modifiers(&self) -> Vec<(&str, &Modifier)> {
+        let features = self
+            .features
+            .iter()
+            .flat_map(|f| f.modifiers.iter().map(|m| (f.name.as_str(), m)));
+        let items = self
+            .inventory
+            .iter()
+            .filter(|i| i.active() && i.kind != ItemKind::Ammunition)
+            .flat_map(|i| i.modifiers.iter().map(|m| (i.name.as_str(), m)));
+        let effects = self
+            .effects
+            .iter()
+            .flat_map(|e| e.modifiers.iter().map(|m| (e.name.as_str(), m)));
+        features.chain(items).chain(effects).collect()
+    }
+
+    fn modifiers_of(&self, kind: ModifierKind) -> impl Iterator<Item = &Modifier> {
+        self.modifiers()
+            .into_iter()
+            .map(|(_, m)| m)
+            .filter(move |m| m.kind == kind)
+    }
+
+    fn modifier_total(&self, kind: ModifierKind) -> i32 {
+        self.modifiers_of(kind).map(|m| m.value).sum()
+    }
+
+    /// Hit point maximum including effects such as Aid.
+    pub fn max_hp(&self) -> i32 {
+        (self.hp.max + self.modifier_total(ModifierKind::MaxHp)).max(1)
+    }
+
+    /// Damage types resisted, without duplicates, in the order they were found.
+    pub fn resistances(&self) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for m in self.modifiers_of(ModifierKind::Resistance) {
+            let t = m.damage_type.trim().to_lowercase();
+            if !t.is_empty() && !out.contains(&t) {
+                out.push(t);
+            }
+        }
+        out
+    }
+
+    /// Note modifiers in force, as `(source, text)`.
+    pub fn notes_in_force(&self) -> Vec<(String, String)> {
+        self.modifiers()
+            .into_iter()
+            .filter(|(_, m)| m.kind == ModifierKind::Note && !m.text.is_empty())
+            .map(|(source, m)| (source.to_owned(), m.text.clone()))
+            .collect()
+    }
+
+    pub fn concentrating_on(&self) -> Option<&Effect> {
+        self.effects.iter().find(|e| e.concentration)
+    }
+
+    /// Adds an effect. Concentrating on a new one ends the old; reapplying one by the same
+    /// name replaces it.
+    pub fn apply_effect(&mut self, effect: Effect) {
+        self.effects
+            .retain(|e| e.name != effect.name && !(effect.concentration && e.concentration));
+        self.effects.push(effect);
+        self.clamp_hp();
+    }
+
+    pub fn end_effect(&mut self, index: usize) -> Result<Effect, PlayError> {
+        if index >= self.effects.len() {
+            return Err(PlayError::NotFound("effect"));
+        }
+        let effect = self.effects.remove(index);
+        self.clamp_hp();
+        Ok(effect)
+    }
+
+    /// Starts the character's next turn: once-per-turn riders reset and effects with a
+    /// round limit count down, ending at zero.
+    pub fn new_turn(&mut self) {
+        self.riders_used.clear();
+        self.round += 1;
+        // An effect at 0 lasts until removed, so only ones counting down can end.
+        self.effects.retain_mut(|e| {
+            if e.rounds == 0 {
+                return true;
+            }
+            e.rounds -= 1;
+            e.rounds > 0
+        });
+        self.clamp_hp();
+    }
+
+    /// Leaves combat: the round counter and riders reset and effects with a round limit end.
+    pub fn end_combat(&mut self) {
+        self.riders_used.clear();
+        self.round = 0;
+        self.effects.retain(|e| e.rounds == 0);
+        self.clamp_hp();
+    }
+
+    fn clamp_hp(&mut self) {
+        self.hp.current = self.hp.current.min(self.max_hp());
+    }
+
+    // --- Weapons ----------------------------------------------------------------------
+
+    fn ammo_item(&self, weapon: &WeaponStats) -> Option<&Item> {
+        if weapon.ammo.is_empty() {
+            return None;
+        }
+        self.inventory
+            .iter()
+            .find(|i| i.name == weapon.ammo && i.kind == ItemKind::Ammunition)
+    }
+
+    /// One attack per equipped weapon, plus a thrown attack for melee weapons that can be thrown.
+    pub fn weapon_attacks(&self) -> Vec<WeaponAttack> {
+        let mut out = Vec::new();
+        for (index, item) in self.inventory.iter().enumerate() {
+            let Some(weapon) = item.weapon.as_ref().filter(|_| item.active()) else {
+                continue;
+            };
+            out.push(self.weapon_attack(index, item, weapon, false));
+            if weapon.thrown && !weapon.ranged {
+                out.push(self.weapon_attack(index, item, weapon, true));
+            }
+        }
+        out
+    }
+
+    fn weapon_attack(
+        &self,
+        index: usize,
+        item: &Item,
+        weapon: &WeaponStats,
+        thrown: bool,
+    ) -> WeaponAttack {
+        let ranged_attack = weapon.ranged || thrown;
+        let (str_mod, dex_mod) = (
+            self.ability_mod(Ability::Str),
+            self.ability_mod(Ability::Dex),
+        );
+        let ability = if weapon.finesse {
+            if dex_mod >= str_mod {
+                Ability::Dex
+            } else {
+                Ability::Str
+            }
+        } else if weapon.ranged {
+            Ability::Dex
+        } else {
+            Ability::Str
+        };
+        let ammo = if weapon.ranged {
+            self.ammo_item(weapon)
+        } else {
+            None
+        };
+
+        // Ammunition modifiers apply whatever their scope; the item's own always do too.
+        let own = item.modifiers.iter().map(|m| (item.name.as_str(), m, true));
+        let from_ammo = ammo
+            .into_iter()
+            .flat_map(|a| a.modifiers.iter().map(|m| (a.name.as_str(), m, true)));
+        let others = self
+            .modifiers()
+            .into_iter()
+            .filter(|(source, _)| *source != item.name)
+            .map(|(source, m)| (source, m, false));
+        let applicable: Vec<(&str, &Modifier)> = own
+            .chain(from_ammo)
+            .chain(others)
+            .filter(|(_, m, always)| *always || m.scope.matches(ranged_attack, weapon.ranged))
+            .map(|(source, m, _)| (source, m))
+            .collect();
+
+        let prof = if weapon.proficient {
+            self.proficiency_bonus()
+        } else {
+            0
+        };
+        let attack_bonus: i32 = applicable
+            .iter()
+            .filter(|(_, m)| m.kind == ModifierKind::AttackRoll)
+            .map(|(_, m)| m.value)
+            .sum();
+        let to_hit = self.ability_mod(ability)
+            + prof
+            + weapon.magic_bonus
+            + attack_bonus
+            + self.d20_penalty();
+
+        let mut flat = self.ability_mod(ability) + weapon.magic_bonus;
+        let mut riders = Vec::new();
+        let mut notes = Vec::new();
+        for (source, m) in &applicable {
+            match m.kind {
+                ModifierKind::Damage if m.dice.trim().is_empty() => flat += m.value,
+                ModifierKind::Damage => {
+                    let name = if m.text.is_empty() {
+                        source.to_string()
+                    } else {
+                        format!("{source} ({})", m.text)
+                    };
+                    riders.push(Rider {
+                        used: m.once_per_turn && self.riders_used.contains(&name),
+                        name,
+                        dice: m.dice.trim().to_owned(),
+                        damage_type: m.damage_type.clone(),
+                        once_per_turn: m.once_per_turn,
+                    });
+                }
+                ModifierKind::Note
+                    if !m.text.is_empty()
+                        && (*source == item.name || ammo.is_some_and(|a| a.name == *source)) =>
+                {
+                    notes.push(m.text.clone())
+                }
+                _ => {}
+            }
+        }
+        let damage = match flat {
+            0 => weapon.damage.clone(),
+            n if n > 0 => format!("{}+{n}", weapon.damage),
+            n => format!("{}{n}", weapon.damage),
+        };
+        let range = if ranged_attack {
+            weapon.range.clone()
+        } else {
+            "melee".to_owned()
+        };
+        WeaponAttack {
+            item: index,
+            name: if thrown {
+                format!("{} (thrown)", item.name)
+            } else {
+                item.name.clone()
+            },
+            thrown,
+            ranged: ranged_attack,
+            ability,
+            to_hit,
+            damage,
+            damage_type: weapon.damage_type.clone(),
+            range,
+            mastery: weapon.mastery.clone(),
+            riders,
+            notes,
+            capacity: weapon.capacity,
+            loaded: weapon.loaded,
+            ammo: ammo.map(|a| a.name.clone()).unwrap_or_default(),
+            ammo_left: ammo.map(|a| a.quantity),
+        }
+    }
+
+    /// Spends one shot: a round from the cylinder and, if tracked, one of the ammunition.
+    pub fn fire(&mut self, item: usize) -> Result<(), PlayError> {
+        let weapon = self
+            .inventory
+            .get(item)
+            .and_then(|i| i.weapon.clone())
+            .ok_or(PlayError::NotFound("weapon"))?;
+        if weapon.capacity > 0 && weapon.loaded == 0 {
+            return Err(PlayError::Unavailable(format!(
+                "{} is empty; reload it",
+                self.inventory[item].name
+            )));
+        }
+        if let Some(ammo) = self.ammo_item(&weapon) {
+            if ammo.quantity == 0 {
+                return Err(PlayError::Unavailable(format!("Out of {}", ammo.name)));
+            }
+            let name = ammo.name.clone();
+            if let Some(a) = self
+                .inventory
+                .iter_mut()
+                .find(|i| i.name == name && i.kind == ItemKind::Ammunition)
+            {
+                a.quantity -= 1;
+            }
+        }
+        if let Some(w) = self.inventory[item].weapon.as_mut()
+            && w.capacity > 0
+        {
+            w.loaded -= 1;
+        }
+        Ok(())
+    }
+
+    pub fn reload(&mut self, item: usize) -> Result<(), PlayError> {
+        let weapon = self
+            .inventory
+            .get_mut(item)
+            .and_then(|i| i.weapon.as_mut())
+            .ok_or(PlayError::NotFound("weapon"))?;
+        weapon.loaded = weapon.capacity;
+        Ok(())
+    }
+
+    /// The damage expression for an attack with every rider not in `excluded`, doubled on a
+    /// critical hit. Marks the once-per-turn riders it includes as used.
+    pub fn weapon_damage(
+        &mut self,
+        attack: &WeaponAttack,
+        crit: bool,
+        excluded: &[String],
+    ) -> Result<String, PlayError> {
+        let mut expression = attack.damage.clone();
+        for rider in &attack.riders {
+            if rider.used || excluded.contains(&rider.name) {
+                continue;
+            }
+            expression.push('+');
+            expression.push_str(&rider.dice);
+            if rider.once_per_turn {
+                self.riders_used.insert(rider.name.clone());
+            }
+        }
+        if crit {
+            expression = crate::dice::double_dice(&expression)
+                .map_err(|e| PlayError::Unavailable(e.to_string()))?;
+        }
+        Ok(expression)
+    }
+
+    // --- Actions and spells -----------------------------------------------------------
+
+    fn finish_action(&mut self, source: &str, action: Action, spent: String) -> Outcome {
+        if let Some(mut effect) = action.effect {
+            if effect.source.is_empty() {
+                effect.source = source.to_owned();
+            }
+            self.apply_effect(effect);
+        }
+        Outcome {
+            label: format!("{source}: {}", action.name),
+            roll: action.roll,
+            roll_effect: action.roll_effect,
+            spent,
+        }
+    }
+
+    /// Uses one of an item's actions, spending its cost and applying its effect.
+    pub fn use_item_action(&mut self, item: usize, action: usize) -> Result<Outcome, PlayError> {
+        let it = self
+            .inventory
+            .get(item)
+            .ok_or(PlayError::NotFound("item"))?;
+        let act = it
+            .actions
+            .get(action)
+            .cloned()
+            .ok_or(PlayError::NotFound("action"))?;
+        let name = it.name.clone();
+        let it = &mut self.inventory[item];
+        let n = act.cost_amount;
+        let spent = match act.cost {
+            Cost::None => String::new(),
+            Cost::Quantity => {
+                if it.quantity < n {
+                    return Err(PlayError::Unavailable(format!("No {name} left")));
+                }
+                it.quantity -= n;
+                format!("{} left", it.quantity)
+            }
+            Cost::Charges | Cost::Uses => {
+                if it.charges_max.saturating_sub(it.charges_spent) < n {
+                    return Err(PlayError::Unavailable(format!(
+                        "{name} has no charges left"
+                    )));
+                }
+                it.charges_spent += n;
+                format!(
+                    "{} of {} charges left",
+                    it.charges_max - it.charges_spent,
+                    it.charges_max
+                )
+            }
+        };
+        Ok(self.finish_action(&name, act, spent))
+    }
+
+    /// Uses one of a feature's actions, spending its uses and applying its effect.
+    pub fn use_feature_action(
+        &mut self,
+        feature: usize,
+        action: usize,
+    ) -> Result<Outcome, PlayError> {
+        let f = self
+            .features
+            .get_mut(feature)
+            .ok_or(PlayError::NotFound("feature"))?;
+        let act = f
+            .actions
+            .get(action)
+            .cloned()
+            .ok_or(PlayError::NotFound("action"))?;
+        let name = f.name.clone();
+        let spent = if act.cost == Cost::None {
+            String::new()
+        } else {
+            if f.uses_max.saturating_sub(f.uses_spent) < act.cost_amount {
+                return Err(PlayError::Unavailable(format!("{name} has no uses left")));
+            }
+            f.uses_spent += act.cost_amount;
+            format!("{} of {} uses left", f.uses_max - f.uses_spent, f.uses_max)
+        };
+        Ok(self.finish_action(&name, act, spent))
+    }
+
+    /// Casts a spell with a slot of `slot_level`, or a free use when it's 0. Cantrips cost
+    /// nothing. Pact slots are used when no regular slot of that level is left.
+    pub fn cast_spell(&mut self, spell: usize, slot_level: u8) -> Result<Outcome, PlayError> {
+        let sp = self
+            .spells
+            .get(spell)
+            .ok_or(PlayError::NotFound("spell"))?
+            .clone();
+        let spent = if sp.level == 0 {
+            String::new()
+        } else if slot_level == 0 {
+            if sp.free_uses_spent >= sp.free_uses_max {
+                return Err(PlayError::Unavailable(format!(
+                    "No free casts of {} left",
+                    sp.name
+                )));
+            }
+            let s = &mut self.spells[spell];
+            s.free_uses_spent += 1;
+            format!(
+                "{} of {} free casts left",
+                s.free_uses_max - s.free_uses_spent,
+                s.free_uses_max
+            )
+        } else {
+            if slot_level < sp.level || slot_level > 9 {
+                return Err(PlayError::Unavailable(format!(
+                    "{} needs a slot of level {} or higher",
+                    sp.name, sp.level
+                )));
+            }
+            let i = slot_level as usize - 1;
+            let max = self.spell_slots_max()[i];
+            let (pact_max, pact_level) = self.pact_slots();
+            if self.spell_slots_used[i] < max {
+                self.spell_slots_used[i] += 1;
+                format!(
+                    "{} of {max} level {slot_level} slots left",
+                    max - self.spell_slots_used[i]
+                )
+            } else if pact_level == slot_level && self.pact_slots_used < pact_max {
+                self.pact_slots_used += 1;
+                format!(
+                    "{} of {pact_max} pact slots left",
+                    pact_max - self.pact_slots_used
+                )
+            } else {
+                return Err(PlayError::Unavailable(format!(
+                    "No level {slot_level} slots left"
+                )));
+            }
+        };
+        let action = Action {
+            name: "Cast".into(),
+            activation: sp.casting_time,
+            roll: sp.roll.clone(),
+            roll_effect: sp.roll_effect,
+            effect: sp.effect.clone().map(|mut e| {
+                e.concentration |= sp.concentration;
+                e
+            }),
+            ..Default::default()
+        };
+        let mut outcome = self.finish_action(&sp.name, action, spent);
+        outcome.label = sp.name;
+        Ok(outcome)
+    }
+
+    /// Applies an action's rolled total: healing or temporary hit points.
+    pub fn apply_roll(&mut self, effect: RollEffect, total: i32) {
+        match effect {
+            RollEffect::None => {}
+            RollEffect::Heal => self.heal(total),
+            RollEffect::TempHp => self.set_temp_hp(total),
+        }
     }
 
     pub fn spell_slots_max(&self) -> [u8; 9] {
@@ -517,7 +1191,7 @@ impl Character {
         if self.hp.current == 0 {
             self.death_saves = DeathSaves::default();
         }
-        self.hp.current = (self.hp.current + amount).min(self.hp.max);
+        self.hp.current = (self.hp.current + amount).min(self.max_hp());
     }
 
     /// Temporary HP don't stack; keep whichever is higher.
@@ -553,11 +1227,19 @@ impl Character {
                 f.uses_spent = 0;
             }
         }
+        for i in &mut self.inventory {
+            if i.recharge == Recharge::Short {
+                i.charges_spent = 0;
+            }
+        }
     }
 
     pub fn long_rest(&mut self) {
         self.short_rest();
-        self.hp.current = self.hp.max;
+        // Eight hours outlasts concentration and almost every spell; Aid can be cast again.
+        self.end_combat();
+        self.effects.clear();
+        self.hp.current = self.max_hp();
         self.hp.temp = 0;
         self.death_saves = DeathSaves::default();
         self.spell_slots_used = [0; 9];
@@ -568,6 +1250,14 @@ impl Character {
             if f.recharge == Recharge::Long {
                 f.uses_spent = 0;
             }
+        }
+        for i in &mut self.inventory {
+            if i.recharge == Recharge::Long {
+                i.charges_spent = 0;
+            }
+        }
+        for s in &mut self.spells {
+            s.free_uses_spent = 0;
         }
         self.exhaustion = self.exhaustion.saturating_sub(1);
     }
@@ -582,7 +1272,7 @@ impl Character {
             *s = (*s).clamp(1, 30);
         }
         self.hp.max = self.hp.max.max(1);
-        self.hp.current = self.hp.current.clamp(0, self.hp.max);
+        self.hp.current = self.hp.current.clamp(0, self.max_hp());
         self.hp.temp = self.hp.temp.max(0);
         self.death_saves.successes = self.death_saves.successes.min(3);
         self.death_saves.failures = self.death_saves.failures.min(3);
@@ -594,9 +1284,20 @@ impl Character {
         self.pact_slots_used = self.pact_slots_used.min(self.pact_slots().0);
         for spell in &mut self.spells {
             spell.level = spell.level.min(9);
+            spell.free_uses_spent = spell.free_uses_spent.min(spell.free_uses_max);
         }
         for f in &mut self.features {
             f.uses_spent = f.uses_spent.min(f.uses_max);
+        }
+        for item in &mut self.inventory {
+            item.charges_spent = item.charges_spent.min(item.charges_max);
+            // Picking the weapon kind in the editor brings up weapon stats to fill in.
+            if item.kind == ItemKind::Weapon && item.weapon.is_none() {
+                item.weapon = Some(WeaponStats::default());
+            }
+            if let Some(w) = item.weapon.as_mut() {
+                w.loaded = w.loaded.min(w.capacity);
+            }
         }
     }
 }
@@ -818,6 +1519,230 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(c.damage_expression(&weak), "1d4-1");
+    }
+
+    fn sable() -> Character {
+        let path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/sable.json");
+        crate::storage::read_file(&path).expect("examples/sable.json loads")
+    }
+
+    fn attack<'a>(attacks: &'a [WeaponAttack], name: &str) -> &'a WeaponAttack {
+        attacks.iter().find(|a| a.name == name).unwrap()
+    }
+
+    fn item_index(c: &Character, name: &str) -> usize {
+        c.inventory.iter().position(|i| i.name == name).unwrap()
+    }
+
+    #[test]
+    fn sable_example() {
+        let c = sable();
+        assert_eq!(c.armor_class(), 16);
+        assert_eq!(c.initiative(), 7);
+        assert_eq!(c.speed(), 40);
+        assert_eq!(c.skill_mod(Skill::Perception), 8);
+        assert_eq!(c.spell_save_dc(Ability::Wis), 13);
+        assert_eq!(c.spell_attack(Ability::Wis), 5);
+        assert_eq!(c.spell_slots_max(), [4, 2, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(c.resistances(), ["necrotic"]);
+
+        let attacks = c.weapon_attacks();
+        let katana = attack(&attacks, "Katana");
+        assert_eq!((katana.to_hit, katana.damage.as_str()), (7, "1d8+4"));
+        let riders: Vec<_> = katana.riders.iter().map(|r| r.name.as_str()).collect();
+        assert_eq!(riders, ["Slash Draw (melee)"]);
+
+        // Archery applies to the revolvers, not to a thrown dagger; Slash Draw's ranged
+        // rider applies to both.
+        let revolver = attack(&attacks, "Revolver");
+        assert_eq!((revolver.to_hit, revolver.damage.as_str()), (9, "1d6+4"));
+        let iron = attack(&attacks, "Black Iron Revolver");
+        assert_eq!((iron.to_hit, iron.damage.as_str()), (11, "1d8+6"));
+        assert_eq!(iron.ammo_left, Some(60));
+        let thrown = attack(&attacks, "Dagger (thrown)");
+        assert_eq!((thrown.to_hit, thrown.damage.as_str()), (7, "1d4+4"));
+        assert_eq!(thrown.riders[0].name, "Slash Draw (ranged)");
+        assert_eq!(
+            attack(&attacks, "Dagger").riders[0].name,
+            "Slash Draw (melee)"
+        );
+    }
+
+    #[test]
+    fn bleeding_rounds_change_the_shot() {
+        let mut c = sable();
+        let iron = item_index(&c, "Black Iron Revolver");
+        c.inventory[iron].weapon.as_mut().unwrap().ammo = "Bleeding Rounds".into();
+        let attacks = c.weapon_attacks();
+        let shot = attack(&attacks, "Black Iron Revolver");
+        assert_eq!((shot.to_hit, shot.damage.as_str()), (10, "1d8+5"));
+        assert!(shot.notes[0].starts_with("On a hit: CON save"));
+    }
+
+    #[test]
+    fn firing_and_reloading() {
+        let mut c = sable();
+        let iron = item_index(&c, "Black Iron Revolver");
+        let rounds = item_index(&c, "+1 Revolver Rounds");
+        for _ in 0..9 {
+            c.fire(iron).unwrap();
+        }
+        assert_eq!(c.inventory[rounds].quantity, 51);
+        assert!(matches!(c.fire(iron), Err(PlayError::Unavailable(_))));
+        c.reload(iron).unwrap();
+        assert_eq!(c.inventory[iron].weapon.as_ref().unwrap().loaded, 9);
+
+        // Untracked ammunition only counts the cylinder.
+        let revolver = item_index(&c, "Revolver");
+        c.fire(revolver).unwrap();
+        assert_eq!(c.inventory[revolver].weapon.as_ref().unwrap().loaded, 5);
+        assert!(
+            c.fire(item_index(&c, "Katana")).is_ok(),
+            "melee weapons never run dry"
+        );
+    }
+
+    #[test]
+    fn riders_once_per_turn() {
+        let mut c = sable();
+        let hm = c
+            .spells
+            .iter()
+            .position(|s| s.name == "Hunter's Mark")
+            .unwrap();
+        c.cast_spell(hm, 0).unwrap();
+        let katana = attack(&c.weapon_attacks(), "Katana").clone();
+        assert_eq!(
+            c.weapon_damage(&katana, false, &[]).unwrap(),
+            "1d8+4+1d6+1d6"
+        );
+
+        // Slash Draw's melee rider is spent; Hunter's Mark still applies.
+        let katana = attack(&c.weapon_attacks(), "Katana").clone();
+        assert_eq!(c.weapon_damage(&katana, true, &[]).unwrap(), "2d8+4+2d6");
+        let revolver = attack(&c.weapon_attacks(), "Revolver").clone();
+        assert_eq!(
+            c.weapon_damage(&revolver, false, &["Hunter's Mark".into()])
+                .unwrap(),
+            "1d6+4+1d4"
+        );
+
+        c.new_turn();
+        assert!(c.riders_used.is_empty());
+        assert_eq!(c.round, 1);
+    }
+
+    #[test]
+    fn effects_concentration_and_duration() {
+        let mut c = sable();
+        let spell =
+            |c: &Character, name: &str| c.spells.iter().position(|s| s.name == name).unwrap();
+        let hm = spell(&c, "Hunter's Mark");
+        c.cast_spell(hm, 0).unwrap();
+        assert_eq!(c.spells[hm].free_uses_spent, 1);
+        assert_eq!(c.concentrating_on().unwrap().name, "Hunter's Mark");
+
+        // Blur takes a 2nd-level slot and ends Hunter's Mark.
+        let blur = spell(&c, "Blur");
+        assert!(c.cast_spell(blur, 1).is_err());
+        c.cast_spell(blur, 2).unwrap();
+        assert_eq!(c.spell_slots_used[1], 1);
+        assert_eq!(c.effects.len(), 1);
+        assert_eq!(c.concentrating_on().unwrap().name, "Blur");
+
+        // Blessing: resistance to everything until the start of the next turn.
+        let blessing = c
+            .features
+            .iter()
+            .position(|f| f.name.starts_with("Blessing"))
+            .unwrap();
+        let outcome = c.use_feature_action(blessing, 0).unwrap();
+        assert_eq!(outcome.spent, "2 of 3 uses left");
+        assert!(c.resistances().contains(&"all".to_owned()));
+        c.new_turn();
+        assert!(!c.resistances().contains(&"all".to_owned()));
+        assert_eq!(c.effects.len(), 1, "Blur lasts until removed");
+
+        c.use_feature_action(blessing, 0).unwrap();
+        c.use_feature_action(blessing, 0).unwrap();
+        assert!(matches!(
+            c.use_feature_action(blessing, 0),
+            Err(PlayError::Unavailable(_))
+        ));
+
+        c.end_combat();
+        assert_eq!(c.round, 0);
+        c.long_rest();
+        assert!(c.effects.is_empty());
+        assert_eq!(c.features[blessing].uses_spent, 0);
+        assert_eq!(c.spells[hm].free_uses_spent, 0);
+    }
+
+    #[test]
+    fn aid_raises_max_hp() {
+        let mut c = sable();
+        let aid = c.spells.iter().position(|s| s.name == "Aid").unwrap();
+        let outcome = c.cast_spell(aid, 2).unwrap();
+        c.apply_roll(outcome.roll_effect, 5);
+        assert_eq!(c.max_hp(), 57);
+        assert_eq!(c.hp.current, 57);
+        let i = c.effects.iter().position(|e| e.name == "Aid").unwrap();
+        c.end_effect(i).unwrap();
+        assert_eq!(c.hp.current, 52);
+    }
+
+    #[test]
+    fn item_actions_spend_their_cost() {
+        let mut c = sable();
+        c.hp.current = 10;
+        let potion = item_index(&c, "Potion of Healing");
+        let outcome = c.use_item_action(potion, 0).unwrap();
+        assert_eq!(outcome.roll, "2d4+2");
+        assert_eq!(outcome.roll_effect, RollEffect::Heal);
+        c.apply_roll(outcome.roll_effect, 7);
+        assert_eq!(c.hp.current, 17);
+        c.use_item_action(potion, 0).unwrap();
+        assert_eq!(c.inventory[potion].quantity, 0);
+        assert!(c.use_item_action(potion, 0).is_err());
+
+        let kit = item_index(&c, "Healer's Kit");
+        c.use_item_action(kit, 0).unwrap();
+        assert_eq!(c.inventory[kit].charges_spent, 1);
+    }
+
+    #[test]
+    fn armor_items_and_shields() {
+        let mut c = fighter_wizard();
+        c.inventory.push(Item {
+            name: "Chain Mail".into(),
+            kind: ItemKind::Armor,
+            armor: Some(ArmorKind::ChainMail),
+            equipped: true,
+            ..Default::default()
+        });
+        c.inventory.push(Item {
+            name: "+1 Shield".into(),
+            kind: ItemKind::Shield,
+            ac_bonus: 1,
+            equipped: true,
+            ..Default::default()
+        });
+        assert_eq!(c.armor_class(), 19);
+        c.apply_effect(Effect {
+            name: "Shield of Faith".into(),
+            concentration: true,
+            modifiers: vec![Modifier {
+                kind: ModifierKind::ArmorClass,
+                value: 2,
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
+        assert_eq!(c.armor_class(), 21);
+        // Unarmored 12, the shield 3 and Shield of Faith 2.
+        c.inventory[0].equipped = false;
+        assert_eq!(c.armor_class(), 17);
     }
 
     #[test]

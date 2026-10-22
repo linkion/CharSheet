@@ -5,11 +5,6 @@ import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
 SheetTab {
-    readonly property var rechargeOptions: [
-        { key: "none", name: "Doesn't recharge" },
-        { key: "short", name: "Short or Long Rest" },
-        { key: "long", name: "Long Rest" }
-    ]
 
     Section {
         title: "Features & Traits"
@@ -32,6 +27,8 @@ SheetTab {
             ColumnLayout {
                 required property var modelData
                 required property int index
+                readonly property string summary: (App.d.feature_summaries || [])[index] ?? ""
+                readonly property var actions: (App.d.actions || []).filter(a => a.owner === "feature" && a.index === index)
                 Layout.fillWidth: true
                 spacing: 0
 
@@ -54,6 +51,13 @@ SheetTab {
                         used: modelData.uses_spent
                         onUsedEdited: count => App.set("/features/" + index + "/uses_spent", count)
                     }
+                    Repeater {
+                        model: actions
+                        ActionButton {
+                            required property var modelData
+                            entry: modelData
+                        }
+                    }
                     QQC2.ToolButton {
                         icon.name: "document-edit"
                         onClicked: featureDialog.edit("/features", index)
@@ -66,6 +70,13 @@ SheetTab {
                     text: modelData.description
                     wrapMode: Text.WordWrap
                     opacity: 0.85
+                    Layout.fillWidth: true
+                }
+                QQC2.Label {
+                    visible: summary.length > 0
+                    text: summary
+                    wrapMode: Text.WordWrap
+                    color: Kirigami.Theme.positiveTextColor
                     Layout.fillWidth: true
                 }
                 QQC2.Label {
@@ -115,7 +126,11 @@ SheetTab {
             { key: "source", label: "Source", type: "text" },
             { key: "description", label: "Description", type: "area" },
             { key: "uses_max", label: "Uses (0 = untracked)", type: "int", from: 0, to: 20 },
-            { key: "recharge", label: "Recharge", type: "choice", options: rechargeOptions }
+            { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges },
+            { label: "Always on", type: "section" },
+            { key: "modifiers", label: "Modifiers", type: "modifiers" },
+            { label: "Actions", type: "section" },
+            { key: "actions", label: "Actions", type: "actions", owner: "feature" }
         ]
     }
 }

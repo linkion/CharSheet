@@ -141,7 +141,7 @@ SheetTab {
                             Layout.fillWidth: true
                             spacing: 0
                             QQC2.Label {
-                                text: modelData.spell.name
+                                text: App.nameOf(App.catalog.activations, modelData.spell.casting_time) + "  ·  " + modelData.spell.name
                                       + (modelData.spell.concentration ? "  [C]" : "")
                                       + (modelData.spell.ritual ? "  [R]" : "")
                                 font.bold: modelData.spell.prepared || levelGroup.index === 0
@@ -154,6 +154,22 @@ SheetTab {
                                 opacity: 0.7
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
+                            }
+                        }
+                        PipRow {
+                            visible: modelData.spell.free_uses_max > 0
+                            total: Math.min(modelData.spell.free_uses_max, 10)
+                            used: modelData.spell.free_uses_spent
+                            onUsedEdited: count => App.set("/spells/" + modelData.index + "/free_uses_spent", count)
+                            QQC2.ToolTip.text: "Free casts"
+                            QQC2.ToolTip.visible: freeHover.hovered
+                            HoverHandler { id: freeHover }
+                        }
+                        Repeater {
+                            model: (App.d.actions || []).filter(a => a.owner === "spell" && a.index === modelData.index)
+                            ActionButton {
+                                required property var modelData
+                                entry: modelData
                             }
                         }
                         QQC2.ToolButton {
@@ -183,7 +199,14 @@ SheetTab {
             { key: "prepared", label: "Prepared", type: "bool" },
             { key: "concentration", label: "Concentration", type: "bool" },
             { key: "ritual", label: "Ritual", type: "bool" },
-            { key: "notes", label: "Notes", type: "area" }
+            { key: "casting_time", label: "Casting time", type: "choice", options: App.catalog.activations },
+            { key: "notes", label: "Notes", type: "area" },
+            { label: "Casting", type: "section" },
+            { key: "free_uses_max", label: "Free casts per long rest", type: "int", from: 0, to: 20 },
+            { key: "roll", label: "Roll when cast", type: "text", placeholder: "e.g. 2d8+3" },
+            { key: "roll_effect", label: "With the roll", type: "choice", options: App.catalog.roll_effects, visibleWhen: spell => (spell.roll || "").length > 0 },
+            { label: "Effect on you", type: "section" },
+            { key: "effect", label: "Effect", type: "effect" }
         ]
     }
 }

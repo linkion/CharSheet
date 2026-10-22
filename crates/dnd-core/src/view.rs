@@ -2,8 +2,9 @@
 
 use crate::abilities::{Ability, Proficiency, Skill};
 use crate::armor::ArmorKind;
-use crate::character::{Character, Condition};
+use crate::character::{Character, Condition, ItemKind, Recharge, WeaponAttack};
 use crate::classes::ClassId;
+use crate::effects::{Activation, Cost, Modifier, ModifierKind, RollEffect, Scope};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -49,6 +50,41 @@ pub struct HitDiceView {
     pub remaining: u32,
 }
 
+/// A limited resource shown as pips: uses, charges, quantity or free casts.
+#[derive(Serialize)]
+pub struct ResourceView {
+    pub label: String,
+    pub left: u32,
+    pub max: u32,
+}
+
+/// Something the character can do from the Combat tab: an item or feature action, or a spell
+/// that rolls or applies an effect.
+#[derive(Serialize)]
+pub struct ActionView {
+    /// "item", "feature" or "spell".
+    pub owner: &'static str,
+    pub index: usize,
+    /// Index of the action on its owner; 0 for spells.
+    pub action: usize,
+    pub name: String,
+    pub source: String,
+    pub activation: Activation,
+    pub description: String,
+    pub roll: String,
+    pub resource: Option<ResourceView>,
+    pub available: bool,
+    pub concentration: bool,
+    /// Lowest slot level for spells, 0 for cantrips and non-spells.
+    pub spell_level: u8,
+}
+
+#[derive(Serialize)]
+pub struct NoteView {
+    pub source: String,
+    pub text: String,
+}
+
 #[derive(Serialize)]
 pub struct Derived {
     pub total_level: u32,
@@ -72,6 +108,119 @@ pub struct Derived {
     pub carrying_capacity: f64,
     pub carried_weight: f64,
     pub attuned: usize,
+    pub max_hp: i32,
+    pub resistances: Vec<String>,
+    pub weapon_attacks: Vec<WeaponAttack>,
+    pub notes_in_force: Vec<NoteView>,
+    /// Name of the effect being concentrated on, if any.
+    pub concentrating: Option<String>,
+    /// One-line summaries of each active effect's modifiers, in `character.effects` order.
+    pub effect_summaries: Vec<String>,
+    pub item_summaries: Vec<String>,
+    pub feature_summaries: Vec<String>,
+    pub actions: Vec<ActionView>,
+}
+
+fn summarize(modifiers: &[Modifier]) -> String {
+    modifiers
+        .iter()
+        .map(Modifier::describe)
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · ")
+}
+
+fn actions(c: &Character) -> Vec<ActionView> {
+    let mut out = Vec::new();
+    for (index, item) in c.inventory.iter().enumerate() {
+        for (i, a) in item.actions.iter().enumerate() {
+            let resource = match a.cost {
+                Cost::None => None,
+                Cost::Quantity => Some(ResourceView {
+                    label: "left".into(),
+                    left: item.quantity,
+                    max: item.quantity,
+                }),
+                Cost::Charges | Cost::Uses => Some(ResourceView {
+                    label: "charges".into(),
+                    left: item.charges_max.saturating_sub(item.charges_spent),
+                    max: item.charges_max,
+                }),
+            };
+            out.push(ActionView {
+                owner: "item",
+                index,
+                action: i,
+                name: a.name.clone(),
+                source: item.name.clone(),
+                activation: a.activation,
+                description: a.description.clone(),
+                roll: a.roll.clone(),
+                available: resource.as_ref().is_none_or(|r| r.left >= a.cost_amount),
+                resource,
+                concentration: a.effect.as_ref().is_some_and(|e| e.concentration),
+                spell_level: 0,
+            });
+        }
+    }
+    for (index, f) in c.features.iter().enumerate() {
+        for (i, a) in f.actions.iter().enumerate() {
+            let resource = (a.cost != Cost::None).then(|| ResourceView {
+                label: "uses".into(),
+                left: f.uses_max.saturating_sub(f.uses_spent),
+                max: f.uses_max,
+            });
+            out.push(ActionView {
+                owner: "feature",
+                index,
+                action: i,
+                name: a.name.clone(),
+                source: f.name.clone(),
+                activation: a.activation,
+                description: a.description.clone(),
+                roll: a.roll.clone(),
+                available: resource.as_ref().is_none_or(|r| r.left >= a.cost_amount),
+                resource,
+                concentration: a.effect.as_ref().is_some_and(|e| e.concentration),
+                spell_level: 0,
+            });
+        }
+    }
+    let slots = c.spell_slots_max();
+    let (pact_max, pact_level) = c.pact_slots();
+    for (index, s) in c.spells.iter().enumerate() {
+        if !s.prepared || (s.effect.is_none() && s.roll.trim().is_empty()) {
+            continue;
+        }
+        let free_left = s.free_uses_max.saturating_sub(s.free_uses_spent);
+        let slot_left = (s.level.max(1)..=9).any(|l| {
+            let i = l as usize - 1;
+            c.spell_slots_used[i] < slots[i] || (l == pact_level && c.pact_slots_used < pact_max)
+        });
+        out.push(ActionView {
+            owner: "spell",
+            index,
+            action: 0,
+            name: s.name.clone(),
+            source: if s.level == 0 {
+                "Cantrip".into()
+            } else {
+                format!("Level {} spell", s.level)
+            },
+            activation: s.casting_time,
+            description: s.notes.clone(),
+            roll: s.roll.clone(),
+            resource: (s.free_uses_max > 0).then(|| ResourceView {
+                label: "free casts".into(),
+                left: free_left,
+                max: s.free_uses_max,
+            }),
+            available: s.level == 0 || free_left > 0 || slot_left,
+            concentration: s.concentration || s.effect.as_ref().is_some_and(|e| e.concentration),
+            spell_level: s.level,
+        });
+    }
+    out
 }
 
 #[derive(Serialize)]
@@ -87,6 +236,19 @@ pub struct Catalog {
     pub armor: Vec<Choice>,
     pub abilities: Vec<Choice>,
     pub conditions: Vec<Choice>,
+    pub item_kinds: Vec<Choice>,
+    pub modifier_kinds: Vec<Choice>,
+    pub scopes: Vec<Choice>,
+    pub activations: Vec<Choice>,
+    pub costs: Vec<Choice>,
+    pub roll_effects: Vec<Choice>,
+    pub recharges: Vec<Choice>,
+}
+
+fn choices<T: Serialize + Copy>(list: &[(T, &'static str)]) -> Vec<Choice> {
+    list.iter()
+        .map(|&(k, name)| Choice { key: key(k), name })
+        .collect()
 }
 
 #[derive(Serialize)]
@@ -174,6 +336,23 @@ impl<'a> SheetView<'a> {
             carrying_capacity: c.carrying_capacity(),
             carried_weight: c.carried_weight(),
             attuned: c.attuned_count(),
+            max_hp: c.max_hp(),
+            resistances: c.resistances(),
+            weapon_attacks: c.weapon_attacks(),
+            notes_in_force: c
+                .notes_in_force()
+                .into_iter()
+                .map(|(source, text)| NoteView { source, text })
+                .collect(),
+            concentrating: c.concentrating_on().map(|e| e.name.clone()),
+            effect_summaries: c.effects.iter().map(|e| summarize(&e.modifiers)).collect(),
+            item_summaries: c
+                .inventory
+                .iter()
+                .map(|i| summarize(&i.modifiers))
+                .collect(),
+            feature_summaries: c.features.iter().map(|f| summarize(&f.modifiers)).collect(),
+            actions: actions(c),
         };
         SheetView {
             character: c,
@@ -232,5 +411,53 @@ pub fn catalog() -> Catalog {
                 Choice { key: k, name }
             })
             .collect(),
+        item_kinds: choices(&[
+            (ItemKind::Gear, "Gear"),
+            (ItemKind::Weapon, "Weapon"),
+            (ItemKind::Armor, "Armor"),
+            (ItemKind::Shield, "Shield"),
+            (ItemKind::Ammunition, "Ammunition"),
+            (ItemKind::Consumable, "Consumable"),
+        ]),
+        modifier_kinds: choices(&[
+            (ModifierKind::ArmorClass, "Armor Class"),
+            (ModifierKind::AttackRoll, "Attack rolls"),
+            (ModifierKind::Damage, "Damage"),
+            (ModifierKind::Save, "Saving throws"),
+            (ModifierKind::Speed, "Speed"),
+            (ModifierKind::Initiative, "Initiative"),
+            (ModifierKind::MaxHp, "Hit point maximum"),
+            (ModifierKind::Resistance, "Resistance"),
+            (ModifierKind::Note, "Note"),
+        ]),
+        scopes: choices(&[
+            (Scope::AllWeapons, "All weapon attacks"),
+            (Scope::Melee, "Melee attacks"),
+            (Scope::Ranged, "Ranged attacks (incl. thrown)"),
+            (Scope::RangedWeapon, "Ranged weapons only"),
+        ]),
+        activations: choices(&[
+            (Activation::Action, "Action"),
+            (Activation::BonusAction, "Bonus Action"),
+            (Activation::Reaction, "Reaction"),
+            (Activation::Free, "Free"),
+            (Activation::Other, "Other"),
+        ]),
+        costs: choices(&[
+            (Cost::None, "Nothing"),
+            (Cost::Quantity, "Uses up the item"),
+            (Cost::Charges, "Item charges"),
+            (Cost::Uses, "Feature uses"),
+        ]),
+        roll_effects: choices(&[
+            (RollEffect::None, "Just roll"),
+            (RollEffect::Heal, "Heal by the total"),
+            (RollEffect::TempHp, "Gain temp HP"),
+        ]),
+        recharges: choices(&[
+            (Recharge::None, "Doesn't recharge"),
+            (Recharge::Short, "Short or Long Rest"),
+            (Recharge::Long, "Long Rest"),
+        ]),
     }
 }

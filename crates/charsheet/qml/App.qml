@@ -23,6 +23,8 @@ QtObject {
     property int requestedTab: 0
 
     signal rolled(var result)
+    // A short message for a passive notification, e.g. what an action did.
+    signal notice(string message)
 
     function signed(n) {
         return (n >= 0 ? "+" : "") + n
@@ -46,8 +48,39 @@ QtObject {
             rolled(JSON.parse(json))
     }
 
+    // Shows a roll the backend made (JSON from CharacterSheet), like roll() does.
+    function showRoll(json) {
+        if (json.length > 0)
+            rolled(JSON.parse(json))
+    }
+
+    function report(message) {
+        if (message.length > 0)
+            notice(message)
+    }
+
+    // The value at a JSON Pointer such as "/inventory/2/modifiers", or undefined.
+    function at(pointer) {
+        return pointer.split("/").filter(p => p).reduce((o, k) => o == null ? undefined : o[k], c)
+    }
+
     function rollD20(modifier, label) {
         roll("1d20" + (modifier !== 0 ? signed(modifier) : ""), label, rollMode)
+    }
+
+    readonly property var masteryOptions: [""].concat(["Cleave", "Graze", "Nick", "Push", "Sap", "Slow", "Topple", "Vex"])
+        .map(m => ({ key: m, name: m || "None" }))
+
+    // Uses an entry of derived.actions; slotLevel is the spell slot to cast with, 0 for a free use.
+    function useAction(action, slotLevel) {
+        let message
+        if (action.owner === "item")
+            message = sheet.useItemAction(action.index, action.action)
+        else if (action.owner === "feature")
+            message = sheet.useFeatureAction(action.index, action.action)
+        else
+            message = sheet.castSpell(action.index, slotLevel || 0)
+        report(message)
     }
 
     function nameOf(list, key) {

@@ -8,6 +8,7 @@ use crate::character::{
     Spell,
 };
 use crate::dice::RollResult;
+use crate::effects::Effect;
 use rusqlite::types::Type;
 use rusqlite::{Connection, OptionalExtension, Row, named_params, params};
 use serde::de::DeserializeOwned;
@@ -81,7 +82,10 @@ impl StoredRoll {
 
 /// Schema migrations from `migrations/`, applied in order; `PRAGMA user_version` counts how
 /// many have run. Add a new numbered `.sql` file for each change and append it here.
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/0001_initial.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/0001_initial.sql"),
+    include_str!("../migrations/0002_items_effects.sql"),
+];
 
 /// Tables holding a character's sheet entries, cleared and rewritten on every save.
 const CHILD_TABLES: &[&str] = &[
@@ -94,6 +98,7 @@ const CHILD_TABLES: &[&str] = &[
     "spells",
     "items",
     "features",
+    "effects",
 ];
 
 /// Columns of `characters` other than `id` and the timestamps; also the save parameter names.
@@ -127,6 +132,8 @@ const CHARACTER_COLUMNS: &[&str] = &[
     "appearance",
     "backstory",
     "notes",
+    "round",
+    "riders_used_json",
 ];
 
 /// An enum's serde name (`"str"`, `"chain_mail"`), so the database matches the JSON format.
@@ -144,6 +151,23 @@ fn from_text<T: DeserializeOwned>(text: String, column: usize) -> rusqlite::Resu
 
 fn text_col<T: DeserializeOwned>(row: &Row, column: usize) -> rusqlite::Result<T> {
     from_text(row.get(column)?, column)
+}
+
+/// A nested value stored as JSON text, like an item's actions.
+fn json_col<T: DeserializeOwned>(row: &Row, column: usize) -> rusqlite::Result<T> {
+    let text: String = row.get(column)?;
+    serde_json::from_str(&text)
+        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(column, Type::Text, Box::new(e)))
+}
+
+/// Like `json_col`, for a nullable column holding an optional value.
+fn opt_json_col<T: DeserializeOwned>(row: &Row, column: usize) -> rusqlite::Result<Option<T>> {
+    let text: Option<String> = row.get(column)?;
+    text.map(|t| {
+        serde_json::from_str(&t)
+            .map_err(|e| rusqlite::Error::FromSqlConversionFailure(column, Type::Text, Box::new(e)))
+    })
+    .transpose()
 }
 
 pub struct Library {
@@ -313,6 +337,9 @@ impl Library {
                     appearance: r.get("appearance")?,
                     backstory: r.get("backstory")?,
                     notes: r.get("notes")?,
+                    effects: Vec::new(),
+                    round: r.get("round")?,
+                    riders_used: json_col(r, r.as_ref().column_index("riders_used_json")?)?,
                 })
             })
             .optional()?
@@ -395,7 +422,8 @@ impl Library {
 
         character.spells = tx
             .prepare(
-                "SELECT name, level, prepared, ritual, concentration, notes
+                "SELECT name, level, prepared, ritual, concentration, notes, casting_time,
+                        free_uses_max, free_uses_spent, roll, roll_effect, effect_json
                  FROM spells WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -406,16 +434,25 @@ impl Library {
                     ritual: r.get(3)?,
                     concentration: r.get(4)?,
                     notes: r.get(5)?,
+                    casting_time: text_col(r, 6)?,
+                    free_uses_max: r.get(7)?,
+                    free_uses_spent: r.get(8)?,
+                    roll: r.get(9)?,
+                    roll_effect: text_col(r, 10)?,
+                    effect: opt_json_col(r, 11)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
 
         character.inventory = tx
             .prepare(
-                "SELECT name, quantity, weight, requires_attunement, attuned, notes
+                "SELECT name, quantity, weight, requires_attunement, attuned, notes, kind,
+                        equipped, weapon_json, armor, ac_bonus, charges_max, charges_spent,
+                        recharge, modifiers_json, actions_json
                  FROM items WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
+                let armor: Option<String> = r.get(9)?;
                 Ok(Item {
                     name: r.get(0)?,
                     quantity: r.get(1)?,
@@ -423,13 +460,24 @@ impl Library {
                     requires_attunement: r.get(3)?,
                     attuned: r.get(4)?,
                     notes: r.get(5)?,
+                    kind: text_col(r, 6)?,
+                    equipped: r.get(7)?,
+                    weapon: opt_json_col(r, 8)?,
+                    armor: armor.map(|a| from_text(a, 9)).transpose()?,
+                    ac_bonus: r.get(10)?,
+                    charges_max: r.get(11)?,
+                    charges_spent: r.get(12)?,
+                    recharge: text_col(r, 13)?,
+                    modifiers: json_col(r, 14)?,
+                    actions: json_col(r, 15)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
 
         character.features = tx
             .prepare(
-                "SELECT name, source, description, uses_max, uses_spent, recharge
+                "SELECT name, source, description, uses_max, uses_spent, recharge,
+                        modifiers_json, actions_json
                  FROM features WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -440,6 +488,25 @@ impl Library {
                     uses_max: r.get(3)?,
                     uses_spent: r.get(4)?,
                     recharge: text_col(r, 5)?,
+                    modifiers: json_col(r, 6)?,
+                    actions: json_col(r, 7)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        character.effects = tx
+            .prepare(
+                "SELECT name, source, concentration, rounds, modifiers_json, notes
+                 FROM effects WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(Effect {
+                    name: r.get(0)?,
+                    source: r.get(1)?,
+                    concentration: r.get(2)?,
+                    rounds: r.get(3)?,
+                    modifiers: json_col(r, 4)?,
+                    notes: r.get(5)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
@@ -488,9 +555,13 @@ impl Library {
             appearance,
             backstory,
             notes,
+            effects,
+            round,
+            riders_used,
         } = character;
         let key = id.to_string();
         let armor = armor.as_ref().map(to_text).transpose()?;
+        let riders_used = serde_json::to_string(riders_used)?;
         let tx = self.conn.unchecked_transaction()?;
 
         let values = named_params! {
@@ -524,6 +595,8 @@ impl Library {
             ":appearance": appearance,
             ":backstory": backstory,
             ":notes": notes,
+            ":round": round,
+            ":riders_used_json": riders_used,
         };
         // Update in place rather than REPLACE, which would cascade-delete the roll log.
         let assignments: Vec<String> = CHARACTER_COLUMNS
@@ -632,8 +705,9 @@ impl Library {
 
             let mut stmt = tx.prepare(
                 "INSERT INTO spells
-                 (character_id, position, name, level, prepared, ritual, concentration, notes)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                 (character_id, position, name, level, prepared, ritual, concentration, notes,
+                  casting_time, free_uses_max, free_uses_spent, roll, roll_effect, effect_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
             )?;
             for (i, s) in spells.iter().enumerate() {
                 stmt.execute(params![
@@ -644,14 +718,23 @@ impl Library {
                     s.prepared,
                     s.ritual,
                     s.concentration,
-                    s.notes
+                    s.notes,
+                    to_text(&s.casting_time)?,
+                    s.free_uses_max,
+                    s.free_uses_spent,
+                    s.roll,
+                    to_text(&s.roll_effect)?,
+                    s.effect.as_ref().map(serde_json::to_string).transpose()?
                 ])?;
             }
 
             let mut stmt = tx.prepare(
                 "INSERT INTO items
-                 (character_id, position, name, quantity, weight, requires_attunement, attuned, notes)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                 (character_id, position, name, quantity, weight, requires_attunement, attuned, notes,
+                  kind, equipped, weapon_json, armor, ac_bonus, charges_max, charges_spent,
+                  recharge, modifiers_json, actions_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16,
+                         ?17, ?18)",
             )?;
             for (i, item) in inventory.iter().enumerate() {
                 stmt.execute(params![
@@ -662,14 +745,28 @@ impl Library {
                     item.weight,
                     item.requires_attunement,
                     item.attuned,
-                    item.notes
+                    item.notes,
+                    to_text(&item.kind)?,
+                    item.equipped,
+                    item.weapon
+                        .as_ref()
+                        .map(serde_json::to_string)
+                        .transpose()?,
+                    item.armor.as_ref().map(to_text).transpose()?,
+                    item.ac_bonus,
+                    item.charges_max,
+                    item.charges_spent,
+                    to_text(&item.recharge)?,
+                    serde_json::to_string(&item.modifiers)?,
+                    serde_json::to_string(&item.actions)?
                 ])?;
             }
 
             let mut stmt = tx.prepare(
                 "INSERT INTO features
-                 (character_id, position, name, source, description, uses_max, uses_spent, recharge)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                 (character_id, position, name, source, description, uses_max, uses_spent, recharge,
+                  modifiers_json, actions_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             )?;
             for (i, f) in features.iter().enumerate() {
                 stmt.execute(params![
@@ -680,7 +777,27 @@ impl Library {
                     f.description,
                     f.uses_max,
                     f.uses_spent,
-                    to_text(&f.recharge)?
+                    to_text(&f.recharge)?,
+                    serde_json::to_string(&f.modifiers)?,
+                    serde_json::to_string(&f.actions)?
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO effects
+                 (character_id, position, name, source, concentration, rounds, modifiers_json, notes)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            for (i, e) in effects.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    e.name,
+                    e.source,
+                    e.concentration,
+                    e.rounds,
+                    serde_json::to_string(&e.modifiers)?,
+                    e.notes
                 ])?;
             }
         }
@@ -806,9 +923,10 @@ mod tests {
     use super::*;
     use crate::abilities::{Proficiency, Skill};
     use crate::armor::ArmorKind;
-    use crate::character::{Condition, Recharge};
+    use crate::character::{Condition, ItemKind, Recharge, WeaponStats};
     use crate::classes::ClassId;
     use crate::dice::{self, RollMode};
+    use crate::effects::{Action, Activation, Cost, Modifier, ModifierKind, RollEffect, Scope};
 
     fn count(lib: &Library, table: &str) -> i64 {
         lib.conn
@@ -885,6 +1003,22 @@ mod tests {
                 prepared: true,
                 ..Default::default()
             },
+            Spell {
+                name: "Hunter's Mark".into(),
+                level: 1,
+                prepared: true,
+                concentration: true,
+                casting_time: Activation::BonusAction,
+                free_uses_max: 3,
+                free_uses_spent: 1,
+                roll: "1d6".into(),
+                roll_effect: RollEffect::TempHp,
+                effect: Some(Effect {
+                    name: "Marked".into(),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
         ];
         c.spell_slots_used[0] = 1;
         c.currency = Currency {
@@ -901,6 +1035,43 @@ mod tests {
             requires_attunement: true,
             attuned: true,
             notes: "hempen".into(),
+            ..Default::default()
+        });
+        c.inventory.push(Item {
+            name: "Revolver".into(),
+            kind: ItemKind::Weapon,
+            equipped: true,
+            weapon: Some(WeaponStats {
+                ranged: true,
+                capacity: 6,
+                loaded: 4,
+                ammo: "Rounds".into(),
+                mastery: "Vex".into(),
+                ..Default::default()
+            }),
+            charges_max: 3,
+            charges_spent: 1,
+            recharge: Recharge::Long,
+            modifiers: vec![Modifier {
+                kind: ModifierKind::Damage,
+                scope: Scope::Ranged,
+                dice: "1d4".into(),
+                once_per_turn: true,
+                ..Default::default()
+            }],
+            actions: vec![Action {
+                name: "Fan the hammer".into(),
+                cost: Cost::Charges,
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
+        c.inventory.push(Item {
+            name: "Breastplate".into(),
+            kind: ItemKind::Armor,
+            armor: Some(ArmorKind::Breastplate),
+            ac_bonus: 1,
+            ..Default::default()
         });
         c.features.push(Feature {
             name: "Cunning Action".into(),
@@ -909,7 +1080,32 @@ mod tests {
             uses_max: 3,
             uses_spent: 1,
             recharge: Recharge::Short,
+            modifiers: vec![Modifier {
+                kind: ModifierKind::Save,
+                ability: Some(Ability::Dex),
+                value: 1,
+                ..Default::default()
+            }],
+            actions: vec![Action {
+                name: "Hide".into(),
+                activation: Activation::BonusAction,
+                ..Default::default()
+            }],
         });
+        c.effects.push(Effect {
+            name: "Bless".into(),
+            source: "Cleric".into(),
+            concentration: true,
+            rounds: 10,
+            modifiers: vec![Modifier {
+                kind: ModifierKind::Note,
+                text: "+1d4 to attacks and saves".into(),
+                ..Default::default()
+            }],
+            notes: "From the party cleric".into(),
+        });
+        c.round = 3;
+        c.riders_used.insert("Sneak Attack".into());
         c.backstory = "Grew up in the woods.".into();
         c.normalize();
         c
@@ -993,6 +1189,49 @@ mod tests {
 
         lib.clear_rolls(c.id).unwrap();
         assert!(lib.recent_rolls(c.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn migrates_a_version_1_database() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("charsheet.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(MIGRATIONS[0]).unwrap();
+            conn.pragma_update(None, "user_version", 1).unwrap();
+            conn.execute_batch(
+                "INSERT INTO characters VALUES ('0a5e0000-0000-4000-8000-000000000001', 'Old',
+                 '', '', '', '', 0, 10, 7, 0, 0, 0, 0, 0, 30, NULL, 0, 0, 0, 0, 0, 0, 0, 5, 0,
+                 'Common', '', '', '', '', '2024-01-01', '2024-01-01');
+                 INSERT INTO items VALUES ('0a5e0000-0000-4000-8000-000000000001', 0, 'Rope',
+                 1, 10.0, 0, 0, '');
+                 INSERT INTO features VALUES ('0a5e0000-0000-4000-8000-000000000001', 0, 'Rage',
+                 '', '', 2, 1, 'long');
+                 INSERT INTO spells VALUES ('0a5e0000-0000-4000-8000-000000000001', 0, 'Light',
+                 0, 1, 0, 0, '');",
+            )
+            .unwrap();
+        }
+        let lib = Library::open(&path).unwrap();
+        let c = lib
+            .load(Uuid::parse_str("0a5e0000-0000-4000-8000-000000000001").unwrap())
+            .unwrap();
+        assert_eq!(c.hp.current, 7);
+        assert_eq!(c.inventory[0].kind, ItemKind::Gear);
+        assert!(c.inventory[0].actions.is_empty());
+        assert_eq!(c.features[0].uses_spent, 1);
+        assert_eq!(c.spells[0].casting_time, Activation::Action);
+        assert!(c.effects.is_empty());
+        lib.save(&c).unwrap();
+        assert_eq!(lib.load(c.id).unwrap(), c);
+    }
+
+    #[test]
+    fn imports_sable() {
+        let lib = Library::open_in_memory().unwrap();
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/sable.json");
+        let sable = lib.import(&path).unwrap();
+        assert_eq!(lib.load(sable.id).unwrap(), sable);
     }
 
     #[test]

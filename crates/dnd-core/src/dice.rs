@@ -274,11 +274,42 @@ pub fn roll_with(
     })
 }
 
+/// The expression with every die count doubled, for critical hits: `1d8+1d6+4` → `2d8+2d6+4`.
+pub fn double_dice(expression: &str) -> Result<String, DiceError> {
+    let expr = Expr::parse(expression)?;
+    let mut out = String::new();
+    for (i, (sign, term)) in expr.terms.iter().enumerate() {
+        match (i, *sign) {
+            (0, -1) => out.push('-'),
+            (0, _) => {}
+            (_, -1) => out.push('-'),
+            _ => out.push('+'),
+        }
+        let doubled = match *term {
+            Term::Dice { count, sides, keep } => Term::Dice {
+                count: count * 2,
+                sides,
+                keep,
+            },
+            Term::Constant(n) => Term::Constant(n),
+        };
+        out.push_str(&doubled.to_string());
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::SeedableRng;
     use rand::rngs::StdRng;
+
+    #[test]
+    fn doubles_dice_for_crits() {
+        assert_eq!(double_dice("1d8+1d6+4").unwrap(), "2d8+2d6+4");
+        assert_eq!(double_dice("2d6 - 1").unwrap(), "4d6-1");
+        assert!(double_dice("nope").is_err());
+    }
 
     #[test]
     fn parses_expressions() {

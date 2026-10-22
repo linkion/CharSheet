@@ -4,14 +4,34 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
+// The play surface: hit points, the turn, active effects, attacks and everything else the
+// character can do.
 SheetTab {
     id: tab
 
-    readonly property var masteryOptions: [""].concat(["Cleave", "Graze", "Nick", "Push", "Sap", "Slow", "Topple", "Vex"])
-        .map(m => ({ key: m, name: m || "None" }))
+    readonly property var activationGroups: [
+        { key: "action", title: "Actions" },
+        { key: "bonus_action", title: "Bonus Actions" },
+        { key: "reaction", title: "Reactions" },
+        { key: "free", title: "Free" },
+        { key: "other", title: "Other" }
+    ]
 
     function doubleDice(expression) {
         return expression.replace(/(\d*)d(\d+)/gi, (m, n, sides) => (2 * (parseInt(n) || 1)) + "d" + sides)
+    }
+
+    function takeDamage(amount) {
+        if (amount <= 0)
+            return
+        App.sheet.damage(amount)
+        const concentrating = App.d.concentrating
+        if (!concentrating)
+            return
+        const dc = Math.min(30, Math.max(10, Math.floor(amount / 2)))
+        const save = (App.d.abilities || []).find(a => a.key === "con")?.save ?? 0
+        applicationWindow().showPassiveNotification("Concentrating on " + concentrating + ": CON save DC " + dc,
+            "long", "Roll Save", () => App.rollD20(save, "Concentration save (DC " + dc + ")"))
     }
 
     GridLayout {
@@ -32,7 +52,7 @@ SheetTab {
         RowLayout {
             Layout.fillWidth: true
             Kirigami.Heading {
-                text: (App.c.hp?.current ?? 0) + " / " + (App.c.hp?.max ?? 0)
+                text: (App.c.hp?.current ?? 0) + " / " + (App.d.max_hp ?? 0)
                 level: 1
                 color: (App.c.hp?.current ?? 1) === 0 ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
             }
@@ -48,12 +68,21 @@ SheetTab {
         QQC2.ProgressBar {
             Layout.fillWidth: true
             from: 0
-            to: App.c.hp?.max ?? 1
+            to: App.d.max_hp ?? 1
             value: App.c.hp?.current ?? 0
         }
 
-        RowLayout {
+        QQC2.Label {
+            visible: (App.d.resistances || []).length > 0
+            text: "Resistant to " + (App.d.resistances || []).map(r => r === "all" ? "all damage" : r).join(", ")
+            color: Kirigami.Theme.positiveTextColor
+            wrapMode: Text.WordWrap
             Layout.fillWidth: true
+        }
+
+        Flow {
+            Layout.fillWidth: true
+            spacing: Kirigami.Units.smallSpacing
             QQC2.SpinBox {
                 id: amount
                 from: 0
@@ -64,7 +93,13 @@ SheetTab {
             QQC2.Button {
                 text: "Damage"
                 icon.name: "list-remove"
-                onClicked: App.sheet.damage(amount.value)
+                onClicked: tab.takeDamage(amount.value)
+            }
+            QQC2.Button {
+                text: "Resisted (½)"
+                onClicked: tab.takeDamage(Math.floor(amount.value / 2))
+                QQC2.ToolTip.text: "Take half damage, rounded down"
+                QQC2.ToolTip.visible: hovered
             }
             QQC2.Button {
                 text: "Heal"
@@ -103,49 +138,116 @@ SheetTab {
     }
 
     Section {
-        title: "Hit Dice & Rests"
+        title: "Turn & Effects"
+
+        headerActions: [
+            Kirigami.Action {
+                text: "Add Effect"
+                icon.name: "list-add"
+                tooltip: "Add an effect by hand, such as a Bless an ally cast on you"
+                onTriggered: {
+                    if (App.append("/effects", {}))
+                        effectDialog.edit("/effects", App.c.effects.length - 1)
+                }
+            }
+        ]
+
+        RowLayout {
+            Layout.fillWidth: true
+            Kirigami.Heading {
+                text: (App.c.round ?? 0) > 0 ? "Round " + App.c.round : "Not in combat"
+                level: 2
+                Layout.fillWidth: true
+            }
+            QQC2.Button {
+                text: (App.c.round ?? 0) > 0 ? "New Turn" : "Start Combat"
+                icon.name: "media-skip-forward"
+                onClicked: App.sheet.newTurn()
+                QQC2.ToolTip.text: "Start your turn: once-per-turn riders reset and timed effects count down"
+                QQC2.ToolTip.visible: hovered
+            }
+            QQC2.Button {
+                visible: (App.c.round ?? 0) > 0
+                text: "End Combat"
+                icon.name: "media-playback-stop"
+                onClicked: App.sheet.endCombat()
+                QQC2.ToolTip.text: "Reset the round and end effects that last a number of turns"
+                QQC2.ToolTip.visible: hovered
+            }
+        }
+
+        QQC2.Label {
+            visible: !!App.d.concentrating
+            text: "Concentrating on " + App.d.concentrating
+            font.bold: true
+            color: Kirigami.Theme.neutralTextColor
+        }
 
         Repeater {
-            model: App.d.hit_dice
+            model: App.c.effects
 
             RowLayout {
                 required property var modelData
                 required property int index
                 Layout.fillWidth: true
 
-                QQC2.Label {
-                    text: modelData.class + " (d" + modelData.die + ")"
+                ColumnLayout {
                     Layout.fillWidth: true
-                }
-                QQC2.Label {
-                    text: modelData.remaining + " / " + modelData.total
-                    font.bold: true
-                }
-                QQC2.Button {
-                    text: "Spend"
-                    enabled: modelData.remaining > 0
-                    onClicked: {
-                        const message = App.sheet.spendHitDie(index)
-                        if (message.length > 0)
-                            applicationWindow().showPassiveNotification(message)
+                    spacing: 0
+                    QQC2.Label {
+                        text: modelData.name
+                              + (modelData.concentration ? "  [C]" : "")
+                              + (modelData.rounds > 0 ? "  · " + modelData.rounds + (modelData.rounds === 1 ? " turn" : " turns") : "")
+                              + (modelData.source ? "  —  " + modelData.source : "")
+                        font.bold: true
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
                     }
+                    QQC2.Label {
+                        readonly property string summary: (App.d.effect_summaries || [])[index] ?? ""
+                        visible: text.length > 0
+                        text: [summary, modelData.notes].filter(s => s).join("  —  ")
+                        wrapMode: Text.WordWrap
+                        opacity: 0.8
+                        Layout.fillWidth: true
+                    }
+                }
+                QQC2.ToolButton {
+                    icon.name: "document-edit"
+                    onClicked: effectDialog.edit("/effects", index)
+                    QQC2.ToolTip.text: "Edit"
+                    QQC2.ToolTip.visible: hovered
+                }
+                QQC2.ToolButton {
+                    icon.name: "dialog-close"
+                    onClicked: App.sheet.endEffect(index)
+                    QQC2.ToolTip.text: "End effect"
+                    QQC2.ToolTip.visible: hovered
                 }
             }
         }
 
-        RowLayout {
-            QQC2.Button {
-                text: "Short Rest"
-                icon.name: "chronometer-pause"
-                onClicked: {
-                    App.sheet.shortRest()
-                    applicationWindow().showPassiveNotification("Pact slots and short-rest features restored")
-                }
-            }
-            QQC2.Button {
-                text: "Long Rest"
-                icon.name: "go-sleep"
-                onClicked: longRestDialog.open()
+        QQC2.Label {
+            visible: (App.c.effects || []).length === 0
+            text: "No active effects. Spells and actions add theirs here."
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
+        Kirigami.Separator {
+            visible: (App.d.notes_in_force || []).length > 0
+            Layout.fillWidth: true
+        }
+
+        Repeater {
+            model: App.d.notes_in_force
+            QQC2.Label {
+                required property var modelData
+                text: "• " + modelData.text + "  (" + modelData.source + ")"
+                wrapMode: Text.WordWrap
+                opacity: 0.8
+                Layout.fillWidth: true
             }
         }
     }
@@ -158,12 +260,25 @@ SheetTab {
             Kirigami.Action {
                 text: "Add Attack"
                 icon.name: "list-add"
+                tooltip: "Add an attack by hand. Equipped weapons in the Inventory show up here on their own."
                 onTriggered: {
                     if (App.append("/attacks", {}))
                         attackDialog.edit("/attacks", App.c.attacks.length - 1)
                 }
             }
         ]
+
+        // Indexed by count so the rider chips keep their state across edits.
+        Repeater {
+            model: (App.d.weapon_attacks || []).length
+
+            ColumnLayout {
+                required property int index
+                Layout.fillWidth: true
+                WeaponAttackRow { attackIndex: index }
+                Kirigami.Separator { Layout.fillWidth: true }
+            }
+        }
 
         Repeater {
             model: App.c.attacks
@@ -219,15 +334,97 @@ SheetTab {
         }
 
         QQC2.Label {
-            visible: (App.c.attacks || []).length === 0
-            text: "No attacks yet."
+            visible: (App.c.attacks || []).length === 0 && (App.d.weapon_attacks || []).length === 0
+            text: "No attacks yet. Equip a weapon in the Inventory, or add one by hand."
             opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+    }
+
+    Section {
+        title: "Actions, Spells & Items"
+        Layout.columnSpan: 2
+
+        Repeater {
+            model: tab.activationGroups
+
+            ColumnLayout {
+                id: group
+                required property var modelData
+                readonly property var actions: (App.d.actions || []).filter(a => a.activation === modelData.key)
+                visible: actions.length > 0
+                Layout.fillWidth: true
+
+                Kirigami.Heading {
+                    text: group.modelData.title
+                    level: 4
+                }
+                Repeater {
+                    model: group.actions
+                    ActionRow {
+                        required property var modelData
+                        action: modelData
+                    }
+                }
+            }
+        }
+
+        QQC2.Label {
+            visible: (App.d.actions || []).length === 0
+            text: "Give items and features actions in their edit dialogs, and prepared spells an effect or a roll, and they show up here."
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+    }
+
+    Section {
+        title: "Hit Dice & Rests"
+
+        Repeater {
+            model: App.d.hit_dice
+
+            RowLayout {
+                required property var modelData
+                required property int index
+                Layout.fillWidth: true
+
+                QQC2.Label {
+                    text: modelData.class + " (d" + modelData.die + ")"
+                    Layout.fillWidth: true
+                }
+                QQC2.Label {
+                    text: modelData.remaining + " / " + modelData.total
+                    font.bold: true
+                }
+                QQC2.Button {
+                    text: "Spend"
+                    enabled: modelData.remaining > 0
+                    onClicked: App.report(App.sheet.spendHitDie(index))
+                }
+            }
+        }
+
+        RowLayout {
+            QQC2.Button {
+                text: "Short Rest"
+                icon.name: "chronometer-pause"
+                onClicked: {
+                    App.sheet.shortRest()
+                    applicationWindow().showPassiveNotification("Pact slots, short-rest features and item charges restored")
+                }
+            }
+            QQC2.Button {
+                text: "Long Rest"
+                icon.name: "go-sleep"
+                onClicked: longRestDialog.open()
+            }
         }
     }
 
     Section {
         title: "Conditions"
-        Layout.columnSpan: 2
 
         RowLayout {
             QQC2.Label { text: "Exhaustion" }
@@ -276,15 +473,28 @@ SheetTab {
             { key: "add_ability_to_damage", label: "Add ability modifier to damage", type: "bool" },
             { key: "bonus", label: "Magic bonus", type: "int", from: -10, to: 10 },
             { key: "damage_type", label: "Damage type", type: "text" },
-            { key: "mastery", label: "Weapon mastery", type: "choice", options: tab.masteryOptions },
+            { key: "mastery", label: "Weapon mastery", type: "choice", options: App.masteryOptions },
             { key: "notes", label: "Notes", type: "area" }
+        ]
+    }
+
+    ItemDialog {
+        id: effectDialog
+        title: "Effect"
+        fields: [
+            { key: "name", label: "Name", type: "text" },
+            { key: "source", label: "Source", type: "text", placeholder: "e.g. Bless from the cleric" },
+            { key: "concentration", label: "Concentration", type: "bool" },
+            { key: "rounds", label: "Turns left (0 = until removed)", type: "int", from: 0, to: 1000 },
+            { key: "notes", label: "Notes", type: "area" },
+            { key: "modifiers", label: "Modifiers", type: "modifiers" }
         ]
     }
 
     Kirigami.PromptDialog {
         id: longRestDialog
         title: "Take a Long Rest?"
-        subtitle: "Restores all HP, hit dice, spell slots and feature uses, and removes one level of Exhaustion."
+        subtitle: "Restores all HP, hit dice, spell slots, feature uses, item charges and free casts, ends active effects, and removes one level of Exhaustion."
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: App.sheet.longRest()
     }

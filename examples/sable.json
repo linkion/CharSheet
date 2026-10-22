@@ -1,0 +1,767 @@
+{
+  "schema_version": 2,
+  "id": "5ab1e000-0000-4000-8000-000000000006",
+  "name": "Sable",
+  "player": "Porave",
+  "species": "Shadar-Kai",
+  "background": "Criminal (\"Masterless\")",
+  "alignment": "Chaotic Good",
+  "classes": [
+    {
+      "class": "ranger",
+      "subclass": "Ronin",
+      "level": 6,
+      "hit_dice_spent": 0,
+      "third_caster": false
+    }
+  ],
+  "base_scores": [
+    12,
+    15,
+    13,
+    8,
+    14,
+    10
+  ],
+  "score_bonuses": [
+    0,
+    3,
+    1,
+    0,
+    0,
+    0
+  ],
+  "extra_saves": [],
+  "skills": {
+    "perception": "expertise",
+    "survival": "proficient",
+    "insight": "proficient",
+    "nature": "proficient",
+    "stealth": "proficient",
+    "sleight_of_hand": "proficient"
+  },
+  "hp": {
+    "max": 52,
+    "current": 52,
+    "temp": 0
+  },
+  "speed": 30,
+  "armor": null,
+  "shield": false,
+  "currency": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 477,
+    "pp": 0
+  },
+  "inventory": [
+    {
+      "name": "Katana",
+      "kind": "weapon",
+      "quantity": 1,
+      "weight": 2,
+      "notes": "Rapier statline. Stow it at the end of every turn: it re-arms Slash Draw and, from 7th level, Cleaving Parry.",
+      "equipped": true,
+      "weapon": {
+        "damage": "1d8",
+        "damage_type": "piercing",
+        "proficient": true,
+        "finesse": true,
+        "mastery": "Vex"
+      }
+    },
+    {
+      "name": "Revolver",
+      "kind": "weapon",
+      "quantity": 1,
+      "weight": 3,
+      "notes": "Standard rounds aren't tracked (Aidan's ruling). Reload: an action or bonus action, or skip one attack (Firearm Expert).",
+      "equipped": true,
+      "weapon": {
+        "damage": "1d6",
+        "damage_type": "piercing",
+        "proficient": true,
+        "ranged": true,
+        "light": true,
+        "range": "60/240",
+        "mastery": "Vex",
+        "capacity": 6,
+        "loaded": 6
+      }
+    },
+    {
+      "name": "Black Iron Revolver",
+      "kind": "weapon",
+      "quantity": 1,
+      "weight": 3,
+      "notes": "Sleek black gun with gold accents (Session 05). \"Fire\" carved along the barrel in Gnomish; \"Freeze\" dimmer on the cylinder. Second gun or replacement: still to confirm.",
+      "equipped": true,
+      "requires_attunement": true,
+      "attuned": true,
+      "weapon": {
+        "damage": "1d8",
+        "damage_type": "piercing",
+        "proficient": true,
+        "ranged": true,
+        "light": true,
+        "range": "40/160",
+        "mastery": "Vex",
+        "magic_bonus": 1,
+        "capacity": 9,
+        "loaded": 9,
+        "ammo": "+1 Revolver Rounds"
+      }
+    },
+    {
+      "name": "Dagger",
+      "kind": "weapon",
+      "quantity": 2,
+      "weight": 1,
+      "notes": "Thrown, it's always drawn that turn, so it carries Slash Draw's ranged rider with no ammunition spent.",
+      "equipped": true,
+      "weapon": {
+        "damage": "1d4",
+        "damage_type": "piercing",
+        "proficient": true,
+        "finesse": true,
+        "thrown": true,
+        "light": true,
+        "range": "20/60",
+        "mastery": "Nick"
+      }
+    },
+    {
+      "name": "Studded Leather",
+      "kind": "armor",
+      "quantity": 1,
+      "weight": 13,
+      "notes": "",
+      "equipped": true,
+      "armor": "studded_leather"
+    },
+    {
+      "name": "+1 Revolver Rounds",
+      "kind": "ammunition",
+      "quantity": 60,
+      "weight": 0,
+      "notes": "Bought 60 for 150 gp in session 5.",
+      "modifiers": [
+        {
+          "kind": "attack_roll",
+          "value": 1
+        },
+        {
+          "kind": "damage",
+          "value": 1
+        },
+        {
+          "kind": "note",
+          "text": "Magical: gets past resistance to nonmagical attacks"
+        }
+      ]
+    },
+    {
+      "name": "Bleeding Rounds",
+      "kind": "ammunition",
+      "quantity": 30,
+      "weight": 0,
+      "notes": "\"Bullets of Bleeding\", 30 for 100 gp in session 5. Pick them as a revolver's ammo to fire them.",
+      "modifiers": [
+        {
+          "kind": "note",
+          "text": "On a hit: CON save or Bleeding (DC, damage and ending still to ask the DM)"
+        }
+      ]
+    },
+    {
+      "name": "Potion of Healing",
+      "kind": "consumable",
+      "quantity": 2,
+      "weight": 0.5,
+      "notes": "",
+      "actions": [
+        {
+          "name": "Drink",
+          "activation": "bonus_action",
+          "description": "Drink it, or give it to a creature within 5 ft.",
+          "cost": "quantity",
+          "cost_amount": 1,
+          "roll": "2d4+2",
+          "roll_effect": "heal",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Healer's Kit",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 3,
+      "notes": "",
+      "charges_max": 10,
+      "actions": [
+        {
+          "name": "Stabilize",
+          "activation": "action",
+          "description": "Utilize: stabilize an Unconscious creature at 0 HP without a Medicine check.",
+          "cost": "charges",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Oil",
+      "kind": "consumable",
+      "quantity": 5,
+      "weight": 1,
+      "notes": "You also have 2 more flasks inside the Explorer's Pack. Also lamp fuel, 6 hours per flask.",
+      "actions": [
+        {
+          "name": "Throw",
+          "activation": "action",
+          "description": "Replaces one attack. Target within 20 ft: DEX save DC 15 (8 + DEX + PB) or doused. 5 fire damage if it takes fire damage before the oil dries. Or pour a 5-ft square that burns for 2 rounds: 5 fire to anything entering or ending there.",
+          "cost": "quantity",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Caltrops",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 2,
+      "notes": "",
+      "actions": [
+        {
+          "name": "Spread",
+          "activation": "action",
+          "description": "Utilize: cover a 5-ft square within 5 ft. First entry each turn: DC 15 DEX save or 1 piercing and Speed 0 until the start of its next turn.",
+          "cost": "none",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Ball Bearings",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 2,
+      "notes": "",
+      "actions": [
+        {
+          "name": "Spill",
+          "activation": "action",
+          "description": "Utilize: cover a level 10-ft square within 10 ft. First entry each turn: DC 10 DEX save or Prone.",
+          "cost": "none",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Hunting Trap",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 25,
+      "notes": "Rides in the wagon.",
+      "actions": [
+        {
+          "name": "Set",
+          "activation": "action",
+          "description": "Utilize to set. DC 13 DEX save or 1d4 piercing and Speed 0; held until it wins a DC 13 Athletics check.",
+          "cost": "none",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Druidic Focus (Sprig of Mistletoe)",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 0.0,
+      "notes": "Spellcasting focus; covers Alarm's and Goodberry's components.",
+      "equipped": true
+    },
+    {
+      "name": "Thieves' Tools",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 1,
+      "notes": ""
+    },
+    {
+      "name": "Explorer's Pack",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 39,
+      "notes": "Backpack, bedroll, tinderbox, 10 torches, waterskin, 50 ft hempen rope, 2 flasks of oil. Rations are tracked separately."
+    },
+    {
+      "name": "Rations",
+      "kind": "consumable",
+      "quantity": 8,
+      "weight": 2,
+      "notes": ""
+    },
+    {
+      "name": "Wolf Meat",
+      "kind": "consumable",
+      "quantity": 2,
+      "weight": 2,
+      "notes": "Spoiling. Eat it before the rations."
+    },
+    {
+      "name": "Tent",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 20,
+      "notes": "Two-person. Wagon cargo."
+    },
+    {
+      "name": "Shovel",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 5,
+      "notes": ""
+    },
+    {
+      "name": "Whetstone and Oil Kit",
+      "kind": "gear",
+      "quantity": 1,
+      "weight": 1,
+      "notes": ""
+    }
+  ],
+  "features": [
+    {
+      "name": "Slash Draw",
+      "source": "Ronin 3",
+      "description": "First melee hit each turn with a weapon drawn that turn: +1d6. First ranged hit each turn with a weapon drawn that turn: +1d4. The two are independent. +1 object interaction per turn, only to draw or stow weapons. Once per turn you can draw a weapon as part of an opportunity attack. Untick a rider chip when the weapon wasn't drawn this turn.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [
+        {
+          "kind": "damage",
+          "scope": "melee",
+          "dice": "1d6",
+          "damage_type": "piercing",
+          "once_per_turn": true,
+          "text": "melee"
+        },
+        {
+          "kind": "damage",
+          "scope": "ranged",
+          "dice": "1d4",
+          "damage_type": "piercing",
+          "once_per_turn": true,
+          "text": "ranged"
+        }
+      ],
+      "actions": []
+    },
+    {
+      "name": "Blessing of the Raven Queen",
+      "source": "Shadar-Kai",
+      "description": "Bonus action: teleport up to 30 ft to an unoccupied space you can see. From 3rd level you also have resistance to all damage until the start of your next turn.",
+      "uses_max": 3,
+      "uses_spent": 0,
+      "recharge": "long",
+      "modifiers": [],
+      "actions": [
+        {
+          "name": "Teleport",
+          "activation": "bonus_action",
+          "description": "Teleport up to 30 ft to an unoccupied space you can see.",
+          "cost": "uses",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": {
+            "name": "Ghostly",
+            "concentration": false,
+            "rounds": 1,
+            "modifiers": [
+              {
+                "kind": "resistance",
+                "damage_type": "all"
+              }
+            ],
+            "notes": "Resistance to all damage until the start of your next turn."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fighting Style: Archery",
+      "source": "Ranger 2",
+      "description": "+2 to attack rolls with ranged weapons.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [
+        {
+          "kind": "attack_roll",
+          "scope": "ranged_weapon",
+          "value": 2
+        }
+      ],
+      "actions": []
+    },
+    {
+      "name": "Extra Attack",
+      "source": "Ranger 5",
+      "description": "Two attacks per Attack action: draw, cut (+1d6), draw, shoot (+1d4).",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Roving",
+      "source": "Ranger 6",
+      "description": "Speed +10 ft while not in heavy armor, and a Climb Speed and Swim Speed equal to your Speed (40 ft).",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [
+        {
+          "kind": "speed",
+          "value": 10
+        }
+      ],
+      "actions": []
+    },
+    {
+      "name": "Alert",
+      "source": "Criminal (Origin feat)",
+      "description": "Add your Proficiency Bonus to initiative (update the modifier when it rises). You can swap initiative with a willing ally.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [
+        {
+          "kind": "initiative",
+          "value": 3,
+          "text": "Alert"
+        }
+      ],
+      "actions": []
+    },
+    {
+      "name": "Firearm Expert",
+      "source": "Feat, level 4",
+      "description": "Ignore Loading. Reload a Reload weapon you're holding without a free hand, or skip one attack to count it as the reload. Being within 5 ft of an enemy doesn't give disadvantage on ranged attacks.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Masterless",
+      "source": "Ronin 3",
+      "description": "+1d6 to saves to avoid or end Charmed. +1 weapon mastery (swap it on a long rest). Swap one mastery on a short rest.",
+      "uses_max": 1,
+      "uses_spent": 0,
+      "recharge": "short",
+      "modifiers": [
+        {
+          "kind": "note",
+          "text": "Charm saves: +1d6 (Masterless) and Advantage (Fey Ancestry)"
+        }
+      ],
+      "actions": [
+        {
+          "name": "Swap Weapon Mastery",
+          "activation": "other",
+          "description": "Short rest: swap one weapon mastery. Current: Vex (Katana), Vex (Revolver), Nick (Dagger).",
+          "cost": "uses",
+          "cost_amount": 1,
+          "roll": "",
+          "roll_effect": "none",
+          "effect": null
+        }
+      ]
+    },
+    {
+      "name": "Weapon Mastery",
+      "source": "Ranger 1",
+      "description": "Vex: on a hit, advantage on your next attack against that creature. Nick: the Light extra attack is part of the Attack action. Katana → Vex → revolver at advantage → Vex → next katana at advantage.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Favored Enemy",
+      "source": "Ranger 1",
+      "description": "Hunter's Mark is always prepared, with free casts that recharge on a long rest (tracked on the spell).",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Deft Explorer",
+      "source": "Ranger 2",
+      "description": "Expertise in Perception; Sylvan and Primordial.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Wandering Magic",
+      "source": "Ronin 3",
+      "description": "Expeditious Retreat (3rd) and Blur (5th) always prepared and free; Remove Curse at 9th.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [],
+      "actions": []
+    },
+    {
+      "name": "Shadar-Kai Traits",
+      "source": "Shadar-Kai",
+      "description": "Darkvision 60 ft (colors only as shades of grey). Fey Ancestry: advantage on saves to avoid or end Charmed. Keen Senses: Perception. Trance: long rest in 4 hours awake, plus two weapon or tool proficiencies until the next long rest. Counts as an elf.",
+      "uses_max": 0,
+      "uses_spent": 0,
+      "recharge": "none",
+      "modifiers": [
+        {
+          "kind": "resistance",
+          "damage_type": "necrotic"
+        }
+      ],
+      "actions": []
+    }
+  ],
+  "spells": [
+    {
+      "name": "Hunter's Mark",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": true,
+      "notes": "Always prepared (Favored Enemy). Mark a creature within 90 ft: +1d6 Force on every hit against it, and advantage on Perception or Survival checks to find it. Move the mark as a bonus action when it drops to 0 HP. Untick the rider on attacks against other targets.",
+      "casting_time": "bonus_action",
+      "free_uses_max": 3,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": {
+        "name": "Hunter's Mark",
+        "concentration": true,
+        "rounds": 0,
+        "modifiers": [
+          {
+            "kind": "damage",
+            "dice": "1d6",
+            "damage_type": "force"
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Expeditious Retreat",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": true,
+      "notes": "Always prepared (Wandering Magic). Dash now, and as a bonus action on each later turn. Up to 10 minutes.",
+      "casting_time": "bonus_action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": {
+        "name": "Expeditious Retreat",
+        "concentration": true,
+        "rounds": 0,
+        "modifiers": [
+          {
+            "kind": "note",
+            "text": "Dash as a Bonus Action"
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Blur",
+      "level": 2,
+      "prepared": true,
+      "ritual": false,
+      "concentration": true,
+      "notes": "Always prepared (Wandering Magic). Attacks against you have disadvantage unless the attacker doesn't rely on sight. Up to 1 minute.",
+      "casting_time": "action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": {
+        "name": "Blur",
+        "concentration": true,
+        "rounds": 0,
+        "modifiers": [
+          {
+            "kind": "note",
+            "text": "Attacks against you have Disadvantage"
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Ensnaring Strike",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": true,
+      "notes": "Next weapon hit this turn: STR save (DC 13) or Restrained, taking 1d6 piercing at the start of each of its turns. Up to 1 minute.",
+      "casting_time": "bonus_action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": {
+        "name": "Ensnaring Strike",
+        "concentration": true,
+        "rounds": 0,
+        "modifiers": [
+          {
+            "kind": "note",
+            "text": "Next weapon hit: STR save DC 13 or Restrained (1d6 piercing each turn)"
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Absorb Elements",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": false,
+      "notes": "When you take acid, cold, fire, lightning or thunder damage: resistance to it, and your first melee hit on your next turn deals +1d6 of that type.",
+      "casting_time": "reaction",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": {
+        "name": "Absorb Elements",
+        "concentration": false,
+        "rounds": 2,
+        "modifiers": [
+          {
+            "kind": "note",
+            "text": "Resistance to the triggering acid, cold, fire, lightning or thunder damage"
+          },
+          {
+            "kind": "damage",
+            "scope": "melee",
+            "dice": "1d6",
+            "damage_type": "elemental",
+            "once_per_turn": true,
+            "text": "absorbed"
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Aid",
+      "level": 2,
+      "prepared": true,
+      "ritual": false,
+      "concentration": false,
+      "notes": "Up to three creatures within 30 ft: +5 max HP and +5 current HP for 8 hours (+5 more per slot level above 2nd). Casting it applies the effect to you.",
+      "casting_time": "action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "5",
+      "roll_effect": "heal",
+      "effect": {
+        "name": "Aid",
+        "concentration": false,
+        "rounds": 0,
+        "modifiers": [
+          {
+            "kind": "max_hp",
+            "value": 5
+          }
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "name": "Cure Wounds",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": false,
+      "notes": "Touch: a creature regains 2d8 + WIS HP (+2d8 per slot level above 1st). If you cast it on yourself, use Heal with the total.",
+      "casting_time": "action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "2d8+2",
+      "roll_effect": "none",
+      "effect": null
+    },
+    {
+      "name": "Goodberry",
+      "level": 1,
+      "prepared": true,
+      "ritual": false,
+      "concentration": false,
+      "notes": "Ten berries; each restores 1 HP and feeds a creature for a day. 24 hours.",
+      "casting_time": "action",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": null
+    },
+    {
+      "name": "Alarm",
+      "level": 1,
+      "prepared": true,
+      "ritual": true,
+      "concentration": false,
+      "notes": "1 minute or ritual. A 20-ft cube warded for 8 hours: an audible or mental alarm when a creature enters.",
+      "casting_time": "other",
+      "free_uses_max": 0,
+      "free_uses_spent": 0,
+      "roll": "",
+      "roll_effect": "none",
+      "effect": null
+    }
+  ],
+  "languages": "Common, Elvish, Sylvan, Primordial",
+  "other_proficiencies": "Armor: light, medium, shields. Weapons: simple and martial, including every firearm. Tools: Thieves' Tools, plus any two weapons or tools per long rest from Trance.",
+  "appearance": "230 years old (born ~1480 P.A.I.). 5'9\", ~145 lb: wiry and light, built for speed, not leverage. Ashen skin, black hair, pale colorless eyes. Deity: Kismet, the Painter of Fate. Pronouns: he/him.",
+  "backstory": "# Backstory — Sable\n\n## The Name\n\n**Sable** — the heraldic word for black. A color name for someone who\nsees the dark only in shades of grey, from a people who lost color entirely and\nhave been chasing it ever since. It reads as a name, not a statement, which is why it works.\n\nThe one question it leaves open: **given or taken?**\n\n- **Given** — your parents named you for the absence, the way their parents named them. You have\n  never once thought about it. Serene about the monochrome; the sourcebook's first camp.\n- **Taken** — you chose the blackest word you could find and wore it, after whatever made you\n  masterless. A name that says *I know what I am now.* The second camp, chasing color, and\n  angrier about it.\n\n## Age & Appearance\n\n**230 years old**, born ~1480 P.A.I. Shadar-kai live past 750, so Sable is roughly a human in\nhis early thirties — an adult with five centuries still ahead. The age is chosen to put him\ninside two specific events on Cedmaran's timeline *(1 Our Past & Present.pdf, pp. 8–9)*:\n\n| Then | Sable was | What it means |\n|---|:--:|---|\n| **The Shattering**, ~1500 P.A.I. | **~20** | The cooperative cities broke into war. If a master's tradition died anywhere, it died here. |\n| **The Dissolution**, ~1600 P.A.I. | **~120** | **Modern gunpowder** perfected, \"refined to discourage all future wars.\" A trained swordsman, adult, watching his whole discipline become negotiable. |\n\n> [!important] This is where the revolver comes from\n> The gun isn't a tool Sable picked up. It's the thing that happened *to* him — and choosing to\n> carry one is a verdict on a tradition that was already gone. That answers the prompt below.\n\n**5'9\" / 175 cm, ~145 lb / 66 kg.** Wiry and corded, built for speed and reach rather than\nleverage — DEX 17 against STR 12, and it shows. Ashen grey skin, black hair, pale colorless eyes.\n\nTwo things worth playing at the table:\n\n- **Sable can see color perfectly well.** The Shadar-Kai lost color *in themselves*, not the\n  ability to perceive it — Darkvision only greys things out in the dark. He walks\n  through a world full of color carrying none of it, which is exactly what makes Kismet's\n  *\"fill the world with color\"* something he can actually chase.\n- **He ages visibly in the Shadowfell.** Shadar-kai become wizened there and youthful again on\n  the Material Plane. If the party ever crosses over, Sable gets old in front of the table.\n\n## The Prompts That Matter\n\nThe subclass and species hand you a story that rhymes with itself. The Ronin are\n**\"masterless, wandering warriors, beholden to no code but their own — no two the same, each\nwith their own tale that led them down the warrior's path.\"** The Shadar-Kai were\n**\"blessed by Chaos, forever lost any color, and left to wander, drawn to color more than ever\nbefore.\"**\n\nBoth are about someone who lost the thing that defined them and went looking.\n\n- **Who was your master, and how did you become masterless?** Death, betrayal, dismissal, or\n  your own choice to walk away? The Ronin text splits into two camps — vigilantes protecting the\n  vulnerable \"no matter the cost,\" and those pursuing \"their own justice, unfettered by the\n  consequences.\" Which one are you, and were you always?\n- **Where did the gun come from?** Firearms are uncommon in Cedmaran, and the doc frames them as\n  a **\"great equalizer\"** that \"blurs the old boundaries between martial skill and arcane might.\"\n  A trained swordsman who picked up a pistol has made a statement about tradition. Who did that\n  offend?\n- **What is the code you kept?** Beholden to no code *but your own* — so what is yours? One\n  sentence. It should be something the table can watch you break.\n- **What are you looking for?** The Shadar-Kai chase color. What's yours?\n\n## Hooks into the Campaign\n\nThe DM's pitch: *\"assist the **Echo's Call** in establishing a new haven for the people. But be\nwarned, the world is unsteady.\"* Themes: exploration, survival, a dynamic world, hope through\npaving new ground.\n\n- **Why do you care about a new haven?** A masterless warrior with no lord and no home is the\n  ideal recruit for people building one. Do you want a place to belong, or are you escorting\n  other people toward something you don't believe you get to have?\n- ~~Ask the DM about the Echo's Call~~ — **answered.** It's the Echo Hunters' **guild call\n  for adventurers**, not a faction. Sable answered a public notice and walked in the front door\n  with strangers, so **no prior tie is required**. That's a freedom, not a gap: if you want him\n  to have a history with the guild, it's now a choice rather than a hole to fill.\n- The world has **waned** over centuries: nations collapsed, peoples condensed, history fell to\n  ruin. Your master's tradition may be one of the things that fell. You could be the last person\n  who knows a style.\n\n## Ties to Cedmaran\n\n- **Deity — ✅ Kismet, the Painter of Fate** *(2 Deities & Patrons.pdf, p. 12)*. True Neutral;\n  Fate, Prophecy, Painters, the Unknown; Arcana domain; a paintbrush for a symbol. A small young\n  woman in a white gown splotched with paint, hair moonlight silver and untouched. She predicts\n  rather than decides — paintings shown every 57 years at Point Nemo — and otherwise\n  **\"prefers to watch from afar, admiring how each creature paints their own path forward into\n  the nebulous unknown.\"**\n\n  Her **edicts** are Sable's whole character, stated by someone else:\n  - *\"Fill the world with color.\"*\n  - *\"Embrace the mystery of the future.\"*\n\n  Her **anathema**:\n  - *\"Losing yourself to monotony.\"*\n  - *\"Attempting to see what has yet to occur.\"*\n\n  > [!important] Why she's the only god a Ronin can actually follow\n  > A Ronin is beholden to no code but their own — so any deity who issues\n  > orders is a contradiction. Kismet doesn't. She **watches you paint your own path**. Following\n  > her costs you nothing you swore not to give.\n  >\n  > And the fit with the species is exact. **Chaos** took your people's color.\n  > Kismet's first edict is *fill the world with color*, and her anathema is *losing yourself to\n  > monotony* — which is precisely the half of the Shadar-Kai who \"found serenity in their\n  > monochromaticity.\" Sable follows the one power in the cosmos whose stated purpose is undoing\n  > what was done to her people. A woman named for **black**, serving the **Painter**.\n\n- **Aecet, Ruination** — kept as the antagonist. *\"The dark hand to chaos,\"* Chaotic Evil, the god\n  whose watch over his dominion is the Decline itself → Shadar-Kai.\n- **Homeland?** `TBD` — Surging Sea, Rift Sea & Central Corridor, Calidun Sea, Northern\n  Wilderness, Southern Wilderness.\n- **Faction history?** `TBD` — thirteen parties of influence, including the **War Dogs Mercenary\n  Co.** and **The Wayfinders Guild**, both plausible former employers for a wandering sword.\n\n## Draft\n\n`TBD` — write it here once the above settle. Three paragraphs is plenty.\n\n## Bonds, Ideals, Flaws\n\n| | |\n|---|---|\n| **Ideal** | `TBD` |\n| **Bond** | `TBD` |\n| **Flaw** | `TBD` |\n| **Personality** | `TBD` |",
+  "notes": "The full turn: draw katana → cut (+1d6 Slash Draw, +1d6 if marked) → draw revolver → shoot (+1d4) → stow the katana. The Vex chain feeds itself as long as you keep hitting the same target."
+}

@@ -48,6 +48,9 @@ Kirigami.ApplicationWindow {
                 text += "  — Natural 1"
             root.showPassiveNotification(text, "long")
         }
+        function onNotice(message) {
+            root.showPassiveNotification(message, "long")
+        }
     }
 
     Connections {

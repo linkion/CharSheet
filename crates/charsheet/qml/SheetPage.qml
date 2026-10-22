@@ -47,7 +47,7 @@ Kirigami.Page {
             displayHint: Kirigami.DisplayHint.AlwaysHide
             onTriggered: {
                 App.sheet.shortRest()
-                applicationWindow().showPassiveNotification("Short rest: Pact slots and short-rest features restored. Spend hit dice on the Combat tab.")
+                applicationWindow().showPassiveNotification("Short rest: Pact slots, short-rest features and item charges restored. Spend hit dice on the Combat tab.")
             }
         },
         Kirigami.Action {
@@ -89,7 +89,7 @@ Kirigami.Page {
     Kirigami.PromptDialog {
         id: longRestDialog
         title: "Take a Long Rest?"
-        subtitle: "Restores all HP, hit dice, spell slots and feature uses, and removes one level of Exhaustion."
+        subtitle: "Restores all HP, hit dice, spell slots, feature uses, item charges and free casts, ends active effects, and removes one level of Exhaustion."
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: App.sheet.longRest()
     }
