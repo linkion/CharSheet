@@ -19,6 +19,13 @@ pub mod qobject {
         #[qproperty(QString, rolls, READ, NOTIFY)]
         type CharacterSheet = super::CharacterSheetRust;
 
+        /// New rolls, oldest first, as a JSON array: those made here and those another
+        /// process (such as the MCP server) added to the log. Rolls already in the log
+        /// when the character opened aren't included.
+        #[qsignal]
+        #[cxx_name = "rollsThrown"]
+        fn rolls_thrown(self: Pin<&mut Self>, rolls_json: QString);
+
         #[qinvokable]
         fn load(self: Pin<&mut Self>, id: &QString) -> bool;
 
@@ -157,6 +164,8 @@ pub struct CharacterSheetRust {
     character: Option<Character>,
     library: Option<Library>,
     roll_log: Vec<StoredRoll>,
+    /// The newest roll announced by `rolls_thrown`, or already logged when the character opened.
+    last_roll_id: i64,
     /// The open character's revision as of our last load or write.
     revision: i64,
     /// The library's data version as of our last check for outside changes.
@@ -173,6 +182,7 @@ impl Default for CharacterSheetRust {
             character: None,
             library: Library::open_default().ok(),
             roll_log: Vec::new(),
+            last_roll_id: 0,
             revision: 0,
             data_version: 0,
         }
@@ -208,6 +218,24 @@ impl qobject::CharacterSheet {
             serde_json::to_string(&SheetView::new(character)).unwrap_or_else(|_| "{}".into());
         self.as_mut().rust_mut().get_mut().view = QString::from(&json);
         self.view_changed();
+    }
+
+    /// Announces the rolls in the log newer than the last one announced.
+    fn throw_new_rolls(mut self: Pin<&mut Self>) {
+        let last = self.rust().last_roll_id;
+        let fresh: Vec<&StoredRoll> = self
+            .rust()
+            .roll_log
+            .iter()
+            .rev()
+            .filter(|r| r.id > last)
+            .collect();
+        let Some(newest) = fresh.last().map(|r| r.id) else {
+            return;
+        };
+        let json = QString::from(&serde_json::to_string(&fresh).unwrap_or_default());
+        self.as_mut().rust_mut().get_mut().last_roll_id = newest;
+        self.rolls_thrown(json);
     }
 
     fn set_rolls(mut self: Pin<&mut Self>, rolls: Vec<StoredRoll>) {
@@ -264,6 +292,7 @@ impl qobject::CharacterSheet {
                 this.revision = revision;
                 this.character = Some(character);
                 self.as_mut().set_rolls(rolls);
+                self.as_mut().throw_new_rolls();
                 self.refresh_view();
             }
             Err(StorageError::NotFound(_)) => {
@@ -297,12 +326,15 @@ impl qobject::CharacterSheet {
     }
 
     /// Adds a roll to the log, saving it with the character.
-    fn log_roll(mut self: Pin<&mut Self>, logged: StoredRoll) -> StoredRoll {
+    fn log_roll(mut self: Pin<&mut Self>, mut logged: StoredRoll) -> StoredRoll {
         let save_error = match (&self.rust().library, &self.rust().character) {
-            (Some(lib), Some(c)) => lib
-                .add_roll(c.id, &logged)
-                .err()
-                .map(|e| format!("Could not save roll: {e}")),
+            (Some(lib), Some(c)) => match lib.add_roll(c.id, &logged) {
+                Ok(id) => {
+                    logged.id = id;
+                    None
+                }
+                Err(e) => Some(format!("Could not save roll: {e}")),
+            },
             _ => None,
         };
         let this = self.as_mut().rust_mut().get_mut();
@@ -311,7 +343,14 @@ impl qobject::CharacterSheet {
         rolls.insert(0, logged.clone());
         rolls.truncate(MAX_ROLLS);
         self.as_mut().set_rolls(rolls);
-        self.set_error(save_error.as_deref().unwrap_or(""));
+        self.as_mut().set_error(save_error.as_deref().unwrap_or(""));
+        if logged.id == 0 {
+            // Unsaved, so it has no id to announce it by.
+            let json = serde_json::to_string(&[&logged]).unwrap_or_default();
+            self.rolls_thrown(QString::from(&json));
+        } else {
+            self.throw_new_rolls();
+        }
         logged
     }
 
@@ -346,6 +385,7 @@ impl qobject::CharacterSheet {
                 this.character = Some(character);
                 this.data_version = data_version;
                 this.revision = revision;
+                this.last_roll_id = rolls.first().map_or(0, |r| r.id);
                 self.as_mut().set_rolls(rolls);
                 if !self.rust().loaded {
                     self.as_mut().rust_mut().get_mut().loaded = true;

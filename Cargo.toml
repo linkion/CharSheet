@@ -11,3 +11,10 @@ license = "GPL-3.0-or-later"
 dnd-core = { path = "crates/dnd-core" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# The dice physics runs on the UI thread, and is far too slow unoptimized.
+[profile.dev.package.rapier3d]
+opt-level = 3
+
+[profile.dev.package.parry3d]
+opt-level = 3

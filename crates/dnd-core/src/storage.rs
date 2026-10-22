@@ -64,6 +64,9 @@ impl From<&Character> for Summary {
 /// A roll in a character's log, as shown in the roll log drawer.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StoredRoll {
+    /// The roll's row in the log, 0 until it's saved. Newer rolls have larger ids.
+    #[serde(default)]
+    pub id: i64,
     pub label: String,
     pub breakdown: String,
     #[serde(flatten)]
@@ -73,6 +76,7 @@ pub struct StoredRoll {
 impl StoredRoll {
     pub fn new(label: impl Into<String>, result: RollResult) -> StoredRoll {
         StoredRoll {
+            id: 0,
             label: label.into(),
             breakdown: result.breakdown(),
             result,
@@ -884,7 +888,8 @@ impl Library {
     }
 
     /// Adds a roll to the character's log, dropping all but the newest `MAX_ROLLS`.
-    pub fn add_roll(&self, id: Uuid, roll: &StoredRoll) -> Result<(), StorageError> {
+    /// Returns the roll's id.
+    pub fn add_roll(&self, id: Uuid, roll: &StoredRoll) -> Result<i64, StorageError> {
         let key = id.to_string();
         let r = &roll.result;
         let tx = self.conn.unchecked_transaction()?;
@@ -903,6 +908,7 @@ impl Library {
                 serde_json::to_string(&r.terms)?
             ],
         )?;
+        let roll_id = tx.last_insert_rowid();
         tx.execute(
             "DELETE FROM rolls WHERE character_id = ?1 AND id NOT IN
              (SELECT id FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2)",
@@ -910,7 +916,7 @@ impl Library {
         )?;
         Library::touch(&tx, &key)?;
         tx.commit()?;
-        Ok(())
+        Ok(roll_id)
     }
 
     /// The character's logged rolls, newest first.
@@ -918,7 +924,7 @@ impl Library {
         let rows = self
             .conn
             .prepare(
-                "SELECT label, breakdown, expression, mode, total, natural, terms_json
+                "SELECT label, breakdown, expression, mode, total, natural, terms_json, id
                  FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2",
             )?
             .query_map(params![id.to_string(), MAX_ROLLS as u32], |r| {
@@ -933,13 +939,15 @@ impl Library {
                         natural: r.get(5)?,
                     },
                     r.get::<_, String>(6)?,
+                    r.get::<_, i64>(7)?,
                 ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
         rows.into_iter()
-            .map(|(label, breakdown, mut result, terms)| {
+            .map(|(label, breakdown, mut result, terms, id)| {
                 result.terms = serde_json::from_str(&terms)?;
                 Ok(StoredRoll {
+                    id,
                     label,
                     breakdown,
                     result,
@@ -1212,9 +1220,11 @@ mod tests {
         let path = tmp.path().join("charsheet.db");
         let lib = Library::open(&path).unwrap();
         let c = lib.create("Roller").unwrap();
+        let mut last_id = 0;
         for i in 0..MAX_ROLLS + 5 {
             let result = dice::roll("1d20+3", RollMode::Advantage).unwrap();
-            lib.add_roll(c.id, &StoredRoll::new(format!("roll {i}"), result))
+            last_id = lib
+                .add_roll(c.id, &StoredRoll::new(format!("roll {i}"), result))
                 .unwrap();
         }
         drop(lib);
@@ -1223,6 +1233,8 @@ mod tests {
         let rolls = lib.recent_rolls(c.id).unwrap();
         assert_eq!(rolls.len(), MAX_ROLLS);
         assert_eq!(rolls[0].label, format!("roll {}", MAX_ROLLS + 4));
+        assert_eq!(rolls[0].id, last_id);
+        assert!(rolls.windows(2).all(|w| w[0].id > w[1].id), "newest first");
         assert_eq!(rolls[MAX_ROLLS - 1].label, "roll 5");
         assert_eq!(rolls[0].result.mode, RollMode::Advantage);
         assert_eq!(rolls[0].breakdown, rolls[0].result.breakdown());

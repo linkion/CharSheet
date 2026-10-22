@@ -1,10 +1,12 @@
 mod bridge {
     pub mod application;
+    pub mod dice;
     pub mod library;
     pub mod markdown;
     pub mod sheet;
     pub mod theme;
 }
+mod dice3d;
 
 use cxx_qt_lib::{
     QGuiApplication, QMap, QMapPair_QString_QVariant, QQmlApplicationEngine, QQuickStyle, QString,

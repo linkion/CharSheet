@@ -41,6 +41,9 @@ Kirigami.ApplicationWindow {
     Connections {
         target: App
         function onRolled(result) {
+            // The dice overlay shows the total instead.
+            if (App.appearance.dice3d)
+                return
             let text = result.label + ": " + result.total + "   " + result.breakdown
             if (result.natural === 20)
                 text += "  — Natural 20!"
@@ -66,6 +69,22 @@ Kirigami.ApplicationWindow {
         function onLastErrorChanged() {
             if (App.library.lastError.length > 0)
                 root.showPassiveNotification(App.library.lastError, "long")
+        }
+    }
+
+    DiceOverlay {
+        id: diceOverlay
+        // Above the page and any drawer or dialog, so dice rolled from the roll log show.
+        parent: QQC2.Overlay.overlay
+        anchors.fill: parent
+        z: 1000
+    }
+
+    Connections {
+        target: App
+        enabled: App.appearance.dice3d
+        function onThrown(rolls) {
+            diceOverlay.show(rolls)
         }
     }
 

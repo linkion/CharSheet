@@ -37,6 +37,14 @@ Kirigami.Page {
             }
         },
         Kirigami.Action {
+            text: "3D Dice"
+            icon.name: "roll"
+            checkable: true
+            checked: App.appearance.dice3d
+            displayHint: Kirigami.DisplayHint.AlwaysHide
+            onTriggered: App.appearance.dice3d = checked
+        },
+        Kirigami.Action {
             text: "Roll Log"
             icon.name: "view-history"
             onTriggered: applicationWindow().showRollLog()

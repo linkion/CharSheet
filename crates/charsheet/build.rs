@@ -37,6 +37,9 @@ fn main() {
             QmlFile::from("qml/CombatTab.qml"),
             QmlFile::from("qml/DiamondPip.qml"),
             QmlFile::from("qml/DiceBox.qml"),
+            QmlFile::from("qml/DiceOverlay.qml"),
+            QmlFile::from("qml/Die3D.qml"),
+            QmlFile::from("qml/DieAtlas.qml"),
             QmlFile::from("qml/EffectEditor.qml"),
             QmlFile::from("qml/FeaturesTab.qml"),
             QmlFile::from("qml/FrameTitle.qml"),
@@ -75,11 +78,13 @@ fn main() {
         ]))
         .qt_module("Quick")
         .qt_module("QuickControls2")
+        .qt_module("Quick3D")
         .qt_module("QuickShapes")
         .qt_module("Widgets")
         .include_dir("cpp")
         .files([
             "src/bridge/application.rs",
+            "src/bridge/dice.rs",
             "src/bridge/library.rs",
             "src/bridge/markdown.rs",
             "src/bridge/sheet.rs",

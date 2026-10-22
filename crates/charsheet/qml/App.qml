@@ -1,4 +1,5 @@
 pragma Singleton
+import QtCore
 import QtQuick
 import io.github.porave.charsheet
 
@@ -21,6 +22,20 @@ QtObject {
         }
     }
 
+    // Every new roll, made here or elsewhere, to throw as 3D dice.
+    readonly property Connections rollWatcher: Connections {
+        target: app.sheet
+        function onRollsThrown(rollsJson) {
+            app.thrown(JSON.parse(rollsJson))
+        }
+    }
+
+    readonly property Settings appearance: Settings {
+        category: "appearance"
+        // Throws 3D dice for every roll, rather than only showing a notification.
+        property bool dice3d: true
+    }
+
     readonly property var entries: JSON.parse(library.entries)
     readonly property var view: JSON.parse(sheet.view)
     readonly property var c: view.character || ({})
@@ -35,6 +50,8 @@ QtObject {
     property int requestedTab: 0
 
     signal rolled(var result)
+    // New rolls (StoredRoll objects, oldest first), from any source, including the MCP server.
+    signal thrown(var rolls)
     // A short message for a passive notification, e.g. what an action did.
     signal notice(string message)
 

@@ -6,7 +6,9 @@ with Qt 6 and Kirigami ([cxx-qt](https://github.com/KDAB/cxx-qt)).
 You enter ability scores, classes and gear. The sheet works out modifiers, proficiency,
 saves, skills, AC, initiative, spell save DC and attack, and spell slots (including
 multiclassing and Pact Magic). It also tracks HP, hit dice, death saves, slots, feature
-uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it.
+uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it. Every roll,
+including those made through the MCP server, throws 3D dice across the window that land on
+the rolled numbers (turn them off with **3D Dice** in the sheet's menu).
 
 Items, features and spells can carry **modifiers** (AC, attack and damage bonuses, damage
 riders such as Hunter's Mark or once-per-turn ones such as Slash Draw, speed, saves, max HP,
@@ -24,7 +26,7 @@ library page to see everything in use.
 Fedora packages needed:
 
 ```sh
-sudo dnf install cargo gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel \
+sudo dnf install cargo gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtquick3d-devel \
     kf6-kirigami kf6-qqc2-desktop-style kf6-kcolorscheme-devel kf6-kconfig-devel
 ```
 
