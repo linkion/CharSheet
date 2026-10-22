@@ -70,6 +70,25 @@ ColumnLayout {
         }
     }
 
+    // Modes that stay on or off until switched, such as a Fire mode; saved with the sheet.
+    Flow {
+        visible: (row.a.toggles || []).length > 0
+        Layout.fillWidth: true
+        spacing: Kirigami.Units.smallSpacing
+
+        Repeater {
+            model: row.a.toggles || []
+            QQC2.Switch {
+                required property var modelData
+                text: modelData.label
+                checked: modelData.enabled
+                onToggled: App.set(modelData.pointer + "/enabled", checked)
+                QQC2.ToolTip.text: modelData.description + " (" + modelData.source + ")"
+                QQC2.ToolTip.visible: hovered
+            }
+        }
+    }
+
     Flow {
         visible: row.a.riders.length > 0
         Layout.fillWidth: true

@@ -292,6 +292,35 @@ pub struct Rider {
     pub used: bool,
 }
 
+/// A modifier that can be switched on and off, with where to find it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Toggle {
+    /// JSON Pointer of the modifier, e.g. `/inventory/2/modifiers/0`.
+    pub pointer: String,
+    pub source: String,
+    /// The modifier's label, or its description when it has none.
+    pub label: String,
+    pub description: String,
+    pub enabled: bool,
+}
+
+impl Toggle {
+    fn new(source: &str, pointer: String, m: &Modifier) -> Toggle {
+        let description = m.describe();
+        Toggle {
+            pointer,
+            source: source.to_owned(),
+            label: if m.text.is_empty() {
+                description.clone()
+            } else {
+                m.text.clone()
+            },
+            description,
+            enabled: m.enabled,
+        }
+    }
+}
+
 /// An attack with an equipped weapon, with every modifier worked in.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WeaponAttack {
@@ -307,6 +336,8 @@ pub struct WeaponAttack {
     pub range: String,
     pub mastery: String,
     pub riders: Vec<Rider>,
+    /// Modifiers on or off for this attack that can be switched, such as a Fire mode.
+    pub toggles: Vec<Toggle>,
     /// Notes from the loaded ammunition and note modifiers on the weapon.
     pub notes: Vec<String>,
     pub capacity: u32,
@@ -591,23 +622,63 @@ impl Character {
 
     // --- Modifiers and effects --------------------------------------------------------
 
-    /// Every modifier in force, with the name of what it comes from: features, equipped
-    /// items and active effects. Ammunition is left out; it only affects the weapon firing it.
-    pub fn modifiers(&self) -> Vec<(&str, &Modifier)> {
-        let features = self
-            .features
-            .iter()
-            .flat_map(|f| f.modifiers.iter().map(|m| (f.name.as_str(), m)));
-        let items = self
-            .inventory
-            .iter()
-            .filter(|i| i.active() && i.kind != ItemKind::Ammunition)
-            .flat_map(|i| i.modifiers.iter().map(|m| (i.name.as_str(), m)));
-        let effects = self
-            .effects
-            .iter()
-            .flat_map(|e| e.modifiers.iter().map(|m| (e.name.as_str(), m)));
+    /// Every modifier from features, equipped items and active effects, switched on or not,
+    /// with the name of what it comes from and its JSON Pointer. Ammunition is left out; it
+    /// only affects the weapon firing it.
+    fn modifier_sources(&self) -> Vec<(&str, String, &Modifier)> {
+        fn each<'a>(
+            list: &'static str,
+            entries: impl Iterator<Item = (usize, &'a str, &'a [Modifier])>,
+        ) -> impl Iterator<Item = (&'a str, String, &'a Modifier)> {
+            entries.flat_map(move |(i, source, modifiers)| {
+                modifiers
+                    .iter()
+                    .enumerate()
+                    .map(move |(j, m)| (source, format!("/{list}/{i}/modifiers/{j}"), m))
+            })
+        }
+        let features = each(
+            "features",
+            self.features
+                .iter()
+                .enumerate()
+                .map(|(i, f)| (i, f.name.as_str(), f.modifiers.as_slice())),
+        );
+        let items = each(
+            "inventory",
+            self.inventory
+                .iter()
+                .enumerate()
+                .filter(|(_, i)| i.active() && i.kind != ItemKind::Ammunition)
+                .map(|(i, it)| (i, it.name.as_str(), it.modifiers.as_slice())),
+        );
+        let effects = each(
+            "effects",
+            self.effects
+                .iter()
+                .enumerate()
+                .map(|(i, e)| (i, e.name.as_str(), e.modifiers.as_slice())),
+        );
         features.chain(items).chain(effects).collect()
+    }
+
+    /// Every modifier in force, with the name of what it comes from: features, equipped
+    /// items and active effects, leaving out any switched off.
+    pub fn modifiers(&self) -> Vec<(&str, &Modifier)> {
+        self.modifier_sources()
+            .into_iter()
+            .filter(|(_, _, m)| m.enabled)
+            .map(|(source, _, m)| (source, m))
+            .collect()
+    }
+
+    /// Every modifier that can be switched on and off, outside ammunition.
+    pub fn toggles(&self) -> Vec<Toggle> {
+        self.modifier_sources()
+            .into_iter()
+            .filter(|(_, _, m)| m.toggleable)
+            .map(|(source, pointer, m)| Toggle::new(source, pointer, m))
+            .collect()
     }
 
     fn modifiers_of(&self, kind: ModifierKind) -> impl Iterator<Item = &Modifier> {
@@ -751,22 +822,57 @@ impl Character {
         } else {
             None
         };
+        let ammo_index = ammo.and_then(|a| self.inventory.iter().position(|i| std::ptr::eq(i, a)));
 
         // Ammunition modifiers apply whatever their scope; the item's own always do too.
-        let own = item.modifiers.iter().map(|m| (item.name.as_str(), m, true));
-        let from_ammo = ammo
-            .into_iter()
-            .flat_map(|a| a.modifiers.iter().map(|m| (a.name.as_str(), m, true)));
+        let own = item.modifiers.iter().enumerate().map(|(j, m)| {
+            (
+                item.name.as_str(),
+                format!("/inventory/{index}/modifiers/{j}"),
+                m,
+                true,
+            )
+        });
+        let from_ammo = ammo.into_iter().zip(ammo_index).flat_map(|(a, ai)| {
+            a.modifiers.iter().enumerate().map(move |(j, m)| {
+                (
+                    a.name.as_str(),
+                    format!("/inventory/{ai}/modifiers/{j}"),
+                    m,
+                    true,
+                )
+            })
+        });
+        // Attack and damage modifiers on another weapon (its Fire mode, a +1) stay on it.
         let others = self
-            .modifiers()
+            .modifier_sources()
             .into_iter()
-            .filter(|(source, _)| *source != item.name)
-            .map(|(source, m)| (source, m, false));
-        let applicable: Vec<(&str, &Modifier)> = own
+            .filter(|(source, _, m)| {
+                *source != item.name
+                    && !(matches!(m.kind, ModifierKind::AttackRoll | ModifierKind::Damage)
+                        && self
+                            .inventory
+                            .iter()
+                            .any(|i| i.name == *source && i.weapon.is_some()))
+            })
+            .map(|(source, pointer, m)| (source, pointer, m, false));
+        let candidates: Vec<(&str, String, &Modifier)> = own
             .chain(from_ammo)
             .chain(others)
-            .filter(|(_, m, always)| *always || m.scope.matches(ranged_attack, weapon.ranged))
-            .map(|(source, m, _)| (source, m))
+            .filter(|(_, _, m, always)| *always || m.scope.matches(ranged_attack, weapon.ranged))
+            .map(|(source, pointer, m, _)| (source, pointer, m))
+            .collect();
+        let toggles: Vec<Toggle> = candidates
+            .iter()
+            .filter(|(_, _, m)| {
+                m.toggleable && matches!(m.kind, ModifierKind::AttackRoll | ModifierKind::Damage)
+            })
+            .map(|(source, pointer, m)| Toggle::new(source, pointer.clone(), m))
+            .collect();
+        let applicable: Vec<(&str, &Modifier)> = candidates
+            .into_iter()
+            .filter(|(_, _, m)| m.enabled)
+            .map(|(source, _, m)| (source, m))
             .collect();
 
         let prof = if weapon.proficient {
@@ -840,6 +946,7 @@ impl Character {
             range,
             mastery: weapon.mastery.clone(),
             riders,
+            toggles,
             notes,
             capacity: weapon.capacity,
             loaded: weapon.loaded,
@@ -1579,6 +1686,74 @@ mod tests {
         let shot = attack(&attacks, "Black Iron Revolver");
         assert_eq!((shot.to_hit, shot.damage.as_str()), (10, "1d8+5"));
         assert!(shot.notes[0].starts_with("On a hit: CON save"));
+    }
+
+    #[test]
+    fn toggled_modifiers() {
+        let mut c = sable();
+        let iron = item_index(&c, "Black Iron Revolver");
+        c.inventory[iron].modifiers = vec![Modifier {
+            kind: ModifierKind::Damage,
+            dice: "2d6".into(),
+            damage_type: "fire".into(),
+            text: "Fire mode".into(),
+            toggleable: true,
+            enabled: false,
+            ..Default::default()
+        }];
+        let pointer = format!("/inventory/{iron}/modifiers/0");
+        let shot = attack(&c.weapon_attacks(), "Black Iron Revolver").clone();
+        assert!(shot.riders.iter().all(|r| !r.name.contains("Fire mode")));
+        assert_eq!(shot.toggles.len(), 1);
+        assert_eq!(shot.toggles[0].pointer, pointer);
+        assert_eq!(shot.toggles[0].label, "Fire mode");
+        assert!(!shot.toggles[0].enabled);
+        assert!(
+            attack(&c.weapon_attacks(), "Revolver").toggles.is_empty(),
+            "only the weapon carrying it"
+        );
+        assert_eq!(c.toggles().len(), 1);
+        crate::edit::set(
+            &mut c,
+            &format!("{pointer}/enabled"),
+            serde_json::json!(true),
+        )
+        .unwrap();
+        let katana = attack(&c.weapon_attacks(), "Katana").clone();
+        assert!(
+            katana.riders.iter().all(|r| !r.name.contains("Fire mode")),
+            "a weapon's damage stays on that weapon"
+        );
+
+        crate::edit::set(
+            &mut c,
+            &format!("{pointer}/enabled"),
+            serde_json::json!(true),
+        )
+        .unwrap();
+        let shot = attack(&c.weapon_attacks(), "Black Iron Revolver").clone();
+        assert!(
+            shot.riders
+                .iter()
+                .any(|r| r.name == "Black Iron Revolver (Fire mode)")
+        );
+        assert!(shot.toggles[0].enabled);
+
+        // A switched-off modifier elsewhere has no effect either.
+        let ac = c.armor_class();
+        c.features[0].modifiers.push(Modifier {
+            kind: ModifierKind::ArmorClass,
+            value: 2,
+            toggleable: true,
+            enabled: false,
+            ..Default::default()
+        });
+        assert_eq!(c.armor_class(), ac);
+        assert_eq!(c.toggles().len(), 2);
+        assert!(
+            attack(&c.weapon_attacks(), "Katana").toggles.is_empty(),
+            "AC switches stay off the attack rows"
+        );
     }
 
     #[test]

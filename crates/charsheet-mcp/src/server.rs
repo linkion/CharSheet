@@ -38,6 +38,11 @@ fills in defaults. Enum values are lowercase snake_case; get_catalog lists every
 Invalid edits are rejected and change nothing; apply_edits makes several edits at once, all \
 or nothing.
 
+A modifier with toggleable: true is a switch, like a weapon's Fire mode: set its enabled field \
+to turn it on or off (a switched-off modifier has no effect). derived.toggles lists every \
+switch with its pointer, and each weapon attack lists its own. Attack and damage modifiers on \
+a weapon apply only to that weapon.
+
 For play, prefer the play tools to raw edits, since they follow the rules (temp HP absorbs \
 damage first, rests recharge uses, casting spends the right slot) and log their dice rolls: \
 indices are positions in character.inventory, character.features, character.spells, \

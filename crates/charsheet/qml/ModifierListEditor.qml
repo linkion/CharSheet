@@ -96,6 +96,19 @@ ColumnLayout {
                     implicitWidth: Kirigami.Units.gridUnit * (card.m.kind === "note" ? 16 : 8)
                     onEditingFinished: if (text !== card.m.text) card.save("text", text)
                 }
+                QQC2.CheckBox {
+                    text: "Switchable"
+                    checked: card.m.toggleable ?? false
+                    onToggled: card.save("toggleable", checked)
+                    QQC2.ToolTip.text: "Can be switched on and off from the Combat tab, like a weapon's Fire mode"
+                    QQC2.ToolTip.visible: hovered
+                }
+                QQC2.Switch {
+                    visible: card.m.toggleable ?? false
+                    text: "On"
+                    checked: card.m.enabled ?? true
+                    onToggled: card.save("enabled", checked)
+                }
                 QQC2.ToolButton {
                     icon.name: "edit-delete"
                     onClicked: App.removeAt(editor.pointer, card.index)

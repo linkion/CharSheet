@@ -65,6 +65,10 @@ pub struct Modifier {
     pub ability: Option<Ability>,
     /// For note, and an optional label for the others.
     pub text: String,
+    /// Can be switched on and off from the Combat tab, like a weapon's Fire mode.
+    pub toggleable: bool,
+    /// A modifier that's switched off has no effect.
+    pub enabled: bool,
 }
 
 impl Default for Modifier {
@@ -78,6 +82,8 @@ impl Default for Modifier {
             once_per_turn: false,
             ability: None,
             text: String::new(),
+            toggleable: false,
+            enabled: true,
         }
     }
 }

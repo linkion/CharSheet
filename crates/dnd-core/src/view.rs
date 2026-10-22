@@ -2,7 +2,7 @@
 
 use crate::abilities::{Ability, Proficiency, Skill};
 use crate::armor::ArmorKind;
-use crate::character::{Character, Condition, ItemKind, Recharge, WeaponAttack};
+use crate::character::{Character, Condition, ItemKind, Recharge, Toggle, WeaponAttack};
 use crate::classes::ClassId;
 use crate::effects::{Activation, Cost, Modifier, ModifierKind, RollEffect, Scope};
 use serde::Serialize;
@@ -111,6 +111,8 @@ pub struct Derived {
     pub max_hp: i32,
     pub resistances: Vec<String>,
     pub weapon_attacks: Vec<WeaponAttack>,
+    /// Modifiers that can be switched on and off.
+    pub toggles: Vec<Toggle>,
     pub notes_in_force: Vec<NoteView>,
     /// Name of the effect being concentrated on, if any.
     pub concentrating: Option<String>,
@@ -124,7 +126,10 @@ pub struct Derived {
 fn summarize(modifiers: &[Modifier]) -> String {
     modifiers
         .iter()
-        .map(Modifier::describe)
+        .map(|m| match m.describe() {
+            s if s.is_empty() || m.enabled => s,
+            s => format!("{s} (off)"),
+        })
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join(" · ")
@@ -339,6 +344,7 @@ impl<'a> SheetView<'a> {
             max_hp: c.max_hp(),
             resistances: c.resistances(),
             weapon_attacks: c.weapon_attacks(),
+            toggles: c.toggles(),
             notes_in_force: c
                 .notes_in_force()
                 .into_iter()

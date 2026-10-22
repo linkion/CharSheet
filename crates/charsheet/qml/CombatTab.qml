@@ -176,6 +176,31 @@ SheetTab {
             }
         }
 
+        // Switchable modifiers other than the weapons' own, which sit on their attack rows.
+        Flow {
+            id: switches
+            readonly property var weaponPointers: (App.d.weapon_attacks || [])
+                .flatMap(a => a.toggles.map(t => t.pointer))
+            readonly property var toggles: (App.d.toggles || [])
+                .filter(t => !weaponPointers.includes(t.pointer))
+
+            visible: toggles.length > 0
+            Layout.fillWidth: true
+            spacing: Kirigami.Units.smallSpacing
+
+            Repeater {
+                model: switches.toggles
+                QQC2.Switch {
+                    required property var modelData
+                    text: modelData.label + "  (" + modelData.source + ")"
+                    checked: modelData.enabled
+                    onToggled: App.set(modelData.pointer + "/enabled", checked)
+                    QQC2.ToolTip.text: modelData.description
+                    QQC2.ToolTip.visible: hovered
+                }
+            }
+        }
+
         QQC2.Label {
             visible: !!App.d.concentrating
             text: "Concentrating on " + App.d.concentrating
