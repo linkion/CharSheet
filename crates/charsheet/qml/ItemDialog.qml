@@ -94,6 +94,7 @@ Kirigami.Dialog {
                     QQC2.TextArea {
                         text: loader.fieldValue ?? ""
                         wrapMode: TextEdit.Wrap
+                        placeholderText: "Markdown supported"
                         Layout.minimumHeight: Kirigami.Units.gridUnit * 5
                         onEditingFinished: if (text !== loader.fieldValue) dialog.save(loader.modelData.key, text)
                     }

@@ -66,13 +66,10 @@ SheetTab {
                         QQC2.ToolTip.visible: hovered
                     }
                 }
-                QQC2.Label {
+                Prose {
                     visible: modelData.description.length > 0
-                    text: modelData.description
-                    wrapMode: Text.WordWrap
-                    font.family: Style.proseFamily
+                    source: modelData.description
                     opacity: 0.85
-                    Layout.fillWidth: true
                 }
                 QQC2.Label {
                     visible: summary.length > 0

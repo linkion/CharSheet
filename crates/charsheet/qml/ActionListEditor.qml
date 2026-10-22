@@ -96,6 +96,7 @@ ColumnLayout {
                 QQC2.TextArea {
                     text: card.a.description ?? ""
                     wrapMode: TextEdit.Wrap
+                    placeholderText: "Markdown supported"
                     Layout.fillWidth: true
                     onEditingFinished: if (text !== card.a.description) card.save("description", text)
                 }

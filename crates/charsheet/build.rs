@@ -52,6 +52,8 @@ fn main() {
             QmlFile::from("qml/OvalBadge.qml"),
             QmlFile::from("qml/PipRow.qml"),
             QmlFile::from("qml/ProficiencyDot.qml"),
+            QmlFile::from("qml/Prose.qml"),
+            QmlFile::from("qml/ProseLine.qml"),
             QmlFile::from("qml/RollButton.qml"),
             QmlFile::from("qml/RollLogDrawer.qml"),
             QmlFile::from("qml/Section.qml"),
@@ -62,6 +64,7 @@ fn main() {
             QmlFile::from("qml/SheetField.qml"),
             QmlFile::from("qml/SheetFrame.qml"),
             QmlFile::from("qml/SheetPage.qml"),
+            QmlFile::from("qml/SheetRow.qml"),
             QmlFile::from("qml/SheetSpin.qml"),
             QmlFile::from("qml/SheetTab.qml"),
             QmlFile::from("qml/ShieldShape.qml"),
@@ -78,6 +81,7 @@ fn main() {
         .files([
             "src/bridge/application.rs",
             "src/bridge/library.rs",
+            "src/bridge/markdown.rs",
             "src/bridge/sheet.rs",
             "src/bridge/theme.rs",
         ])

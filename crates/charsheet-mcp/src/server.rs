@@ -43,6 +43,9 @@ to turn it on or off (a switched-off modifier has no effect). derived.toggles li
 switch with its pointer, and each weapon attack lists its own. Attack and damage modifiers on \
 a weapon apply only to that weapon.
 
+Free text (notes, appearance, backstory, descriptions, a modifier's text) is Markdown, which \
+the app renders: use **bold**, lists and links where they help.
+
 For play, prefer the play tools to raw edits, since they follow the rules (temp HP absorbs \
 damage first, rests recharge uses, casting spends the right slot) and log their dice rolls: \
 indices are positions in character.inventory, character.features, character.spells, \

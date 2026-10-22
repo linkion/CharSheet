@@ -132,9 +132,10 @@ SheetTab {
                 Repeater {
                     model: levelGroup.spells
 
-                    RowLayout {
+                    SheetRow {
                         required property var modelData
-                        Layout.fillWidth: true
+                        required property int index
+                        alternate: index % 2 === 1
 
                         QQC2.CheckBox {
                             visible: levelGroup.index > 0
@@ -154,12 +155,9 @@ SheetTab {
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
-                            QQC2.Label {
-                                visible: modelData.spell.notes.length > 0
-                                text: modelData.spell.notes
+                            ProseLine {
+                                source: modelData.spell.notes
                                 opacity: 0.7
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
                             }
                         }
                         PipRow {

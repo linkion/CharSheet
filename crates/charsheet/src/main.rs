@@ -1,6 +1,7 @@
 mod bridge {
     pub mod application;
     pub mod library;
+    pub mod markdown;
     pub mod sheet;
     pub mod theme;
 }

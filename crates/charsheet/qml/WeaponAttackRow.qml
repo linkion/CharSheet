@@ -143,12 +143,11 @@ ColumnLayout {
 
     Repeater {
         model: row.a.notes
-        QQC2.Label {
+        Prose {
             required property var modelData
-            text: "• " + modelData
-            wrapMode: Text.WordWrap
+            source: "• " + modelData
+            font.family: Style.uiFamily
             opacity: 0.8
-            Layout.fillWidth: true
         }
     }
 }

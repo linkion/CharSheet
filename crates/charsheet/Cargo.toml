@@ -13,6 +13,7 @@ cxx-qt-lib = { version = "0.10", features = ["qt_full"] }
 serde = { workspace = true }
 uuid = "1"
 rand = "0.9"
+pulldown-cmark = { version = "0.13.5", default-features = false }
 
 [build-dependencies]
 cxx-qt-build = { version = "0.10", features = ["link_qt_object_files"] }

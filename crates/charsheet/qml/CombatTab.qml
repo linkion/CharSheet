@@ -272,12 +272,17 @@ SheetTab {
                         elide: Text.ElideRight
                     }
                     QQC2.Label {
-                        readonly property string summary: (App.d.effect_summaries || [])[index] ?? ""
+                        text: (App.d.effect_summaries || [])[index] ?? ""
                         visible: text.length > 0
-                        text: [summary, modelData.notes].filter(s => s).join("  —  ")
                         wrapMode: Text.WordWrap
                         opacity: 0.8
                         Layout.fillWidth: true
+                    }
+                    Prose {
+                        visible: source.length > 0
+                        source: modelData.notes ?? ""
+                        font.family: Style.uiFamily
+                        opacity: 0.8
                     }
                 }
                 QQC2.ToolButton {
@@ -310,12 +315,11 @@ SheetTab {
 
         Repeater {
             model: App.d.notes_in_force
-            QQC2.Label {
+            Prose {
                 required property var modelData
-                text: "• " + modelData.text + "  (" + modelData.source + ")"
-                wrapMode: Text.WordWrap
+                source: "• " + modelData.text + "  (" + modelData.source + ")"
+                font.family: Style.uiFamily
                 opacity: 0.8
-                Layout.fillWidth: true
             }
         }
     }
@@ -366,13 +370,11 @@ SheetTab {
                         Layout.fillWidth: true
                         elide: Text.ElideRight
                     }
-                    QQC2.Label {
-                        text: [modelData.damage_type, modelData.mastery ? "Mastery: " + modelData.mastery : "", modelData.notes]
-                              .filter(s => s).join(" · ")
-                        visible: text.length > 0
+                    ProseLine {
+                        prefix: [modelData.damage_type, modelData.mastery ? "Mastery: " + modelData.mastery : ""]
+                                .filter(s => s).join(" · ")
+                        source: modelData.notes ?? ""
                         opacity: 0.7
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
                     }
                 }
                 RollButton {
@@ -432,7 +434,9 @@ SheetTab {
                     model: group.actions
                     ActionRow {
                         required property var modelData
+                        required property int index
                         action: modelData
+                        alternate: index % 2 === 1
                     }
                 }
             }

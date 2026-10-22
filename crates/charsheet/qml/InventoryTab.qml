@@ -102,21 +102,22 @@ SheetTab {
                         id: entry
                         required property var modelData
                         readonly property var item: modelData.item
-                        readonly property int index: modelData.index
-                        readonly property string summary: (App.d.item_summaries || [])[index] ?? ""
-                        readonly property var actions: (App.d.actions || []).filter(a => a.owner === "item" && a.index === index)
+                        required property int index
+                        readonly property int itemIndex: modelData.index
+                        readonly property string summary: (App.d.item_summaries || [])[itemIndex] ?? ""
+                        readonly property var actions: (App.d.actions || []).filter(a => a.owner === "item" && a.index === itemIndex)
                         readonly property bool equippable: ["weapon", "armor", "shield"].includes(item.kind) || (item.kind !== "ammunition" && item.modifiers.length > 0)
                         readonly property bool countable: ["ammunition", "consumable"].includes(item.kind)
                         Layout.fillWidth: true
                         spacing: 0
 
-                        RowLayout {
-                            Layout.fillWidth: true
+                        SheetRow {
+                            alternate: entry.index % 2 === 1
 
                             QQC2.CheckBox {
                                 visible: entry.equippable
                                 checked: entry.item.equipped
-                                onToggled: App.set("/inventory/" + entry.index + "/equipped", checked)
+                                onToggled: App.set("/inventory/" + entry.itemIndex + "/equipped", checked)
                                 QQC2.ToolTip.text: "Equipped"
                                 QQC2.ToolTip.visible: hovered
                             }
@@ -130,12 +131,10 @@ SheetTab {
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
-                                QQC2.Label {
-                                    visible: text.length > 0
-                                    text: [entry.summary, entry.item.notes].filter(s => s).join("  —  ")
+                                ProseLine {
+                                    prefix: entry.summary ?? ""
+                                    source: entry.item.notes ?? ""
                                     opacity: 0.7
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
                                 }
                             }
                             RowLayout {
@@ -144,7 +143,7 @@ SheetTab {
                                 QQC2.ToolButton {
                                     text: "−"
                                     enabled: entry.item.quantity > 0
-                                    onClicked: App.set("/inventory/" + entry.index + "/quantity", entry.item.quantity - 1)
+                                    onClicked: App.set("/inventory/" + entry.itemIndex + "/quantity", entry.item.quantity - 1)
                                 }
                                 QQC2.Label {
                                     text: entry.item.quantity
@@ -154,14 +153,14 @@ SheetTab {
                                 }
                                 QQC2.ToolButton {
                                     text: "+"
-                                    onClicked: App.set("/inventory/" + entry.index + "/quantity", entry.item.quantity + 1)
+                                    onClicked: App.set("/inventory/" + entry.itemIndex + "/quantity", entry.item.quantity + 1)
                                 }
                             }
                             PipRow {
                                 visible: entry.item.charges_max > 0 && entry.item.charges_max <= 20
                                 total: Math.min(entry.item.charges_max, 20)
                                 used: entry.item.charges_spent
-                                onUsedEdited: count => App.set("/inventory/" + entry.index + "/charges_spent", count)
+                                onUsedEdited: count => App.set("/inventory/" + entry.itemIndex + "/charges_spent", count)
                             }
                             QQC2.Label {
                                 visible: entry.item.charges_max > 20
@@ -176,7 +175,7 @@ SheetTab {
                                 visible: entry.item.requires_attunement
                                 text: "Attuned"
                                 checked: entry.item.attuned
-                                onToggled: App.set("/inventory/" + entry.index + "/attuned", checked)
+                                onToggled: App.set("/inventory/" + entry.itemIndex + "/attuned", checked)
                             }
                             Repeater {
                                 model: entry.actions
@@ -187,7 +186,7 @@ SheetTab {
                             }
                             QQC2.ToolButton {
                                 icon.name: "document-edit"
-                                onClicked: itemDialog.edit("/inventory", entry.index)
+                                onClicked: itemDialog.edit("/inventory", entry.itemIndex)
                                 QQC2.ToolTip.text: "Edit"
                                 QQC2.ToolTip.visible: hovered
                             }
