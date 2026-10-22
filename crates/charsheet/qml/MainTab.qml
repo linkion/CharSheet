@@ -18,7 +18,7 @@ SheetTab {
     // Identity, level, armor class and hit points, like the top band of the sheet.
     GridLayout {
         Layout.fillWidth: true
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
         columns: tab.wide ? 4 : 3
         columnSpacing: Kirigami.Units.largeSpacing
         rowSpacing: Kirigami.Units.largeSpacing
@@ -98,13 +98,13 @@ SheetTab {
 
     BannerRule {
         Layout.fillWidth: true
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
         text: App.c.name || ""
     }
 
     GridLayout {
         Layout.fillWidth: true
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
         columns: tab.wide ? 7 : 4
         columnSpacing: Kirigami.Units.largeSpacing
         rowSpacing: Kirigami.Units.largeSpacing
@@ -154,7 +154,7 @@ SheetTab {
 
     Kirigami.InlineMessage {
         Layout.fillWidth: true
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
         visible: (App.c.exhaustion ?? 0) > 0
         type: Kirigami.MessageType.Warning
         text: "Exhaustion " + App.c.exhaustion + ": " + App.d.d20_penalty + " to every d20 test (already included below)."

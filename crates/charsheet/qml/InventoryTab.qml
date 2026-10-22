@@ -67,7 +67,7 @@ SheetTab {
 
     Section {
         title: "Equipment"
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
 
         headerActions: [
             Kirigami.Action {

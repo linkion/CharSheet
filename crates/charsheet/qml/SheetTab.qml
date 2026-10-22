@@ -8,6 +8,9 @@ QQC2.ScrollView {
     id: tab
 
     property int wideColumns: 2
+    // The current column count. Full-width items span this many columns: spanning more
+    // columns than the grid has stops it laying its items out again when it narrows.
+    readonly property alias columns: grid.columns
     default property alias content: grid.data
 
     contentWidth: availableWidth

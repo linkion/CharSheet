@@ -36,7 +36,7 @@ SheetTab {
 
     GridLayout {
         Layout.fillWidth: true
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
         columns: 4
         columnSpacing: Kirigami.Units.largeSpacing
 
@@ -221,8 +221,9 @@ SheetTab {
         // Switchable modifiers other than the weapons' own, which sit on their attack rows.
         Flow {
             id: switches
+            // QML's JavaScript has no Array.prototype.flatMap.
             readonly property var weaponPointers: (App.d.weapon_attacks || [])
-                .flatMap(a => a.toggles.map(t => t.pointer))
+                .reduce((pointers, a) => pointers.concat((a.toggles || []).map(t => t.pointer)), [])
             readonly property var toggles: (App.d.toggles || [])
                 .filter(t => !weaponPointers.includes(t.pointer))
 
@@ -321,7 +322,7 @@ SheetTab {
 
     Section {
         title: "Attacks"
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
 
         headerActions: [
             Kirigami.Action {
@@ -411,7 +412,7 @@ SheetTab {
 
     Section {
         title: "Actions, Spells & Items"
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
 
         Repeater {
             model: tab.activationGroups

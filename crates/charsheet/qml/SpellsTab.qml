@@ -101,7 +101,7 @@ SheetTab {
 
     Section {
         title: "Spells"
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
 
         headerActions: [
             Kirigami.Action {

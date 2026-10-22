@@ -5,10 +5,11 @@ import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
 SheetTab {
+    id: tab
 
     Section {
         title: "Features & Traits"
-        Layout.columnSpan: 2
+        Layout.columnSpan: tab.columns
 
         headerActions: [
             Kirigami.Action {
