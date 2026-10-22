@@ -41,7 +41,7 @@ make install       # builds a release binary and installs to ~/.local
 make uninstall     # removes it again; your characters are kept
 ```
 
-This installs `~/.local/bin/charsheet` plus the launcher, icon and AppStream metadata, so
+This installs `~/.local/bin/charsheet` and `~/.local/bin/charsheet-mcp` plus the launcher, icon and AppStream metadata, so
 CharSheet shows up in the application launcher. Make sure `~/.local/bin` is on your `PATH`.
 For a system-wide install use `sudo make install PREFIX=/usr/local`. `DESTDIR` works for
 staged (packaging) installs.
@@ -59,12 +59,38 @@ Characters and their recent dice rolls are stored in a SQLite database at
 `~/.local/share/charsheet/charsheet.db`. Use Export/Import on the library page to share a
 character as a JSON file.
 
+## MCP server
+
+`charsheet-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server over
+stdio, so an AI assistant can read, edit and play your characters. To add it to Claude Code:
+
+```sh
+claude mcp add charsheet -- ~/.local/bin/charsheet-mcp
+```
+
+It works on the same library as the app (`--db <path>` picks another one). Changes are saved
+immediately, and a character open in the app updates within a second.
+
+- **Library:** `list_characters`, `create_character`, `duplicate_character`,
+  `delete_character`, `import_character`, `export_character`
+- **Reading:** `get_character` (the whole sheet with derived values, or one part by JSON
+  Pointer such as `/inventory` or `/derived/weapon_attacks`), `get_catalog` (valid choices)
+- **Editing:** `set_field`, `append_item`, `remove_item`, `move_item` by JSON Pointer
+  (`/hp/max`, `/skills/stealth`, `/inventory/2/modifiers`), and `apply_edits` for several
+  at once, all or nothing
+- **Play:** `damage`, `heal`, `set_temp_hp`, `spend_hit_die`, `short_rest`, `long_rest`,
+  `roll`, `get_rolls`, `clear_rolls`, `use_item_action`, `use_feature_action`,
+  `cast_spell`, `weapon_attack`, `weapon_damage`, `reload`, `apply_effect`, `end_effect`,
+  `new_turn`, `end_combat`
+
 ## Layout
 
-- `crates/dnd-core`: the model, rules (SRD 5.2 tables), dice, JSON-pointer edits and
-  storage. It has no Qt dependency and is unit-tested.
+- `crates/dnd-core`: the model, rules (SRD 5.2 tables), dice, JSON-pointer edits, play
+  actions and storage. It has no Qt dependency and is unit-tested.
 - `crates/charsheet`: the Qt app. `src/bridge/` exposes `CharacterLibrary` and
   `CharacterSheet` to QML, and `qml/` holds the Kirigami UI.
+- `crates/charsheet-mcp`: the MCP server, built on `dnd-core` with
+  [rmcp](https://crates.io/crates/rmcp).
 
 Rules data comes from the System Reference Document 5.2 by Wizards of the Coast,
 licensed under CC-BY-4.0.

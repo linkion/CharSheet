@@ -5,6 +5,7 @@ DESTDIR ?=
 
 APP_ID := io.github.porave.CharSheet
 BIN := target/release/charsheet
+MCP_BIN := target/release/charsheet-mcp
 
 BINDIR := $(DESTDIR)$(PREFIX)/bin
 APPDIR := $(DESTDIR)$(PREFIX)/share/applications
@@ -16,12 +17,13 @@ METADIR := $(DESTDIR)$(PREFIX)/share/metainfo
 all: build
 
 build:
-	cargo build --release -p charsheet
+	cargo build --release -p charsheet -p charsheet-mcp
 
 $(BIN): build
 
 install: $(BIN)
 	install -Dm755 $(BIN) $(BINDIR)/charsheet
+	install -Dm755 $(MCP_BIN) $(BINDIR)/charsheet-mcp
 	install -d $(APPDIR)
 	sed 's|^Exec=charsheet|Exec=$(PREFIX)/bin/charsheet|' packaging/$(APP_ID).desktop > $(APPDIR)/$(APP_ID).desktop
 	chmod 644 $(APPDIR)/$(APP_ID).desktop
@@ -31,7 +33,7 @@ install: $(BIN)
 	@echo "Installed charsheet to $(BINDIR)"
 
 uninstall:
-	rm -f $(BINDIR)/charsheet
+	rm -f $(BINDIR)/charsheet $(BINDIR)/charsheet-mcp
 	rm -f $(APPDIR)/$(APP_ID).desktop
 	rm -f $(ICONDIR)/$(APP_ID).svg
 	rm -f $(METADIR)/$(APP_ID).metainfo.xml

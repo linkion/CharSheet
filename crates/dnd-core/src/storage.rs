@@ -85,6 +85,7 @@ impl StoredRoll {
 const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_initial.sql"),
     include_str!("../migrations/0002_items_effects.sql"),
+    include_str!("../migrations/0003_revision.sql"),
 ];
 
 /// Tables holding a character's sheet entries, cleared and rewritten on every save.
@@ -101,7 +102,8 @@ const CHILD_TABLES: &[&str] = &[
     "effects",
 ];
 
-/// Columns of `characters` other than `id` and the timestamps; also the save parameter names.
+/// Columns of `characters` other than `id`, the timestamps and the revision; also the save
+/// parameter names.
 const CHARACTER_COLUMNS: &[&str] = &[
     "name",
     "player",
@@ -257,6 +259,35 @@ impl Library {
             )
             .optional()?
             .is_some())
+    }
+
+    /// Bumps the character's revision, marking it changed for other connections.
+    fn touch(conn: &Connection, key: &str) -> Result<(), StorageError> {
+        conn.execute(
+            "UPDATE characters SET revision = revision + 1 WHERE id = ?1",
+            [key],
+        )?;
+        Ok(())
+    }
+
+    /// The character's revision, which goes up with every save and every roll logged.
+    pub fn revision(&self, id: Uuid) -> Result<i64, StorageError> {
+        self.conn
+            .query_row(
+                "SELECT revision FROM characters WHERE id = ?1",
+                [id.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?
+            .ok_or(StorageError::NotFound(id))
+    }
+
+    /// Changes whenever another connection (another window or process) commits a write, so
+    /// it's a cheap check before looking for what changed.
+    pub fn data_version(&self) -> Result<i64, StorageError> {
+        Ok(self
+            .conn
+            .pragma_query_value(None, "data_version", |r| r.get(0))?)
     }
 
     /// Every readable character, sorted by name. Characters that can't be read are skipped.
@@ -516,8 +547,9 @@ impl Library {
         Ok(character)
     }
 
-    /// Writes the whole character in one transaction, replacing its sheet entries.
-    pub fn save(&self, character: &Character) -> Result<(), StorageError> {
+    /// Writes the whole character in one transaction, replacing its sheet entries. Returns
+    /// its new revision.
+    pub fn save(&self, character: &Character) -> Result<i64, StorageError> {
         // Destructured so that a new field can't be forgotten here.
         let Character {
             schema_version: _,
@@ -603,21 +635,27 @@ impl Library {
             .iter()
             .map(|c| format!("{c} = :{c}"))
             .collect();
-        let updated = tx
+        let updated: Option<i64> = tx
             .prepare_cached(&format!(
-                "UPDATE characters SET {}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-             WHERE id = :id",
+                "UPDATE characters SET {}, revision = revision + 1,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                 WHERE id = :id RETURNING revision",
                 assignments.join(", ")
             ))?
-            .execute(values)?;
-        if updated == 0 {
-            tx.prepare_cached(&format!(
-                "INSERT INTO characters (id, {}) VALUES (:id, :{})",
-                CHARACTER_COLUMNS.join(", "),
-                CHARACTER_COLUMNS.join(", :")
-            ))?
-            .execute(values)?;
-        }
+            .query_row(values, |r| r.get(0))
+            .optional()?;
+        let revision = match updated {
+            Some(revision) => revision,
+            None => {
+                tx.prepare_cached(&format!(
+                    "INSERT INTO characters (id, {}) VALUES (:id, :{})",
+                    CHARACTER_COLUMNS.join(", "),
+                    CHARACTER_COLUMNS.join(", :")
+                ))?
+                .execute(values)?;
+                0
+            }
+        };
 
         for table in CHILD_TABLES {
             tx.execute(
@@ -803,7 +841,7 @@ impl Library {
         }
 
         tx.commit()?;
-        Ok(())
+        Ok(revision)
     }
 
     /// Deletes the character with its sheet entries and roll log.
@@ -870,6 +908,7 @@ impl Library {
              (SELECT id FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2)",
             params![key, MAX_ROLLS as u32],
         )?;
+        Library::touch(&tx, &key)?;
         tx.commit()?;
         Ok(())
     }
@@ -910,10 +949,11 @@ impl Library {
     }
 
     pub fn clear_rolls(&self, id: Uuid) -> Result<(), StorageError> {
-        self.conn.execute(
-            "DELETE FROM rolls WHERE character_id = ?1",
-            [id.to_string()],
-        )?;
+        let key = id.to_string();
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM rolls WHERE character_id = ?1", [&key])?;
+        Library::touch(&tx, &key)?;
+        tx.commit()?;
         Ok(())
     }
 }
@@ -1232,6 +1272,35 @@ mod tests {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/sable.json");
         let sable = lib.import(&path).unwrap();
         assert_eq!(lib.load(sable.id).unwrap(), sable);
+    }
+
+    #[test]
+    fn revisions_and_data_version() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("charsheet.db");
+        let app = Library::open(&path).unwrap();
+        let other = Library::open(&path).unwrap();
+        let mut c = app.create("Rev").unwrap();
+        assert_eq!(app.revision(c.id).unwrap(), 0);
+        c.name = "Rev 2".into();
+        assert_eq!(app.save(&c).unwrap(), 1);
+
+        let seen = app.data_version().unwrap();
+        app.add_roll(
+            c.id,
+            &StoredRoll::new("x", dice::roll("1d4", RollMode::Normal).unwrap()),
+        )
+        .unwrap();
+        assert_eq!(app.data_version().unwrap(), seen, "own writes don't count");
+        assert_eq!(app.revision(c.id).unwrap(), 2);
+
+        other.clear_rolls(c.id).unwrap();
+        assert_ne!(app.data_version().unwrap(), seen);
+        assert_eq!(app.revision(c.id).unwrap(), 3);
+        assert!(matches!(
+            app.revision(Uuid::new_v4()),
+            Err(StorageError::NotFound(_))
+        ));
     }
 
     #[test]

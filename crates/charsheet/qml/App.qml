@@ -9,6 +9,18 @@ QtObject {
     readonly property CharacterLibrary library: CharacterLibrary {}
     readonly property CharacterSheet sheet: CharacterSheet {}
 
+    // Picks up changes made elsewhere, such as by the MCP server.
+    readonly property Timer syncTimer: Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: {
+            app.library.sync()
+            if (app.sheet.loaded)
+                app.sheet.sync()
+        }
+    }
+
     readonly property var entries: JSON.parse(library.entries)
     readonly property var view: JSON.parse(sheet.view)
     readonly property var c: view.character || ({})

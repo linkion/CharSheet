@@ -322,6 +322,8 @@ pub enum PlayError {
     NotFound(&'static str),
     #[error("{0}")]
     Unavailable(String),
+    #[error("{0}")]
+    Dice(#[from] crate::dice::DiceError),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -910,8 +912,7 @@ impl Character {
             }
         }
         if crit {
-            expression = crate::dice::double_dice(&expression)
-                .map_err(|e| PlayError::Unavailable(e.to_string()))?;
+            expression = crate::dice::double_dice(&expression)?;
         }
         Ok(expression)
     }

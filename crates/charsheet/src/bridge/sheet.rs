@@ -1,5 +1,6 @@
 //! One open character. QML reads `view` (character + derived values as JSON) and edits
-//! through invokables. Every successful edit is saved straight away.
+//! through invokables. Every successful edit is saved straight away, after picking up any
+//! changes made elsewhere (another window, or the MCP server) so they aren't overwritten.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -23,6 +24,11 @@ pub mod qobject {
 
         #[qinvokable]
         fn close(self: Pin<&mut Self>);
+
+        /// Reloads the character if another window or process (such as the MCP server)
+        /// changed it. Called on a timer.
+        #[qinvokable]
+        fn sync(self: Pin<&mut Self>);
 
         /// Static choice lists (classes, armor, abilities, conditions) as JSON.
         #[qinvokable]
@@ -135,10 +141,10 @@ pub mod qobject {
 
 use cxx_qt::CxxQtType;
 use cxx_qt_lib::QString;
-use dnd_core::character::PlayError;
-use dnd_core::dice::{self, RollMode, RollResult};
-use dnd_core::effects::{Effect, Outcome, RollEffect};
-use dnd_core::storage::{MAX_ROLLS, StoredRoll};
+use dnd_core::dice::{self, RollMode};
+use dnd_core::effects::Effect;
+use dnd_core::play::{self, Played};
+use dnd_core::storage::{MAX_ROLLS, StorageError, StoredRoll};
 use dnd_core::view::{SheetView, catalog};
 use dnd_core::{Character, Library, edit};
 use std::pin::Pin;
@@ -151,6 +157,10 @@ pub struct CharacterSheetRust {
     character: Option<Character>,
     library: Option<Library>,
     roll_log: Vec<StoredRoll>,
+    /// The open character's revision as of our last load or write.
+    revision: i64,
+    /// The library's data version as of our last check for outside changes.
+    data_version: i64,
 }
 
 impl Default for CharacterSheetRust {
@@ -163,6 +173,19 @@ impl Default for CharacterSheetRust {
             character: None,
             library: Library::open_default().ok(),
             roll_log: Vec::new(),
+            revision: 0,
+            data_version: 0,
+        }
+    }
+}
+
+impl CharacterSheetRust {
+    /// The open character's current revision, after a write of our own.
+    fn note_revision(&mut self) {
+        if let (Some(lib), Some(c)) = (&self.library, &self.character)
+            && let Ok(revision) = lib.revision(c.id)
+        {
+            self.revision = revision;
         }
     }
 }
@@ -176,27 +199,79 @@ impl qobject::CharacterSheet {
         }
     }
 
+    /// Re-serializes the view after a change.
+    fn refresh_view(mut self: Pin<&mut Self>) {
+        let Some(character) = &self.rust().character else {
+            return;
+        };
+        let json =
+            serde_json::to_string(&SheetView::new(character)).unwrap_or_else(|_| "{}".into());
+        self.as_mut().rust_mut().get_mut().view = QString::from(&json);
+        self.view_changed();
+    }
+
+    fn set_rolls(mut self: Pin<&mut Self>, rolls: Vec<StoredRoll>) {
+        let this = self.as_mut().rust_mut().get_mut();
+        this.rolls = QString::from(&serde_json::to_string(&rolls).unwrap_or_default());
+        this.roll_log = rolls;
+        self.rolls_changed();
+    }
+
     /// Re-serializes the view after a change and saves the character.
     fn publish(mut self: Pin<&mut Self>) {
-        let (json, save_error) = {
-            let this = self.rust();
-            let Some(character) = &this.character else {
-                return;
-            };
-            let json =
-                serde_json::to_string(&SheetView::new(character)).unwrap_or_else(|_| "{}".into());
-            let save_error = match &this.library {
-                Some(lib) => lib
-                    .save(character)
-                    .err()
-                    .map(|e| format!("Could not save: {e}")),
-                None => Some("Could not save: no character library".to_owned()),
-            };
-            (json, save_error)
+        self.as_mut().refresh_view();
+        let this = self.as_mut().rust_mut().get_mut();
+        let saved = match (&this.library, &this.character) {
+            (Some(lib), Some(c)) => lib.save(c).map_err(|e| format!("Could not save: {e}")),
+            (None, _) => Err("Could not save: no character library".to_owned()),
+            (_, None) => return,
         };
-        self.as_mut().rust_mut().get_mut().view = QString::from(&json);
-        self.as_mut().view_changed();
+        let save_error = match saved {
+            Ok(revision) => {
+                this.revision = revision;
+                None
+            }
+            Err(e) => Some(e),
+        };
         self.set_error(save_error.as_deref().unwrap_or(""));
+    }
+
+    /// Picks up changes another connection made to the open character since we last
+    /// looked, so that edits never overwrite them.
+    fn reload_if_changed(mut self: Pin<&mut Self>) {
+        let this = self.as_mut().rust_mut().get_mut();
+        let (Some(lib), Some(c)) = (&this.library, &this.character) else {
+            return;
+        };
+        let id = c.id;
+        let Ok(data_version) = lib.data_version() else {
+            return;
+        };
+        if data_version == this.data_version {
+            return;
+        }
+        this.data_version = data_version;
+        let reloaded = match lib.revision(id) {
+            Ok(revision) if revision == this.revision => return,
+            Ok(revision) => lib
+                .load(id)
+                .and_then(|c| Ok((revision, c, lib.recent_rolls(id)?))),
+            Err(e) => Err(e),
+        };
+        match reloaded {
+            Ok((revision, character, rolls)) => {
+                let this = self.as_mut().rust_mut().get_mut();
+                this.revision = revision;
+                this.character = Some(character);
+                self.as_mut().set_rolls(rolls);
+                self.refresh_view();
+            }
+            Err(StorageError::NotFound(_)) => {
+                self.as_mut().close();
+                self.set_error("This character was deleted elsewhere");
+            }
+            Err(e) => self.set_error(&format!("Could not reload: {e}")),
+        }
     }
 
     /// Applies a change to the open character, then publishes and saves it.
@@ -204,6 +279,7 @@ impl qobject::CharacterSheet {
         mut self: Pin<&mut Self>,
         f: impl FnOnce(&mut Character) -> Result<T, String>,
     ) -> Option<T> {
+        self.as_mut().reload_if_changed();
         let result = match self.as_mut().rust_mut().get_mut().character.as_mut() {
             Some(c) => f(c),
             None => Err("No character is open".to_owned()),
@@ -221,8 +297,7 @@ impl qobject::CharacterSheet {
     }
 
     /// Adds a roll to the log, saving it with the character.
-    fn log_roll(mut self: Pin<&mut Self>, label: &str, result: RollResult) -> StoredRoll {
-        let logged = StoredRoll::new(label, result);
+    fn log_roll(mut self: Pin<&mut Self>, logged: StoredRoll) -> StoredRoll {
         let save_error = match (&self.rust().library, &self.rust().character) {
             (Some(lib), Some(c)) => lib
                 .add_roll(c.id, &logged)
@@ -231,76 +306,47 @@ impl qobject::CharacterSheet {
             _ => None,
         };
         let this = self.as_mut().rust_mut().get_mut();
-        this.roll_log.insert(0, logged.clone());
-        this.roll_log.truncate(MAX_ROLLS);
-        this.rolls = QString::from(&serde_json::to_string(&this.roll_log).unwrap_or_default());
-        self.as_mut().rolls_changed();
+        this.note_revision();
+        let mut rolls = std::mem::take(&mut this.roll_log);
+        rolls.insert(0, logged.clone());
+        rolls.truncate(MAX_ROLLS);
+        self.as_mut().set_rolls(rolls);
         self.set_error(save_error.as_deref().unwrap_or(""));
         logged
     }
 
-    /// Rolls an expression, logging it; sets the error and returns None if it's invalid.
-    fn roll_logged(
-        self: Pin<&mut Self>,
-        expression: &str,
-        label: &str,
-        mode: RollMode,
-    ) -> Option<StoredRoll> {
-        match dice::roll(expression, mode) {
-            Ok(result) => Some(self.log_roll(label, result)),
-            Err(e) => {
-                self.set_error(&format!("{label}: {e}"));
-                None
-            }
-        }
-    }
-
-    /// Rolls an action's dice, applies healing or temp HP, and describes what happened.
-    fn finish_outcome(mut self: Pin<&mut Self>, outcome: Option<Outcome>) -> QString {
-        let Some(outcome) = outcome else {
+    /// Logs what an action rolled and returns its message.
+    fn finish(mut self: Pin<&mut Self>, played: Option<Played>) -> QString {
+        let Some(played) = played else {
             return QString::default();
         };
-        let mut parts = vec![outcome.label.clone()];
-        if !outcome.roll.trim().is_empty()
-            && let Some(rolled) =
-                self.as_mut()
-                    .roll_logged(&outcome.roll, &outcome.label, RollMode::Normal)
-        {
-            let total = rolled.result.total;
-            parts.push(match outcome.roll_effect {
-                RollEffect::None => format!("rolled {total}"),
-                RollEffect::Heal => format!("healed {total}"),
-                RollEffect::TempHp => format!("{total} temp HP"),
-            });
-            if outcome.roll_effect != RollEffect::None {
-                self.as_mut().mutate(|c| {
-                    c.apply_roll(outcome.roll_effect, total);
-                    Ok(())
-                });
-            }
+        for roll in played.rolls {
+            self.as_mut().log_roll(roll);
         }
-        if !outcome.spent.is_empty() {
-            parts.push(outcome.spent);
-        }
-        QString::from(&parts.join(" · "))
+        QString::from(&played.message)
     }
 
     pub fn load(mut self: Pin<&mut Self>, id: &QString) -> bool {
         let loaded = match (&self.rust().library, uuid::Uuid::parse_str(&id.to_string())) {
-            (Some(lib), Ok(id)) => lib
-                .load(id)
-                .and_then(|c| Ok((c, lib.recent_rolls(id)?)))
-                .map_err(|e| e.to_string()),
+            (Some(lib), Ok(id)) => (|| {
+                Ok((
+                    lib.data_version()?,
+                    lib.revision(id)?,
+                    lib.load(id)?,
+                    lib.recent_rolls(id)?,
+                ))
+            })()
+            .map_err(|e: StorageError| e.to_string()),
             (None, _) => Err("No character library".to_owned()),
             (_, Err(e)) => Err(format!("Invalid character id: {e}")),
         };
         match loaded {
-            Ok((character, rolls)) => {
+            Ok((data_version, revision, character, rolls)) => {
                 let this = self.as_mut().rust_mut().get_mut();
                 this.character = Some(character);
-                this.rolls = QString::from(&serde_json::to_string(&rolls).unwrap_or_default());
-                this.roll_log = rolls;
-                self.as_mut().rolls_changed();
+                this.data_version = data_version;
+                this.revision = revision;
+                self.as_mut().set_rolls(rolls);
                 if !self.rust().loaded {
                     self.as_mut().rust_mut().get_mut().loaded = true;
                     self.as_mut().loaded_changed();
@@ -322,6 +368,10 @@ impl qobject::CharacterSheet {
         this.loaded = false;
         self.as_mut().view_changed();
         self.as_mut().loaded_changed();
+    }
+
+    pub fn sync(self: Pin<&mut Self>) {
+        self.reload_if_changed();
     }
 
     pub fn catalog(&self) -> QString {
@@ -388,13 +438,8 @@ impl qobject::CharacterSheet {
     }
 
     pub fn spend_hit_die(self: Pin<&mut Self>, class_index: i32) -> QString {
-        let message = self.mutate(|c| {
-            let index = usize::try_from(class_index).map_err(|e| e.to_string())?;
-            match c.spend_hit_die(index, &mut rand::rng()) {
-                Some((roll, healed)) => Ok(format!("Rolled {roll}, regained {healed} HP")),
-                None => Err("No hit dice of that type left".to_owned()),
-            }
-        });
+        let message =
+            self.mutate(|c| play::spend_hit_die(c, index(class_index)?).map_err(|e| e.to_string()));
         QString::from(&message.unwrap_or_default())
     }
 
@@ -418,9 +463,12 @@ impl qobject::CharacterSheet {
         label: &QString,
         mode: &QString,
     ) -> QString {
+        self.as_mut().reload_if_changed();
         match dice::roll(&expression.to_string(), roll_mode(mode)) {
             Ok(result) => {
-                let logged = self.as_mut().log_roll(&label.to_string(), result);
+                let logged = self
+                    .as_mut()
+                    .log_roll(StoredRoll::new(label.to_string(), result));
                 QString::from(&serde_json::to_string(&logged).unwrap_or_default())
             }
             Err(e) => {
@@ -438,20 +486,14 @@ impl qobject::CharacterSheet {
                 .map(|e| format!("Could not clear rolls: {e}")),
             _ => None,
         };
+        self.as_mut().rust_mut().get_mut().note_revision();
         self.as_mut().set_error(save_error.as_deref().unwrap_or(""));
-        let this = self.as_mut().rust_mut().get_mut();
-        this.roll_log.clear();
-        this.rolls = QString::from("[]");
-        self.rolls_changed();
+        self.set_rolls(Vec::new());
     }
 }
 
 fn index(i: i32) -> Result<usize, String> {
     usize::try_from(i).map_err(|e| e.to_string())
-}
-
-fn play(e: PlayError) -> String {
-    e.to_string()
 }
 
 fn roll_json(roll: Option<StoredRoll>) -> QString {
@@ -470,52 +512,33 @@ fn roll_mode(mode: &QString) -> RollMode {
 
 impl qobject::CharacterSheet {
     pub fn use_item_action(mut self: Pin<&mut Self>, item: i32, action: i32) -> QString {
-        let outcome = self.as_mut().mutate(|c| {
-            c.use_item_action(index(item)?, index(action)?)
-                .map_err(play)
+        let played = self.as_mut().mutate(|c| {
+            play::use_item_action(c, index(item)?, index(action)?).map_err(|e| e.to_string())
         });
-        self.finish_outcome(outcome)
+        self.finish(played)
     }
 
     pub fn use_feature_action(mut self: Pin<&mut Self>, feature: i32, action: i32) -> QString {
-        let outcome = self.as_mut().mutate(|c| {
-            c.use_feature_action(index(feature)?, index(action)?)
-                .map_err(play)
+        let played = self.as_mut().mutate(|c| {
+            play::use_feature_action(c, index(feature)?, index(action)?).map_err(|e| e.to_string())
         });
-        self.finish_outcome(outcome)
+        self.finish(played)
     }
 
     pub fn cast_spell(mut self: Pin<&mut Self>, spell: i32, slot_level: i32) -> QString {
-        let outcome = self.as_mut().mutate(|c| {
+        let played = self.as_mut().mutate(|c| {
             let level = u8::try_from(slot_level).map_err(|e| e.to_string())?;
-            c.cast_spell(index(spell)?, level).map_err(play)
+            play::cast_spell(c, index(spell)?, level).map_err(|e| e.to_string())
         });
-        self.finish_outcome(outcome)
+        self.finish(played)
     }
 
     pub fn weapon_attack(mut self: Pin<&mut Self>, attack: i32, mode: &QString) -> QString {
-        let fired = self.as_mut().mutate(|c| {
-            let a = c
-                .weapon_attacks()
-                .into_iter()
-                .nth(index(attack)?)
-                .ok_or("No such attack")?;
-            if a.ranged && !a.thrown {
-                c.fire(a.item).map_err(play)?;
-            }
-            Ok(a)
-        });
-        let Some(a) = fired else {
-            return QString::default();
-        };
-        let modifier = match a.to_hit {
-            0 => String::new(),
-            n if n > 0 => format!("+{n}"),
-            n => n.to_string(),
-        };
-        let label = format!("{} attack", a.name);
-        let rolled = self.roll_logged(&format!("1d20{modifier}"), &label, roll_mode(mode));
-        roll_json(rolled)
+        let mode = roll_mode(mode);
+        let rolled = self
+            .as_mut()
+            .mutate(|c| play::weapon_attack(c, index(attack)?, mode).map_err(|e| e.to_string()));
+        roll_json(rolled.map(|r| self.log_roll(r)))
     }
 
     pub fn weapon_damage(
@@ -527,27 +550,13 @@ impl qobject::CharacterSheet {
         let excluded: Vec<String> =
             serde_json::from_str(&excluded_json.to_string()).unwrap_or_default();
         let rolled = self.as_mut().mutate(|c| {
-            let a = c
-                .weapon_attacks()
-                .into_iter()
-                .nth(index(attack)?)
-                .ok_or("No such attack")?;
-            let expression = c.weapon_damage(&a, crit, &excluded).map_err(play)?;
-            Ok((a.name, expression))
+            play::weapon_damage(c, index(attack)?, crit, &excluded).map_err(|e| e.to_string())
         });
-        let Some((name, expression)) = rolled else {
-            return QString::default();
-        };
-        let label = if crit {
-            format!("{name} critical damage")
-        } else {
-            format!("{name} damage")
-        };
-        roll_json(self.roll_logged(&expression, &label, RollMode::Normal))
+        roll_json(rolled.map(|r| self.log_roll(r)))
     }
 
     pub fn reload(self: Pin<&mut Self>, item: i32) {
-        self.mutate(|c| c.reload(index(item)?).map_err(play));
+        self.mutate(|c| c.reload(index(item)?).map_err(|e| e.to_string()));
     }
 
     pub fn apply_effect(self: Pin<&mut Self>, effect_json: &QString) -> bool {
@@ -560,7 +569,11 @@ impl qobject::CharacterSheet {
     }
 
     pub fn end_effect(self: Pin<&mut Self>, i: i32) {
-        self.mutate(|c| c.end_effect(index(i)?).map(|_| ()).map_err(play));
+        self.mutate(|c| {
+            c.end_effect(index(i)?)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        });
     }
 
     pub fn new_turn(self: Pin<&mut Self>) {

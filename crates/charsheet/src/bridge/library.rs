@@ -20,6 +20,11 @@ pub mod qobject {
         #[qinvokable]
         fn refresh(self: Pin<&mut Self>);
 
+        /// Refreshes the list if another window or process changed the library. Called on
+        /// a timer.
+        #[qinvokable]
+        fn sync(self: Pin<&mut Self>);
+
         /// Creates a character and returns its id, or "" on failure.
         #[qinvokable]
         fn create(self: Pin<&mut Self>, name: &QString) -> QString;
@@ -52,6 +57,8 @@ pub struct CharacterLibraryRust {
     entries: QString,
     last_error: QString,
     library: Result<Library, String>,
+    /// The library's data version as of the last sync.
+    data_version: i64,
 }
 
 impl Default for CharacterLibraryRust {
@@ -61,6 +68,7 @@ impl Default for CharacterLibraryRust {
             entries: QString::from("[]"),
             last_error: QString::default(),
             library,
+            data_version: 0,
         };
         this.entries = QString::from(&this.entries_json());
         if let Err(e) = &this.library {
@@ -127,6 +135,16 @@ impl qobject::CharacterLibrary {
         if self.rust().entries != json {
             self.as_mut().rust_mut().get_mut().entries = json;
             self.entries_changed();
+        }
+    }
+
+    pub fn sync(mut self: Pin<&mut Self>) {
+        let Ok(Ok(data_version)) = self.rust().library.as_ref().map(Library::data_version) else {
+            return;
+        };
+        if data_version != self.rust().data_version {
+            self.as_mut().rust_mut().get_mut().data_version = data_version;
+            self.refresh();
         }
     }
 
