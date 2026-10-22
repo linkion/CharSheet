@@ -84,21 +84,11 @@ pub mod qobject {
 
 use cxx_qt::CxxQtType;
 use cxx_qt_lib::QString;
-use dnd_core::dice::{self, RollMode, RollResult};
+use dnd_core::dice::{self, RollMode};
+use dnd_core::storage::{MAX_ROLLS, StoredRoll};
 use dnd_core::view::{SheetView, catalog};
 use dnd_core::{Character, Library, edit};
-use serde::Serialize;
 use std::pin::Pin;
-
-const MAX_ROLLS: usize = 50;
-
-#[derive(Serialize)]
-struct LoggedRoll {
-    label: String,
-    breakdown: String,
-    #[serde(flatten)]
-    result: RollResult,
-}
 
 pub struct CharacterSheetRust {
     view: QString,
@@ -107,7 +97,7 @@ pub struct CharacterSheetRust {
     rolls: QString,
     character: Option<Character>,
     library: Option<Library>,
-    roll_log: Vec<LoggedRoll>,
+    roll_log: Vec<StoredRoll>,
 }
 
 impl Default for CharacterSheetRust {
@@ -179,16 +169,19 @@ impl qobject::CharacterSheet {
 
     pub fn load(mut self: Pin<&mut Self>, id: &QString) -> bool {
         let loaded = match (&self.rust().library, uuid::Uuid::parse_str(&id.to_string())) {
-            (Some(lib), Ok(id)) => lib.load(id).map_err(|e| e.to_string()),
+            (Some(lib), Ok(id)) => lib
+                .load(id)
+                .and_then(|c| Ok((c, lib.recent_rolls(id)?)))
+                .map_err(|e| e.to_string()),
             (None, _) => Err("No character library".to_owned()),
             (_, Err(e)) => Err(format!("Invalid character id: {e}")),
         };
         match loaded {
-            Ok(character) => {
+            Ok((character, rolls)) => {
                 let this = self.as_mut().rust_mut().get_mut();
                 this.character = Some(character);
-                this.roll_log.clear();
-                this.rolls = QString::from("[]");
+                this.rolls = QString::from(&serde_json::to_string(&rolls).unwrap_or_default());
+                this.roll_log = rolls;
                 self.as_mut().rolls_changed();
                 if !self.rust().loaded {
                     self.as_mut().rust_mut().get_mut().loaded = true;
@@ -314,19 +307,22 @@ impl qobject::CharacterSheet {
         };
         match dice::roll(&expression.to_string(), mode) {
             Ok(result) => {
-                let logged = LoggedRoll {
-                    label: label.to_string(),
-                    breakdown: result.breakdown(),
-                    result,
-                };
+                let logged = StoredRoll::new(label.to_string(), result);
                 let json = serde_json::to_string(&logged).unwrap_or_default();
+                let save_error = match (&self.rust().library, &self.rust().character) {
+                    (Some(lib), Some(c)) => lib
+                        .add_roll(c.id, &logged)
+                        .err()
+                        .map(|e| format!("Could not save roll: {e}")),
+                    _ => None,
+                };
                 let this = self.as_mut().rust_mut().get_mut();
                 this.roll_log.insert(0, logged);
                 this.roll_log.truncate(MAX_ROLLS);
                 this.rolls =
                     QString::from(&serde_json::to_string(&this.roll_log).unwrap_or_default());
                 self.as_mut().rolls_changed();
-                self.set_error("");
+                self.set_error(save_error.as_deref().unwrap_or(""));
                 QString::from(&json)
             }
             Err(e) => {
@@ -337,6 +333,14 @@ impl qobject::CharacterSheet {
     }
 
     pub fn clear_rolls(mut self: Pin<&mut Self>) {
+        let save_error = match (&self.rust().library, &self.rust().character) {
+            (Some(lib), Some(c)) => lib
+                .clear_rolls(c.id)
+                .err()
+                .map(|e| format!("Could not clear rolls: {e}")),
+            _ => None,
+        };
+        self.as_mut().set_error(save_error.as_deref().unwrap_or(""));
         let this = self.as_mut().rust_mut().get_mut();
         this.roll_log.clear();
         this.rolls = QString::from("[]");

@@ -1,11 +1,25 @@
-//! One JSON file per character, `<uuid>.json`, in the library directory.
+//! The character library: one SQLite database holding every character, with a table per
+//! kind of sheet entry, plus each character's recent dice rolls. Single characters move in
+//! and out of the library as JSON files (import/export).
 
-use crate::character::{Character, SCHEMA_VERSION};
-use serde::Serialize;
+use crate::abilities::Ability;
+use crate::character::{
+    Attack, Character, ClassLevel, Currency, DeathSaves, Feature, HitPoints, Item, SCHEMA_VERSION,
+    Spell,
+};
+use crate::dice::RollResult;
+use rusqlite::types::Type;
+use rusqlite::{Connection, OptionalExtension, Row, named_params, params};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use uuid::Uuid;
+
+/// How many rolls are kept per character.
+pub const MAX_ROLLS: usize = 50;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
@@ -13,8 +27,14 @@ pub enum StorageError {
     Io(#[from] std::io::Error),
     #[error("not a valid character file: {0}")]
     Format(#[from] serde_json::Error),
+    #[error("database error: {0}")]
+    Sql(#[from] rusqlite::Error),
     #[error("this character was saved by a newer version of the app (format {0})")]
     TooNew(u32),
+    #[error("the character database was created by a newer version of the app (schema {0})")]
+    DatabaseTooNew(u32),
+    #[error("no character with id {0}")]
+    NotFound(Uuid),
     #[error("no data directory available")]
     NoDataDir,
 }
@@ -40,8 +60,94 @@ impl From<&Character> for Summary {
     }
 }
 
+/// A roll in a character's log, as shown in the roll log drawer.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StoredRoll {
+    pub label: String,
+    pub breakdown: String,
+    #[serde(flatten)]
+    pub result: RollResult,
+}
+
+impl StoredRoll {
+    pub fn new(label: impl Into<String>, result: RollResult) -> StoredRoll {
+        StoredRoll {
+            label: label.into(),
+            breakdown: result.breakdown(),
+            result,
+        }
+    }
+}
+
+/// Schema migrations from `migrations/`, applied in order; `PRAGMA user_version` counts how
+/// many have run. Add a new numbered `.sql` file for each change and append it here.
+const MIGRATIONS: &[&str] = &[include_str!("../migrations/0001_initial.sql")];
+
+/// Tables holding a character's sheet entries, cleared and rewritten on every save.
+const CHILD_TABLES: &[&str] = &[
+    "character_classes",
+    "character_abilities",
+    "character_skills",
+    "character_conditions",
+    "character_spell_slots",
+    "attacks",
+    "spells",
+    "items",
+    "features",
+];
+
+/// Columns of `characters` other than `id` and the timestamps; also the save parameter names.
+const CHARACTER_COLUMNS: &[&str] = &[
+    "name",
+    "player",
+    "species",
+    "background",
+    "alignment",
+    "jack_of_all_trades",
+    "hp_max",
+    "hp_current",
+    "hp_temp",
+    "death_successes",
+    "death_failures",
+    "heroic_inspiration",
+    "exhaustion",
+    "speed",
+    "armor",
+    "shield",
+    "ac_bonus",
+    "initiative_bonus",
+    "pact_slots_used",
+    "cp",
+    "sp",
+    "ep",
+    "gp",
+    "pp",
+    "languages",
+    "other_proficiencies",
+    "appearance",
+    "backstory",
+    "notes",
+];
+
+/// An enum's serde name (`"str"`, `"chain_mail"`), so the database matches the JSON format.
+fn to_text<T: Serialize>(value: &T) -> Result<String, StorageError> {
+    Ok(match serde_json::to_value(value)? {
+        serde_json::Value::String(s) => s,
+        other => other.to_string(),
+    })
+}
+
+fn from_text<T: DeserializeOwned>(text: String, column: usize) -> rusqlite::Result<T> {
+    serde_json::from_value(serde_json::Value::String(text))
+        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(column, Type::Text, Box::new(e)))
+}
+
+fn text_col<T: DeserializeOwned>(row: &Row, column: usize) -> rusqlite::Result<T> {
+    from_text(row.get(column)?, column)
+}
+
 pub struct Library {
-    dir: PathBuf,
+    conn: Connection,
 }
 
 /// Reads a character from any file, upgrading older formats.
@@ -76,55 +182,521 @@ pub fn write_file(path: &Path, character: &Character) -> Result<(), StorageError
 }
 
 impl Library {
-    /// The default library at `$XDG_DATA_HOME/charsheet/characters`.
+    /// The default library at `$XDG_DATA_HOME/charsheet/charsheet.db`.
     pub fn open_default() -> Result<Library, StorageError> {
-        let dir = dirs::data_dir()
+        let path = dirs::data_dir()
             .ok_or(StorageError::NoDataDir)?
             .join("charsheet")
-            .join("characters");
-        Library::open(dir)
+            .join("charsheet.db");
+        Library::open(path)
     }
 
-    pub fn open(dir: impl Into<PathBuf>) -> Result<Library, StorageError> {
-        let dir = dir.into();
-        fs::create_dir_all(&dir)?;
-        Ok(Library { dir })
+    pub fn open(path: impl Into<PathBuf>) -> Result<Library, StorageError> {
+        let path = path.into();
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir)?;
+        }
+        let conn = Connection::open(&path)?;
+        // The library list and the open sheet each hold a connection.
+        conn.busy_timeout(Duration::from_secs(5))?;
+        conn.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(()))?;
+        Library::init(conn)
     }
 
-    pub fn dir(&self) -> &Path {
-        &self.dir
+    /// A throwaway library, for tests.
+    pub fn open_in_memory() -> Result<Library, StorageError> {
+        Library::init(Connection::open_in_memory()?)
     }
 
-    fn path(&self, id: Uuid) -> PathBuf {
-        self.dir.join(format!("{id}.json"))
+    fn init(mut conn: Connection) -> Result<Library, StorageError> {
+        conn.pragma_update(None, "foreign_keys", true)?;
+        let version: u32 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if version as usize > MIGRATIONS.len() {
+            return Err(StorageError::DatabaseTooNew(version));
+        }
+        for (i, sql) in MIGRATIONS.iter().enumerate().skip(version as usize) {
+            let tx = conn.transaction()?;
+            tx.execute_batch(sql)?;
+            tx.pragma_update(None, "user_version", i as u32 + 1)?;
+            tx.commit()?;
+        }
+        Ok(Library { conn })
     }
 
-    /// Every readable character, sorted by name. Files that can't be read are skipped.
+    fn exists(&self, id: Uuid) -> Result<bool, StorageError> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT 1 FROM characters WHERE id = ?1",
+                [id.to_string()],
+                |_| Ok(()),
+            )
+            .optional()?
+            .is_some())
+    }
+
+    /// Every readable character, sorted by name. Characters that can't be read are skipped.
     pub fn list(&self) -> Result<Vec<Summary>, StorageError> {
+        let ids = self
+            .conn
+            .prepare("SELECT id FROM characters ORDER BY name COLLATE NOCASE, id")?
+            .query_map([], |r| r.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?;
         let mut out = Vec::new();
-        for entry in fs::read_dir(&self.dir)? {
-            let path = entry?.path();
-            if path.extension().is_some_and(|e| e == "json") {
-                match read_file(&path) {
-                    Ok(c) => out.push(Summary::from(&c)),
-                    Err(e) => eprintln!("skipping {}: {e}", path.display()),
-                }
+        for id in ids {
+            match Uuid::parse_str(&id)
+                .map_err(|e| StorageError::Sql(rusqlite::Error::ToSqlConversionFailure(e.into())))
+                .and_then(|id| self.load(id))
+            {
+                Ok(c) => out.push(Summary::from(&c)),
+                Err(e) => eprintln!("skipping character {id}: {e}"),
             }
         }
-        out.sort_by_key(|s| s.name.to_lowercase());
         Ok(out)
     }
 
     pub fn load(&self, id: Uuid) -> Result<Character, StorageError> {
-        read_file(&self.path(id))
+        let key = id.to_string();
+        let conn = &self.conn;
+        let tx = conn.unchecked_transaction()?;
+
+        let mut character = tx
+            .query_row("SELECT * FROM characters WHERE id = ?1", [&key], |r| {
+                let armor: Option<String> = r.get("armor")?;
+                let armor_col = r.as_ref().column_index("armor")?;
+                Ok(Character {
+                    schema_version: SCHEMA_VERSION,
+                    id,
+                    name: r.get("name")?,
+                    player: r.get("player")?,
+                    species: r.get("species")?,
+                    background: r.get("background")?,
+                    alignment: r.get("alignment")?,
+                    classes: Vec::new(),
+                    base_scores: [10; 6],
+                    score_bonuses: [0; 6],
+                    extra_saves: Default::default(),
+                    skills: Default::default(),
+                    jack_of_all_trades: r.get("jack_of_all_trades")?,
+                    hp: HitPoints {
+                        max: r.get("hp_max")?,
+                        current: r.get("hp_current")?,
+                        temp: r.get("hp_temp")?,
+                    },
+                    death_saves: DeathSaves {
+                        successes: r.get("death_successes")?,
+                        failures: r.get("death_failures")?,
+                    },
+                    heroic_inspiration: r.get("heroic_inspiration")?,
+                    exhaustion: r.get("exhaustion")?,
+                    conditions: Default::default(),
+                    speed: r.get("speed")?,
+                    armor: armor.map(|a| from_text(a, armor_col)).transpose()?,
+                    shield: r.get("shield")?,
+                    ac_bonus: r.get("ac_bonus")?,
+                    initiative_bonus: r.get("initiative_bonus")?,
+                    attacks: Vec::new(),
+                    spells: Vec::new(),
+                    spell_slots_used: [0; 9],
+                    pact_slots_used: r.get("pact_slots_used")?,
+                    currency: Currency {
+                        cp: r.get("cp")?,
+                        sp: r.get("sp")?,
+                        ep: r.get("ep")?,
+                        gp: r.get("gp")?,
+                        pp: r.get("pp")?,
+                    },
+                    inventory: Vec::new(),
+                    features: Vec::new(),
+                    languages: r.get("languages")?,
+                    other_proficiencies: r.get("other_proficiencies")?,
+                    appearance: r.get("appearance")?,
+                    backstory: r.get("backstory")?,
+                    notes: r.get("notes")?,
+                })
+            })
+            .optional()?
+            .ok_or(StorageError::NotFound(id))?;
+
+        character.classes = tx
+            .prepare(
+                "SELECT class, subclass, level, hit_dice_spent, third_caster
+                 FROM character_classes WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(ClassLevel {
+                    class: text_col(r, 0)?,
+                    subclass: r.get(1)?,
+                    level: r.get(2)?,
+                    hit_dice_spent: r.get(3)?,
+                    third_caster: r.get(4)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        {
+            let mut stmt = tx.prepare(
+                "SELECT ability, base_score, bonus, extra_save
+                 FROM character_abilities WHERE character_id = ?1",
+            )?;
+            let mut rows = stmt.query([&key])?;
+            while let Some(r) = rows.next()? {
+                let ability: Ability = text_col(r, 0)?;
+                character.base_scores[ability.index()] = r.get(1)?;
+                character.score_bonuses[ability.index()] = r.get(2)?;
+                if r.get(3)? {
+                    character.extra_saves.insert(ability);
+                }
+            }
+        }
+
+        character.skills = tx
+            .prepare("SELECT skill, proficiency FROM character_skills WHERE character_id = ?1")?
+            .query_map([&key], |r| Ok((text_col(r, 0)?, text_col(r, 1)?)))?
+            .collect::<Result<_, _>>()?;
+
+        character.conditions = tx
+            .prepare("SELECT condition FROM character_conditions WHERE character_id = ?1")?
+            .query_map([&key], |r| text_col(r, 0))?
+            .collect::<Result<_, _>>()?;
+
+        {
+            let mut stmt = tx
+                .prepare("SELECT level, used FROM character_spell_slots WHERE character_id = ?1")?;
+            let mut rows = stmt.query([&key])?;
+            while let Some(r) = rows.next()? {
+                let level: u32 = r.get(0)?;
+                if let Some(slot) = character.spell_slots_used.get_mut(level as usize - 1) {
+                    *slot = r.get(1)?;
+                }
+            }
+        }
+
+        character.attacks = tx
+            .prepare(
+                "SELECT name, ability, proficient, damage, damage_type, bonus,
+                        add_ability_to_damage, mastery, notes
+                 FROM attacks WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(Attack {
+                    name: r.get(0)?,
+                    ability: text_col(r, 1)?,
+                    proficient: r.get(2)?,
+                    damage: r.get(3)?,
+                    damage_type: r.get(4)?,
+                    bonus: r.get(5)?,
+                    add_ability_to_damage: r.get(6)?,
+                    mastery: r.get(7)?,
+                    notes: r.get(8)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        character.spells = tx
+            .prepare(
+                "SELECT name, level, prepared, ritual, concentration, notes
+                 FROM spells WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(Spell {
+                    name: r.get(0)?,
+                    level: r.get(1)?,
+                    prepared: r.get(2)?,
+                    ritual: r.get(3)?,
+                    concentration: r.get(4)?,
+                    notes: r.get(5)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        character.inventory = tx
+            .prepare(
+                "SELECT name, quantity, weight, requires_attunement, attuned, notes
+                 FROM items WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(Item {
+                    name: r.get(0)?,
+                    quantity: r.get(1)?,
+                    weight: r.get(2)?,
+                    requires_attunement: r.get(3)?,
+                    attuned: r.get(4)?,
+                    notes: r.get(5)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        character.features = tx
+            .prepare(
+                "SELECT name, source, description, uses_max, uses_spent, recharge
+                 FROM features WHERE character_id = ?1 ORDER BY position",
+            )?
+            .query_map([&key], |r| {
+                Ok(Feature {
+                    name: r.get(0)?,
+                    source: r.get(1)?,
+                    description: r.get(2)?,
+                    uses_max: r.get(3)?,
+                    uses_spent: r.get(4)?,
+                    recharge: text_col(r, 5)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        tx.commit()?;
+        character.normalize();
+        Ok(character)
     }
 
+    /// Writes the whole character in one transaction, replacing its sheet entries.
     pub fn save(&self, character: &Character) -> Result<(), StorageError> {
-        write_file(&self.path(character.id), character)
+        // Destructured so that a new field can't be forgotten here.
+        let Character {
+            schema_version: _,
+            id,
+            name,
+            player,
+            species,
+            background,
+            alignment,
+            classes,
+            base_scores,
+            score_bonuses,
+            extra_saves,
+            skills,
+            jack_of_all_trades,
+            hp,
+            death_saves,
+            heroic_inspiration,
+            exhaustion,
+            conditions,
+            speed,
+            armor,
+            shield,
+            ac_bonus,
+            initiative_bonus,
+            attacks,
+            spells,
+            spell_slots_used,
+            pact_slots_used,
+            currency,
+            inventory,
+            features,
+            languages,
+            other_proficiencies,
+            appearance,
+            backstory,
+            notes,
+        } = character;
+        let key = id.to_string();
+        let armor = armor.as_ref().map(to_text).transpose()?;
+        let tx = self.conn.unchecked_transaction()?;
+
+        let values = named_params! {
+            ":id": key,
+            ":name": name,
+            ":player": player,
+            ":species": species,
+            ":background": background,
+            ":alignment": alignment,
+            ":jack_of_all_trades": jack_of_all_trades,
+            ":hp_max": hp.max,
+            ":hp_current": hp.current,
+            ":hp_temp": hp.temp,
+            ":death_successes": death_saves.successes,
+            ":death_failures": death_saves.failures,
+            ":heroic_inspiration": heroic_inspiration,
+            ":exhaustion": exhaustion,
+            ":speed": speed,
+            ":armor": armor,
+            ":shield": shield,
+            ":ac_bonus": ac_bonus,
+            ":initiative_bonus": initiative_bonus,
+            ":pact_slots_used": pact_slots_used,
+            ":cp": currency.cp,
+            ":sp": currency.sp,
+            ":ep": currency.ep,
+            ":gp": currency.gp,
+            ":pp": currency.pp,
+            ":languages": languages,
+            ":other_proficiencies": other_proficiencies,
+            ":appearance": appearance,
+            ":backstory": backstory,
+            ":notes": notes,
+        };
+        // Update in place rather than REPLACE, which would cascade-delete the roll log.
+        let assignments: Vec<String> = CHARACTER_COLUMNS
+            .iter()
+            .map(|c| format!("{c} = :{c}"))
+            .collect();
+        let updated = tx
+            .prepare_cached(&format!(
+                "UPDATE characters SET {}, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+             WHERE id = :id",
+                assignments.join(", ")
+            ))?
+            .execute(values)?;
+        if updated == 0 {
+            tx.prepare_cached(&format!(
+                "INSERT INTO characters (id, {}) VALUES (:id, :{})",
+                CHARACTER_COLUMNS.join(", "),
+                CHARACTER_COLUMNS.join(", :")
+            ))?
+            .execute(values)?;
+        }
+
+        for table in CHILD_TABLES {
+            tx.execute(
+                &format!("DELETE FROM {table} WHERE character_id = ?1"),
+                [&key],
+            )?;
+        }
+
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO character_classes
+                 (character_id, position, class, subclass, level, hit_dice_spent, third_caster)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            )?;
+            for (i, c) in classes.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    to_text(&c.class)?,
+                    c.subclass,
+                    c.level,
+                    c.hit_dice_spent,
+                    c.third_caster
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO character_abilities
+                 (character_id, ability, base_score, bonus, extra_save)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+            )?;
+            for ability in Ability::ALL {
+                stmt.execute(params![
+                    key,
+                    to_text(&ability)?,
+                    base_scores[ability.index()],
+                    score_bonuses[ability.index()],
+                    extra_saves.contains(&ability)
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO character_skills (character_id, skill, proficiency)
+                 VALUES (?1, ?2, ?3)",
+            )?;
+            for (skill, proficiency) in skills {
+                stmt.execute(params![key, to_text(skill)?, to_text(proficiency)?])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO character_conditions (character_id, condition) VALUES (?1, ?2)",
+            )?;
+            for condition in conditions {
+                stmt.execute(params![key, to_text(condition)?])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO character_spell_slots (character_id, level, used) VALUES (?1, ?2, ?3)",
+            )?;
+            for (i, used) in spell_slots_used.iter().enumerate() {
+                stmt.execute(params![key, i as u32 + 1, used])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO attacks
+                 (character_id, position, name, ability, proficient, damage, damage_type, bonus,
+                  add_ability_to_damage, mastery, notes)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            )?;
+            for (i, a) in attacks.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    a.name,
+                    to_text(&a.ability)?,
+                    a.proficient,
+                    a.damage,
+                    a.damage_type,
+                    a.bonus,
+                    a.add_ability_to_damage,
+                    a.mastery,
+                    a.notes
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO spells
+                 (character_id, position, name, level, prepared, ritual, concentration, notes)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            for (i, s) in spells.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    s.name,
+                    s.level,
+                    s.prepared,
+                    s.ritual,
+                    s.concentration,
+                    s.notes
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO items
+                 (character_id, position, name, quantity, weight, requires_attunement, attuned, notes)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            for (i, item) in inventory.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    item.name,
+                    item.quantity,
+                    item.weight,
+                    item.requires_attunement,
+                    item.attuned,
+                    item.notes
+                ])?;
+            }
+
+            let mut stmt = tx.prepare(
+                "INSERT INTO features
+                 (character_id, position, name, source, description, uses_max, uses_spent, recharge)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            for (i, f) in features.iter().enumerate() {
+                stmt.execute(params![
+                    key,
+                    i as i64,
+                    f.name,
+                    f.source,
+                    f.description,
+                    f.uses_max,
+                    f.uses_spent,
+                    to_text(&f.recharge)?
+                ])?;
+            }
+        }
+
+        tx.commit()?;
+        Ok(())
     }
 
+    /// Deletes the character with its sheet entries and roll log.
     pub fn delete(&self, id: Uuid) -> Result<(), StorageError> {
-        fs::remove_file(self.path(id))?;
+        let deleted = self
+            .conn
+            .execute("DELETE FROM characters WHERE id = ?1", [id.to_string()])?;
+        if deleted == 0 {
+            return Err(StorageError::NotFound(id));
+        }
         Ok(())
     }
 
@@ -145,7 +717,7 @@ impl Library {
     /// Imports a file into the library. It gets a new id if that id is already taken.
     pub fn import(&self, path: &Path) -> Result<Character, StorageError> {
         let mut character = read_file(path)?;
-        if self.path(character.id).exists() {
+        if self.exists(character.id)? {
             character.id = Uuid::new_v4();
         }
         self.save(&character)?;
@@ -155,35 +727,229 @@ impl Library {
     pub fn export(&self, id: Uuid, path: &Path) -> Result<(), StorageError> {
         write_file(path, &self.load(id)?)
     }
+
+    /// Adds a roll to the character's log, dropping all but the newest `MAX_ROLLS`.
+    pub fn add_roll(&self, id: Uuid, roll: &StoredRoll) -> Result<(), StorageError> {
+        let key = id.to_string();
+        let r = &roll.result;
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute(
+            "INSERT INTO rolls
+             (character_id, label, expression, mode, total, natural, breakdown, terms_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                key,
+                roll.label,
+                r.expression,
+                to_text(&r.mode)?,
+                r.total,
+                r.natural,
+                roll.breakdown,
+                serde_json::to_string(&r.terms)?
+            ],
+        )?;
+        tx.execute(
+            "DELETE FROM rolls WHERE character_id = ?1 AND id NOT IN
+             (SELECT id FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2)",
+            params![key, MAX_ROLLS as u32],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// The character's logged rolls, newest first.
+    pub fn recent_rolls(&self, id: Uuid) -> Result<Vec<StoredRoll>, StorageError> {
+        let rows = self
+            .conn
+            .prepare(
+                "SELECT label, breakdown, expression, mode, total, natural, terms_json
+                 FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2",
+            )?
+            .query_map(params![id.to_string(), MAX_ROLLS as u32], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    RollResult {
+                        expression: r.get(2)?,
+                        mode: text_col(r, 3)?,
+                        terms: Vec::new(),
+                        total: r.get(4)?,
+                        natural: r.get(5)?,
+                    },
+                    r.get::<_, String>(6)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        rows.into_iter()
+            .map(|(label, breakdown, mut result, terms)| {
+                result.terms = serde_json::from_str(&terms)?;
+                Ok(StoredRoll {
+                    label,
+                    breakdown,
+                    result,
+                })
+            })
+            .collect()
+    }
+
+    pub fn clear_rolls(&self, id: Uuid) -> Result<(), StorageError> {
+        self.conn.execute(
+            "DELETE FROM rolls WHERE character_id = ?1",
+            [id.to_string()],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::abilities::{Proficiency, Skill};
-    use crate::character::Attack;
+    use crate::armor::ArmorKind;
+    use crate::character::{Condition, Recharge};
+    use crate::classes::ClassId;
+    use crate::dice::{self, RollMode};
+
+    fn count(lib: &Library, table: &str) -> i64 {
+        lib.conn
+            .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get(0))
+            .unwrap()
+    }
+
+    /// A character with something in every table.
+    fn populated() -> Character {
+        let mut c = Character::new("Zed");
+        c.player = "Pat".into();
+        c.species = "Elf".into();
+        c.classes = vec![
+            ClassLevel {
+                class: ClassId::Rogue,
+                subclass: "Arcane Trickster".into(),
+                level: 5,
+                hit_dice_spent: 2,
+                third_caster: true,
+            },
+            ClassLevel {
+                class: ClassId::Wizard,
+                level: 2,
+                ..Default::default()
+            },
+        ];
+        c.base_scores = [8, 16, 14, 15, 12, 10];
+        c.score_bonuses = [0, 2, 0, 1, 0, 0];
+        c.extra_saves.insert(Ability::Con);
+        c.skills.insert(Skill::Stealth, Proficiency::Expertise);
+        c.skills
+            .insert(Skill::AnimalHandling, Proficiency::Proficient);
+        c.jack_of_all_trades = true;
+        c.hp = HitPoints {
+            max: 40,
+            current: 31,
+            temp: 5,
+        };
+        c.death_saves = DeathSaves {
+            successes: 1,
+            failures: 2,
+        };
+        c.heroic_inspiration = true;
+        c.exhaustion = 2;
+        c.conditions.insert(Condition::Prone);
+        c.conditions.insert(Condition::Poisoned);
+        c.armor = Some(ArmorKind::StuddedLeather);
+        c.shield = true;
+        c.ac_bonus = 1;
+        c.initiative_bonus = 2;
+        c.attacks = vec![
+            Attack {
+                name: "Rapier".into(),
+                ability: Ability::Dex,
+                damage: "1d8".into(),
+                damage_type: "piercing".into(),
+                bonus: 1,
+                mastery: "Vex".into(),
+                ..Default::default()
+            },
+            Attack {
+                name: "Dagger".into(),
+                ..Default::default()
+            },
+        ];
+        c.spells = vec![
+            Spell {
+                name: "Mage Hand".into(),
+                ..Default::default()
+            },
+            Spell {
+                name: "Shield".into(),
+                level: 1,
+                prepared: true,
+                ..Default::default()
+            },
+        ];
+        c.spell_slots_used[0] = 1;
+        c.currency = Currency {
+            cp: 3,
+            sp: 4,
+            ep: 0,
+            gp: 125,
+            pp: 1,
+        };
+        c.inventory.push(Item {
+            name: "Rope".into(),
+            quantity: 2,
+            weight: 2.5,
+            requires_attunement: true,
+            attuned: true,
+            notes: "hempen".into(),
+        });
+        c.features.push(Feature {
+            name: "Cunning Action".into(),
+            source: "Rogue".into(),
+            description: "Dash, Disengage or Hide".into(),
+            uses_max: 3,
+            uses_spent: 1,
+            recharge: Recharge::Short,
+        });
+        c.backstory = "Grew up in the woods.".into();
+        c.normalize();
+        c
+    }
 
     #[test]
-    fn round_trip_and_library_ops() {
-        let tmp = tempfile::tempdir().unwrap();
-        let lib = Library::open(tmp.path().join("chars")).unwrap();
-
-        let mut c = lib.create("Zed").unwrap();
-        c.skills.insert(Skill::Stealth, Proficiency::Expertise);
-        c.attacks.push(Attack {
-            name: "Rapier".into(),
-            ..Default::default()
-        });
+    fn round_trip_every_field() {
+        let lib = Library::open_in_memory().unwrap();
+        let mut c = populated();
         lib.save(&c).unwrap();
         assert_eq!(lib.load(c.id).unwrap(), c);
 
+        // Saving again replaces entries rather than adding to them.
+        c.attacks.swap(0, 1);
+        c.armor = None;
+        c.conditions.clear();
+        c.inventory.clear();
+        lib.save(&c).unwrap();
+        assert_eq!(lib.load(c.id).unwrap(), c);
+        assert_eq!(count(&lib, "characters"), 1);
+        assert_eq!(count(&lib, "items"), 0);
+    }
+
+    #[test]
+    fn library_ops() {
+        let tmp = tempfile::tempdir().unwrap();
+        let lib = Library::open(tmp.path().join("data").join("charsheet.db")).unwrap();
+
+        let c = populated();
+        lib.save(&c).unwrap();
         lib.create("anna").unwrap();
         let names: Vec<_> = lib.list().unwrap().into_iter().map(|s| s.name).collect();
         assert_eq!(names, ["anna", "Zed"]);
+        let zed = lib.list().unwrap().pop().unwrap();
+        assert_eq!(zed, Summary::from(&c));
 
         let copy = lib.duplicate(c.id).unwrap();
         assert_ne!(copy.id, c.id);
         assert_eq!(copy.name, "Zed (copy)");
+        assert_eq!(copy.attacks, c.attacks);
 
         let exported = tmp.path().join("zed.json");
         lib.export(c.id, &exported).unwrap();
@@ -191,15 +957,56 @@ mod tests {
         assert_ne!(imported.id, c.id, "colliding id gets replaced");
         assert_eq!(imported.attacks, c.attacks);
 
+        lib.add_roll(
+            c.id,
+            &StoredRoll::new("x", dice::roll("1d4", RollMode::Normal).unwrap()),
+        )
+        .unwrap();
         lib.delete(c.id).unwrap();
+        assert!(matches!(lib.load(c.id), Err(StorageError::NotFound(_))));
+        assert!(matches!(lib.delete(c.id), Err(StorageError::NotFound(_))));
         assert_eq!(lib.list().unwrap().len(), 3);
-        assert!(
-            !tmp.path().join("chars").read_dir().unwrap().any(|e| e
-                .unwrap()
-                .path()
-                .to_string_lossy()
-                .ends_with(".tmp"))
-        );
+        assert_eq!(count(&lib, "rolls"), 0, "deleting cascades to the roll log");
+        assert_eq!(count(&lib, "character_classes"), 5);
+    }
+
+    #[test]
+    fn roll_log_is_capped_and_persisted() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("charsheet.db");
+        let lib = Library::open(&path).unwrap();
+        let c = lib.create("Roller").unwrap();
+        for i in 0..MAX_ROLLS + 5 {
+            let result = dice::roll("1d20+3", RollMode::Advantage).unwrap();
+            lib.add_roll(c.id, &StoredRoll::new(format!("roll {i}"), result))
+                .unwrap();
+        }
+        drop(lib);
+
+        let lib = Library::open(&path).unwrap();
+        let rolls = lib.recent_rolls(c.id).unwrap();
+        assert_eq!(rolls.len(), MAX_ROLLS);
+        assert_eq!(rolls[0].label, format!("roll {}", MAX_ROLLS + 4));
+        assert_eq!(rolls[MAX_ROLLS - 1].label, "roll 5");
+        assert_eq!(rolls[0].result.mode, RollMode::Advantage);
+        assert_eq!(rolls[0].breakdown, rolls[0].result.breakdown());
+
+        lib.clear_rolls(c.id).unwrap();
+        assert!(lib.recent_rolls(c.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn rejects_newer_database() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("charsheet.db");
+        Connection::open(&path)
+            .unwrap()
+            .pragma_update(None, "user_version", 99)
+            .unwrap();
+        assert!(matches!(
+            Library::open(&path),
+            Err(StorageError::DatabaseTooNew(99))
+        ));
     }
 
     #[test]
@@ -213,11 +1020,9 @@ mod tests {
         fs::write(&junk, "not json").unwrap();
         assert!(matches!(read_file(&junk), Err(StorageError::Format(_))));
 
-        let lib = Library::open(tmp.path()).unwrap();
-        assert!(
-            lib.list().unwrap().is_empty(),
-            "unreadable files are skipped"
-        );
+        let lib = Library::open_in_memory().unwrap();
+        assert!(lib.import(&junk).is_err());
+        assert!(lib.list().unwrap().is_empty());
     }
 
     #[test]

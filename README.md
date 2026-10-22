@@ -44,8 +44,9 @@ charsheet                               # open the character library
 charsheet --open "Brakka" --tab 1       # open a character by name or id on a tab (0-6)
 ```
 
-Characters are stored as one JSON file each in `~/.local/share/charsheet/characters/`.
-Use Export/Import on the library page to share them.
+Characters and their recent dice rolls are stored in a SQLite database at
+`~/.local/share/charsheet/charsheet.db`. Use Export/Import on the library page to share a
+character as a JSON file.
 
 ## Layout
 
