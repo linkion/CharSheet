@@ -12,7 +12,9 @@ APPDIR := $(DESTDIR)$(PREFIX)/share/applications
 ICONDIR := $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps
 METADIR := $(DESTDIR)$(PREFIX)/share/metainfo
 
-.PHONY: all build install uninstall refresh-caches run test clean
+SRD_PDF ?= SRD_CC_v5.2.1.pdf
+
+.PHONY: all build install uninstall refresh-caches run test clean srd
 
 all: build
 
@@ -56,3 +58,9 @@ test:
 
 clean:
 	cargo clean
+
+# Regenerates data/srd from the SRD PDF (not in the repo; download it from
+# https://www.dndbeyond.com/srd) and checks the result. Needs python3 and mutool.
+srd:
+	python3 -I tools/srd/build.py $(SRD_PDF) data/srd
+	python3 -I tools/srd/check.py data/srd $(SRD_PDF)

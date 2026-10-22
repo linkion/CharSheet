@@ -1,0 +1,394 @@
+[
+ {
+  "id": "vehicle:airship",
+  "name": "Airship",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 8,
+  "crew": 10,
+  "passengers": 20,
+  "cargo_tons": 1,
+  "ac": 13,
+  "hp": 300,
+  "damage_threshold": null,
+  "cost": {
+   "amount": 40000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 8",
+  "markdown": "**Airship**"
+ },
+ {
+  "id": "mount:camel",
+  "name": "Camel",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 450,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 450",
+  "markdown": "**Camel**"
+ },
+ {
+  "id": "vehicle:carriage",
+  "name": "Carriage",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 600,
+  "cost": {
+   "amount": 100,
+   "unit": "gp"
+  },
+  "summary": "weight lb 600",
+  "markdown": "**Carriage**"
+ },
+ {
+  "id": "vehicle:cart",
+  "name": "Cart",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 200,
+  "cost": {
+   "amount": 15,
+   "unit": "gp"
+  },
+  "summary": "weight lb 200",
+  "markdown": "**Cart**"
+ },
+ {
+  "id": "vehicle:chariot",
+  "name": "Chariot",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 100,
+  "cost": {
+   "amount": 250,
+   "unit": "gp"
+  },
+  "summary": "weight lb 100",
+  "markdown": "**Chariot**"
+ },
+ {
+  "id": "mount:elephant",
+  "name": "Elephant",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 1320,
+  "cost": {
+   "amount": 200,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 1320",
+  "markdown": "**Elephant**"
+ },
+ {
+  "id": "vehicle:feed-per-day",
+  "name": "Feed per day",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 10,
+  "cost": {
+   "amount": 5,
+   "unit": "cp"
+  },
+  "summary": "weight lb 10",
+  "markdown": "**Feed per day**"
+ },
+ {
+  "id": "vehicle:galley",
+  "name": "Galley",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 4,
+  "crew": 80,
+  "passengers": null,
+  "cargo_tons": 150,
+  "ac": 15,
+  "hp": 500,
+  "damage_threshold": 20,
+  "cost": {
+   "amount": 30000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 4",
+  "markdown": "**Galley**"
+ },
+ {
+  "id": "mount:horse-draft",
+  "name": "Horse, Draft",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 540,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 540",
+  "markdown": "**Horse, Draft**"
+ },
+ {
+  "id": "mount:horse-riding",
+  "name": "Horse, Riding",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 480,
+  "cost": {
+   "amount": 75,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 480",
+  "markdown": "**Horse, Riding**"
+ },
+ {
+  "id": "vehicle:keelboat",
+  "name": "Keelboat",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 1,
+  "crew": 1,
+  "passengers": 6,
+  "cargo_tons": 0.5,
+  "ac": 15,
+  "hp": 100,
+  "damage_threshold": 10,
+  "cost": {
+   "amount": 3000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 1",
+  "markdown": "**Keelboat**"
+ },
+ {
+  "id": "vehicle:longship",
+  "name": "Longship",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 3,
+  "crew": 40,
+  "passengers": 150,
+  "cargo_tons": 10,
+  "ac": 15,
+  "hp": 300,
+  "damage_threshold": 15,
+  "cost": {
+   "amount": 10000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 3",
+  "markdown": "**Longship**"
+ },
+ {
+  "id": "mount:mastiff",
+  "name": "Mastiff",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 195,
+  "cost": {
+   "amount": 25,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 195",
+  "markdown": "**Mastiff**"
+ },
+ {
+  "id": "mount:mule",
+  "name": "Mule",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 420,
+  "cost": {
+   "amount": 8,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 420",
+  "markdown": "**Mule**"
+ },
+ {
+  "id": "mount:pony",
+  "name": "Pony",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 225,
+  "cost": {
+   "amount": 30,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 225",
+  "markdown": "**Pony**"
+ },
+ {
+  "id": "vehicle:rowboat",
+  "name": "Rowboat",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 1.5,
+  "crew": 1,
+  "passengers": 3,
+  "cargo_tons": null,
+  "ac": 11,
+  "hp": 50,
+  "damage_threshold": null,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "speed mph 1.5",
+  "markdown": "**Rowboat**"
+ },
+ {
+  "id": "vehicle:saddle-exotic",
+  "name": "Saddle, Exotic",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 40,
+  "cost": {
+   "amount": 60,
+   "unit": "gp"
+  },
+  "summary": "weight lb 40",
+  "markdown": "**Saddle, Exotic**"
+ },
+ {
+  "id": "vehicle:saddle-military",
+  "name": "Saddle, Military",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 30,
+  "cost": {
+   "amount": 20,
+   "unit": "gp"
+  },
+  "summary": "weight lb 30",
+  "markdown": "**Saddle, Military**"
+ },
+ {
+  "id": "vehicle:saddle-riding",
+  "name": "Saddle, Riding",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 25,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "weight lb 25",
+  "markdown": "**Saddle, Riding**"
+ },
+ {
+  "id": "vehicle:sailing-ship",
+  "name": "Sailing Ship",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 2,
+  "crew": 20,
+  "passengers": 20,
+  "cargo_tons": 100,
+  "ac": 15,
+  "hp": 300,
+  "damage_threshold": 15,
+  "cost": {
+   "amount": 10000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 2",
+  "markdown": "**Sailing Ship**"
+ },
+ {
+  "id": "vehicle:sled",
+  "name": "Sled",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 300,
+  "cost": {
+   "amount": 20,
+   "unit": "gp"
+  },
+  "summary": "weight lb 300",
+  "markdown": "**Sled**"
+ },
+ {
+  "id": "vehicle:stabling-per-day",
+  "name": "Stabling per day",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": null,
+  "cost": {
+   "amount": 5,
+   "unit": "sp"
+  },
+  "summary": "",
+  "markdown": "**Stabling per day**"
+ },
+ {
+  "id": "vehicle:wagon",
+  "name": "Wagon",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "tack_or_drawn",
+  "weight_lb": 400,
+  "cost": {
+   "amount": 35,
+   "unit": "gp"
+  },
+  "summary": "weight lb 400",
+  "markdown": "**Wagon**"
+ },
+ {
+  "id": "mount:warhorse",
+  "name": "Warhorse",
+  "category": "mount",
+  "page": 100,
+  "vehicle_type": "mount",
+  "carrying_capacity_lb": 540,
+  "cost": {
+   "amount": 400,
+   "unit": "gp"
+  },
+  "summary": "carrying capacity lb 540",
+  "markdown": "**Warhorse**"
+ },
+ {
+  "id": "vehicle:warship",
+  "name": "Warship",
+  "category": "vehicle",
+  "page": 100,
+  "vehicle_type": "ship",
+  "speed_mph": 2.5,
+  "crew": 60,
+  "passengers": 60,
+  "cargo_tons": 200,
+  "ac": 15,
+  "hp": 500,
+  "damage_threshold": 20,
+  "cost": {
+   "amount": 25000,
+   "unit": "gp"
+  },
+  "summary": "speed mph 2.5",
+  "markdown": "**Warship**"
+ }
+]

@@ -1,0 +1,122 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 gear",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^gear:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "gear"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "weight_lb": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "cost": {
+    "type": [
+     "object",
+     "null"
+    ],
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "unit": {
+      "enum": [
+       "cp",
+       "sp",
+       "ep",
+       "gp",
+       "pp"
+      ]
+     }
+    },
+    "required": [
+     "amount",
+     "unit"
+    ],
+    "additionalProperties": false
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "cost_text": {
+    "type": "string"
+   },
+   "variants": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "name"
+     ],
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "weight_lb": {
+       "type": [
+        "number",
+        "null"
+       ]
+      },
+      "cost": {
+       "type": [
+        "object",
+        "null"
+       ],
+       "properties": {
+        "amount": {
+         "type": "number"
+        },
+        "unit": {
+         "enum": [
+          "cp",
+          "sp",
+          "ep",
+          "gp",
+          "pp"
+         ]
+        }
+       },
+       "required": [
+        "amount",
+        "unit"
+       ],
+       "additionalProperties": false
+      }
+     }
+    }
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "weight_lb",
+   "cost",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

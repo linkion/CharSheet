@@ -1,0 +1,169 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 weapons",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^weapon:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "weapon"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "weapon_category": {
+    "enum": [
+     "simple",
+     "martial"
+    ]
+   },
+   "ranged": {
+    "type": "boolean"
+   },
+   "damage": {
+    "type": "object",
+    "properties": {
+     "dice": {
+      "type": "string",
+      "pattern": "^(\\d+d\\d+|\\d+)$"
+     },
+     "type": {
+      "enum": [
+       "acid",
+       "bludgeoning",
+       "cold",
+       "fire",
+       "force",
+       "lightning",
+       "necrotic",
+       "piercing",
+       "poison",
+       "psychic",
+       "radiant",
+       "slashing",
+       "thunder"
+      ]
+     }
+    },
+    "required": [
+     "dice",
+     "type"
+    ],
+    "additionalProperties": false
+   },
+   "properties": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string",
+       "pattern": "^weapon_property:[a-z0-9-]+$"
+      },
+      "name": {
+       "type": "string"
+      },
+      "range": {
+       "type": "object",
+       "properties": {
+        "normal": {
+         "type": "integer"
+        },
+        "long": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "normal",
+        "long"
+       ],
+       "additionalProperties": false
+      },
+      "ammunition": {
+       "type": "string"
+      },
+      "damage": {
+       "type": "string",
+       "pattern": "^\\d+d\\d+([+-]\\d+)?$"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "id",
+      "name"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "mastery": {
+    "type": "string",
+    "pattern": "^mastery_property:[a-z0-9-]+$"
+   },
+   "weight_lb": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "cost": {
+    "type": [
+     "object",
+     "null"
+    ],
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "unit": {
+      "enum": [
+       "cp",
+       "sp",
+       "ep",
+       "gp",
+       "pp"
+      ]
+     }
+    },
+    "required": [
+     "amount",
+     "unit"
+    ],
+    "additionalProperties": false
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "weapon_category",
+   "ranged",
+   "damage",
+   "properties",
+   "mastery",
+   "weight_lb",
+   "cost",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

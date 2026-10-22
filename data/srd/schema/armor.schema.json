@@ -1,0 +1,123 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 armor",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^armor:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "armor"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "armor_category": {
+    "enum": [
+     "light",
+     "medium",
+     "heavy",
+     "shield"
+    ]
+   },
+   "ac": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "base": {
+      "type": "integer"
+     },
+     "dex_cap": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "bonus": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "additionalProperties": false
+   },
+   "strength_required": {
+    "type": [
+     "integer",
+     "null"
+    ]
+   },
+   "stealth_disadvantage": {
+    "type": "boolean"
+   },
+   "don_doff": {
+    "type": "string"
+   },
+   "weight_lb": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "cost": {
+    "type": [
+     "object",
+     "null"
+    ],
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "unit": {
+      "enum": [
+       "cp",
+       "sp",
+       "ep",
+       "gp",
+       "pp"
+      ]
+     }
+    },
+    "required": [
+     "amount",
+     "unit"
+    ],
+    "additionalProperties": false
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "armor_category",
+   "ac",
+   "strength_required",
+   "stealth_disadvantage",
+   "don_doff",
+   "weight_lb",
+   "cost",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

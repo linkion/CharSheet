@@ -1,0 +1,73 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 glossary",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^glossary:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "glossary"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "tag": {
+    "anyOf": [
+     {
+      "enum": [
+       "action",
+       "area_of_effect",
+       "attitude",
+       "condition",
+       "hazard"
+      ]
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "see_also": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "pattern": "^glossary:[a-z0-9-]+$"
+    }
+   },
+   "see_also_text": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "tag",
+   "see_also",
+   "see_also_text",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

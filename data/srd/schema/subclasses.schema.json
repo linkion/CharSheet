@@ -1,0 +1,98 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 subclasses",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^subclass:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "subclass"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "class": {
+    "type": "string",
+    "pattern": "^class:[a-z0-9-]+$"
+   },
+   "features": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "level": {
+       "type": "integer"
+      },
+      "name": {
+       "type": "string"
+      },
+      "markdown": {
+       "type": "string",
+       "description": "Markdown"
+      }
+     },
+     "required": [
+      "level",
+      "name",
+      "markdown"
+     ],
+     "additionalProperties": false
+    },
+    "minItems": 1
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "spells": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "level": {
+       "type": "integer"
+      },
+      "spells": {
+       "type": "array",
+       "items": {
+        "type": "string",
+        "pattern": "^spell:[a-z0-9-]+$"
+       }
+      },
+      "group": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "level",
+      "spells"
+     ],
+     "additionalProperties": false
+    }
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "class",
+   "features",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

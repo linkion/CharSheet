@@ -1,0 +1,112 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 backgrounds",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^background:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "background"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "ability_scores": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "strength",
+      "dexterity",
+      "constitution",
+      "intelligence",
+      "wisdom",
+      "charisma"
+     ]
+    },
+    "minItems": 3,
+    "maxItems": 3
+   },
+   "feat": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string",
+      "pattern": "^feat:[a-z0-9-]+$"
+     }
+    },
+    "required": [
+     "name",
+     "id"
+    ],
+    "additionalProperties": false
+   },
+   "skill_proficiencies": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "acrobatics",
+      "animal_handling",
+      "arcana",
+      "athletics",
+      "deception",
+      "history",
+      "insight",
+      "intimidation",
+      "investigation",
+      "medicine",
+      "nature",
+      "perception",
+      "performance",
+      "persuasion",
+      "religion",
+      "sleight_of_hand",
+      "stealth",
+      "survival"
+     ]
+    },
+    "minItems": 2,
+    "maxItems": 2
+   },
+   "tool_proficiency": {
+    "type": "string"
+   },
+   "equipment": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "ability_scores",
+   "feat",
+   "skill_proficiencies",
+   "tool_proficiency",
+   "equipment",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

@@ -1,0 +1,267 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 mounts_vehicles",
+ "type": "array",
+ "items": {
+  "anyOf": [
+   {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^mount:[a-z0-9-]+$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "category": {
+      "const": "mount"
+     },
+     "page": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 364
+     },
+     "vehicle_type": {
+      "const": "mount"
+     },
+     "carrying_capacity_lb": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "cost": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "properties": {
+       "amount": {
+        "type": "number"
+       },
+       "unit": {
+        "enum": [
+         "cp",
+         "sp",
+         "ep",
+         "gp",
+         "pp"
+        ]
+       }
+      },
+      "required": [
+       "amount",
+       "unit"
+      ],
+      "additionalProperties": false
+     },
+     "summary": {
+      "type": "string"
+     },
+     "markdown": {
+      "type": "string",
+      "description": "Markdown"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "category",
+     "page",
+     "vehicle_type",
+     "carrying_capacity_lb",
+     "cost",
+     "summary",
+     "markdown"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^vehicle:[a-z0-9-]+$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "category": {
+      "const": "vehicle"
+     },
+     "page": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 364
+     },
+     "vehicle_type": {
+      "const": "tack_or_drawn"
+     },
+     "weight_lb": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "cost": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "properties": {
+       "amount": {
+        "type": "number"
+       },
+       "unit": {
+        "enum": [
+         "cp",
+         "sp",
+         "ep",
+         "gp",
+         "pp"
+        ]
+       }
+      },
+      "required": [
+       "amount",
+       "unit"
+      ],
+      "additionalProperties": false
+     },
+     "summary": {
+      "type": "string"
+     },
+     "markdown": {
+      "type": "string",
+      "description": "Markdown"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "category",
+     "page",
+     "vehicle_type",
+     "weight_lb",
+     "cost",
+     "summary",
+     "markdown"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^vehicle:[a-z0-9-]+$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "category": {
+      "const": "vehicle"
+     },
+     "page": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 364
+     },
+     "vehicle_type": {
+      "const": "ship"
+     },
+     "speed_mph": {
+      "type": "number"
+     },
+     "crew": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "passengers": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "cargo_tons": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "ac": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "hp": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "damage_threshold": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "cost": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "properties": {
+       "amount": {
+        "type": "number"
+       },
+       "unit": {
+        "enum": [
+         "cp",
+         "sp",
+         "ep",
+         "gp",
+         "pp"
+        ]
+       }
+      },
+      "required": [
+       "amount",
+       "unit"
+      ],
+      "additionalProperties": false
+     },
+     "summary": {
+      "type": "string"
+     },
+     "markdown": {
+      "type": "string",
+      "description": "Markdown"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "category",
+     "page",
+     "vehicle_type",
+     "speed_mph",
+     "crew",
+     "passengers",
+     "cargo_tons",
+     "ac",
+     "hp",
+     "damage_threshold",
+     "cost",
+     "summary",
+     "markdown"
+    ],
+    "additionalProperties": false
+   }
+  ]
+ }
+}

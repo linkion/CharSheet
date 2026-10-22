@@ -1,0 +1,313 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 spells",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^spell:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "spell"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "level": {
+    "type": "integer",
+    "minimum": 0,
+    "maximum": 9
+   },
+   "school": {
+    "enum": [
+     "abjuration",
+     "conjuration",
+     "divination",
+     "enchantment",
+     "evocation",
+     "illusion",
+     "necromancy",
+     "transmutation"
+    ]
+   },
+   "classes": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "pattern": "^class:[a-z0-9-]+$"
+    },
+    "minItems": 1
+   },
+   "casting_time": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "activation": {
+      "enum": [
+       "action",
+       "bonus_action",
+       "reaction",
+       "time"
+      ]
+     },
+     "amount": {
+      "type": "integer"
+     },
+     "unit": {
+      "enum": [
+       "minute",
+       "hour"
+      ]
+     },
+     "trigger": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "activation"
+    ],
+    "additionalProperties": false
+   },
+   "ritual": {
+    "type": "boolean"
+   },
+   "range": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "enum": [
+       "self",
+       "touch",
+       "feet",
+       "miles",
+       "sight",
+       "unlimited",
+       "special"
+      ]
+     },
+     "text": {
+      "type": "string"
+     },
+     "value": {
+      "type": "integer"
+     },
+     "area": {
+      "type": "object",
+      "properties": {
+       "shape": {
+        "type": "string"
+       },
+       "size": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "shape",
+       "size"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "kind",
+     "text"
+    ],
+    "additionalProperties": false
+   },
+   "components": {
+    "type": "object",
+    "properties": {
+     "v": {
+      "type": "boolean"
+     },
+     "s": {
+      "type": "boolean"
+     },
+     "m": {
+      "type": "boolean"
+     },
+     "text": {
+      "type": "string"
+     },
+     "material": {
+      "type": "string"
+     },
+     "cost_gp": {
+      "type": "integer"
+     },
+     "consumed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "v",
+     "s",
+     "m",
+     "text"
+    ],
+    "additionalProperties": false
+   },
+   "duration": {
+    "type": "object",
+    "properties": {
+     "concentration": {
+      "type": "boolean"
+     },
+     "text": {
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "instantaneous",
+       "timed",
+       "until_dispelled",
+       "special"
+      ]
+     },
+     "amount": {
+      "type": "integer"
+     },
+     "unit": {
+      "enum": [
+       "round",
+       "minute",
+       "hour",
+       "day"
+      ]
+     },
+     "up_to": {
+      "type": "boolean"
+     },
+     "or_triggered": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "concentration",
+     "text",
+     "kind"
+    ],
+    "additionalProperties": false
+   },
+   "concentration": {
+    "type": "boolean"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "higher_levels": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "cantrip_upgrade": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "saves": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "strength",
+      "dexterity",
+      "constitution",
+      "intelligence",
+      "wisdom",
+      "charisma"
+     ]
+    }
+   },
+   "attack": {
+    "enum": [
+     "melee",
+     "ranged"
+    ]
+   },
+   "damage": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "dice": {
+       "type": "string",
+       "pattern": "^\\d+d\\d+([+-]\\d+)?$"
+      },
+      "type": {
+       "enum": [
+        "acid",
+        "bludgeoning",
+        "cold",
+        "fire",
+        "force",
+        "lightning",
+        "necrotic",
+        "piercing",
+        "poison",
+        "psychic",
+        "radiant",
+        "slashing",
+        "thunder"
+       ]
+      }
+     },
+     "required": [
+      "dice",
+      "type"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "damage_types": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "acid",
+      "bludgeoning",
+      "cold",
+      "fire",
+      "force",
+      "lightning",
+      "necrotic",
+      "piercing",
+      "poison",
+      "psychic",
+      "radiant",
+      "slashing",
+      "thunder"
+     ]
+    }
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "level",
+   "school",
+   "classes",
+   "casting_time",
+   "ritual",
+   "range",
+   "components",
+   "duration",
+   "concentration",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

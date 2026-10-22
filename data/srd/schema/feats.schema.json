@@ -1,0 +1,81 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 feats",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^feat:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "feat"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "feat_category": {
+    "enum": [
+     "origin",
+     "general",
+     "fighting_style",
+     "epic_boon"
+    ]
+   },
+   "repeatable": {
+    "type": "boolean"
+   },
+   "benefits": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "markdown": {
+       "type": "string",
+       "description": "Markdown"
+      }
+     },
+     "required": [
+      "name",
+      "markdown"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "prerequisite": {
+    "type": "string"
+   },
+   "prerequisite_level": {
+    "type": "integer"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "feat_category",
+   "repeatable",
+   "benefits",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

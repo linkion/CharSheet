@@ -1,0 +1,29 @@
+{
+ "source": "System Reference Document 5.2.1",
+ "version": "5.2.1",
+ "license": "CC-BY-4.0",
+ "attribution": "This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+ "generated_at": "2026-10-22T17:45:31Z",
+ "files": {
+  "armor.json": 13,
+  "backgrounds.json": 4,
+  "classes.json": 12,
+  "conditions.json": 15,
+  "feats.json": 17,
+  "gear.json": 81,
+  "glossary.json": 155,
+  "magic_items.json": 258,
+  "mastery_properties.json": 8,
+  "monsters.json": 330,
+  "mounts_vehicles.json": 25,
+  "rules.json": 392,
+  "services.json": 34,
+  "species.json": 9,
+  "spells.json": 339,
+  "subclasses.json": 12,
+  "tools.json": 25,
+  "weapon_properties.json": 10,
+  "weapons.json": 38,
+  "index.json": 1777
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 species",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^species:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "species"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "creature_type": {
+    "enum": [
+     "aberration",
+     "beast",
+     "celestial",
+     "construct",
+     "dragon",
+     "elemental",
+     "fey",
+     "fiend",
+     "giant",
+     "humanoid",
+     "monstrosity",
+     "ooze",
+     "plant",
+     "undead"
+    ]
+   },
+   "size": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "tiny",
+      "small",
+      "medium",
+      "large",
+      "huge",
+      "gargantuan"
+     ]
+    },
+    "minItems": 1
+   },
+   "size_text": {
+    "type": "string"
+   },
+   "speed": {
+    "type": "integer"
+   },
+   "traits": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "markdown": {
+       "type": "string",
+       "description": "Markdown"
+      }
+     },
+     "required": [
+      "name",
+      "markdown"
+     ],
+     "additionalProperties": false
+    },
+    "minItems": 1
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "creature_type",
+   "size",
+   "size_text",
+   "speed",
+   "traits",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

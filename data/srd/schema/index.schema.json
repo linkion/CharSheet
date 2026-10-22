@@ -1,0 +1,53 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 search index",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^[a-z_]+:[a-z0-9/-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "type": "string"
+   },
+   "aliases": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "keywords": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "page": {
+    "type": "integer"
+   },
+   "file": {
+    "type": "string",
+    "pattern": "^[a-z_]+\\.json$"
+   },
+   "summary": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "aliases",
+   "keywords",
+   "page",
+   "file",
+   "summary"
+  ],
+  "additionalProperties": false
+ }
+}

@@ -1,0 +1,113 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 tools",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^tool:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "tool"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "tool_category": {
+    "enum": [
+     "artisans_tools",
+     "other"
+    ]
+   },
+   "ability": {
+    "enum": [
+     "strength",
+     "dexterity",
+     "constitution",
+     "intelligence",
+     "wisdom",
+     "charisma"
+    ]
+   },
+   "utilize": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "minItems": 1
+   },
+   "craft": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "weight_lb": {
+    "type": [
+     "number",
+     "null"
+    ]
+   },
+   "cost": {
+    "type": [
+     "object",
+     "null"
+    ],
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "unit": {
+      "enum": [
+       "cp",
+       "sp",
+       "ep",
+       "gp",
+       "pp"
+      ]
+     }
+    },
+    "required": [
+     "amount",
+     "unit"
+    ],
+    "additionalProperties": false
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "variants": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "tool_category",
+   "ability",
+   "utilize",
+   "craft",
+   "weight_lb",
+   "cost",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

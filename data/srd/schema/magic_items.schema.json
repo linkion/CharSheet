@@ -1,0 +1,154 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 magic_items",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^magic_item:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "magic_item"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "aliases": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "attunement": {
+    "type": "object",
+    "properties": {
+     "required": {
+      "type": "boolean"
+     },
+     "by": {
+      "type": "string"
+     },
+     "classes": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^class:[a-z0-9-]+$"
+      }
+     },
+     "spellcaster": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "required"
+    ],
+    "additionalProperties": false
+   },
+   "item_type": {
+    "enum": [
+     "wondrous_item",
+     "weapon",
+     "armor",
+     "potion",
+     "ring",
+     "wand",
+     "staff",
+     "rod",
+     "scroll"
+    ]
+   },
+   "rarity": {
+    "enum": [
+     "common",
+     "uncommon",
+     "rare",
+     "very_rare",
+     "legendary",
+     "artifact",
+     "varies"
+    ]
+   },
+   "cursed": {
+    "type": "boolean"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "subtype": {
+    "type": "string"
+   },
+   "rarity_by_variant": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "variant": {
+       "type": "string"
+      },
+      "rarity": {
+       "enum": [
+        "common",
+        "uncommon",
+        "rare",
+        "very_rare",
+        "legendary",
+        "artifact"
+       ]
+      }
+     },
+     "required": [
+      "variant",
+      "rarity"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "charges": {
+    "type": "object",
+    "properties": {
+     "max": {
+      "type": "integer"
+     },
+     "regain": {
+      "type": [
+       "string",
+       "integer"
+      ]
+     },
+     "regain_when": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "max"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "aliases",
+   "attunement",
+   "item_type",
+   "rarity",
+   "cursed",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

@@ -1,0 +1,77 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 services",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^service:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "service"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "service_type": {
+    "type": "string"
+   },
+   "cost": {
+    "type": [
+     "object",
+     "null"
+    ],
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "unit": {
+      "enum": [
+       "cp",
+       "sp",
+       "ep",
+       "gp",
+       "pp"
+      ]
+     }
+    },
+    "required": [
+     "amount",
+     "unit"
+    ],
+    "additionalProperties": false
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "per": {
+    "type": "string"
+   },
+   "availability": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "service_type",
+   "cost",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

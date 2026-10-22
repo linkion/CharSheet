@@ -1,3 +1,4 @@
 target/
 # Reference only; not ours to redistribute.
 DnD_2024_Character-Sheet.pdf
+__pycache__/

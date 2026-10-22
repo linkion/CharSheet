@@ -1,0 +1,461 @@
+[
+ {
+  "id": "service:ale-mug",
+  "name": "Ale (mug)",
+  "category": "service",
+  "page": 101,
+  "service_type": "food_and_drink",
+  "cost": {
+   "amount": 4,
+   "unit": "cp"
+  },
+  "summary": "Ale (mug): 4 CP",
+  "markdown": "**Ale (mug)**: 4 CP"
+ },
+ {
+  "id": "service:aristocratic-inn-stay-per-day",
+  "name": "Aristocratic (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 4,
+   "unit": "gp"
+  },
+  "summary": "Aristocratic (Inn Stay per Day): 4 GP",
+  "markdown": "**Aristocratic (Inn Stay per Day)**: 4 GP"
+ },
+ {
+  "id": "service:aristocratic-meal",
+  "name": "Aristocratic (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 6,
+   "unit": "sp"
+  },
+  "summary": "Aristocratic (Meal): 6 SP",
+  "markdown": "**Aristocratic (Meal)**: 6 SP"
+ },
+ {
+  "id": "service:aristocratic-lifestyle",
+  "name": "Aristocratic Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "You pay for the best and might have a staff that supports your lifestyle.",
+  "markdown": "You pay for the best and might have a staff that supports your lifestyle. Others notice your wealth and might encourage you to share it, either legally or otherwise."
+ },
+ {
+  "id": "service:bread-loaf",
+  "name": "Bread (loaf)",
+  "category": "service",
+  "page": 101,
+  "service_type": "food_and_drink",
+  "cost": {
+   "amount": 2,
+   "unit": "cp"
+  },
+  "summary": "Bread (loaf): 2 CP",
+  "markdown": "**Bread (loaf)**: 2 CP"
+ },
+ {
+  "id": "service:cheese-wedge",
+  "name": "Cheese (wedge)",
+  "category": "service",
+  "page": 101,
+  "service_type": "food_and_drink",
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "summary": "Cheese (wedge): 1 SP",
+  "markdown": "**Cheese (wedge)**: 1 SP"
+ },
+ {
+  "id": "service:comfortable-inn-stay-per-day",
+  "name": "Comfortable (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 8,
+   "unit": "sp"
+  },
+  "summary": "Comfortable (Inn Stay per Day): 8 SP",
+  "markdown": "**Comfortable (Inn Stay per Day)**: 8 SP"
+ },
+ {
+  "id": "service:comfortable-meal",
+  "name": "Comfortable (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "summary": "Comfortable (Meal): 2 SP",
+  "markdown": "**Comfortable (Meal)**: 2 SP"
+ },
+ {
+  "id": "service:comfortable-lifestyle",
+  "name": "Comfortable Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "You spend modestly for your necessities and enjoy a few luxuries.",
+  "markdown": "You spend modestly for your necessities and enjoy a few luxuries."
+ },
+ {
+  "id": "service:common-wine-bottle",
+  "name": "Common (Wine (bottle))",
+  "category": "service",
+  "page": 101,
+  "service_type": "wine_bottle",
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "summary": "Common (Wine (bottle)): 2 SP",
+  "markdown": "**Common (Wine (bottle))**: 2 SP"
+ },
+ {
+  "id": "service:fine-wine-bottle",
+  "name": "Fine (Wine (bottle))",
+  "category": "service",
+  "page": 101,
+  "service_type": "wine_bottle",
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Fine (Wine (bottle)): 10 GP",
+  "markdown": "**Fine (Wine (bottle))**: 10 GP"
+ },
+ {
+  "id": "service:messenger",
+  "name": "Messenger",
+  "category": "service",
+  "page": 102,
+  "service_type": "hireling",
+  "cost": {
+   "amount": 2,
+   "unit": "cp"
+  },
+  "per": "mile",
+  "summary": "Messenger: 2 CP",
+  "markdown": "**Messenger**: 2 CP"
+ },
+ {
+  "id": "service:modest-inn-stay-per-day",
+  "name": "Modest (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 5,
+   "unit": "sp"
+  },
+  "summary": "Modest (Inn Stay per Day): 5 SP",
+  "markdown": "**Modest (Inn Stay per Day)**: 5 SP"
+ },
+ {
+  "id": "service:modest-meal",
+  "name": "Modest (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "summary": "Modest (Meal): 1 SP",
+  "markdown": "**Modest (Meal)**: 1 SP"
+ },
+ {
+  "id": "service:modest-lifestyle",
+  "name": "Modest Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 1,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "You support yourself at an average level.",
+  "markdown": "You support yourself at an average level."
+ },
+ {
+  "id": "service:poor-inn-stay-per-day",
+  "name": "Poor (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "summary": "Poor (Inn Stay per Day): 1 SP",
+  "markdown": "**Poor (Inn Stay per Day)**: 1 SP"
+ },
+ {
+  "id": "service:poor-meal",
+  "name": "Poor (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 2,
+   "unit": "cp"
+  },
+  "summary": "Poor (Meal): 2 CP",
+  "markdown": "**Poor (Meal)**: 2 CP"
+ },
+ {
+  "id": "service:poor-lifestyle",
+  "name": "Poor Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "per": "day",
+  "summary": "You spend frugally for your necessities.",
+  "markdown": "You spend frugally for your necessities."
+ },
+ {
+  "id": "service:skilled-hireling",
+  "name": "Skilled hireling",
+  "category": "service",
+  "page": 102,
+  "service_type": "hireling",
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "Skilled hireling: 2 GP",
+  "markdown": "**Skilled hireling**: 2 GP"
+ },
+ {
+  "id": "service:spellcasting-cantrip",
+  "name": "Spellcasting (Cantrip)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "Village, town, or city",
+  "cost": {
+   "amount": 30,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Cantrip): 30 GP",
+  "markdown": "**Spellcasting (Cantrip)**: 30 GP"
+ },
+ {
+  "id": "service:spellcasting-level-1",
+  "name": "Spellcasting (Level 1)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "Village, town, or city",
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 1): 50 GP",
+  "markdown": "**Spellcasting (Level 1)**: 50 GP"
+ },
+ {
+  "id": "service:spellcasting-level-2",
+  "name": "Spellcasting (Level 2)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "Village, town, or city",
+  "cost": {
+   "amount": 200,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 2): 200 GP",
+  "markdown": "**Spellcasting (Level 2)**: 200 GP"
+ },
+ {
+  "id": "service:spellcasting-level-3",
+  "name": "Spellcasting (Level 3)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "Town or city only",
+  "cost": {
+   "amount": 300,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 3): 300 GP",
+  "markdown": "**Spellcasting (Level 3)**: 300 GP"
+ },
+ {
+  "id": "service:spellcasting-level-45",
+  "name": "Spellcasting (Level 4–5)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "Town or city only",
+  "cost": {
+   "amount": 2000,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 4–5): 2000 GP",
+  "markdown": "**Spellcasting (Level 4–5)**: 2000 GP"
+ },
+ {
+  "id": "service:spellcasting-level-68",
+  "name": "Spellcasting (Level 6–8)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "City only",
+  "cost": {
+   "amount": 20000,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 6–8): 20000 GP",
+  "markdown": "**Spellcasting (Level 6–8)**: 20000 GP"
+ },
+ {
+  "id": "service:spellcasting-level-9",
+  "name": "Spellcasting (Level 9)",
+  "category": "service",
+  "page": 102,
+  "service_type": "spellcasting",
+  "availability": "City only",
+  "cost": {
+   "amount": 100000,
+   "unit": "gp"
+  },
+  "summary": "Spellcasting (Level 9): 100000 GP",
+  "markdown": "**Spellcasting (Level 9)**: 100000 GP"
+ },
+ {
+  "id": "service:squalid-inn-stay-per-day",
+  "name": "Squalid (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 7,
+   "unit": "cp"
+  },
+  "summary": "Squalid (Inn Stay per Day): 7 CP",
+  "markdown": "**Squalid (Inn Stay per Day)**: 7 CP"
+ },
+ {
+  "id": "service:squalid-meal",
+  "name": "Squalid (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 1,
+   "unit": "cp"
+  },
+  "summary": "Squalid (Meal): 1 CP",
+  "markdown": "**Squalid (Meal)**: 1 CP"
+ },
+ {
+  "id": "service:squalid-lifestyle",
+  "name": "Squalid Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "per": "day",
+  "summary": "You spend the bare minimum for your necessities.",
+  "markdown": "You spend the bare minimum for your necessities. You might be exposed to unhealthy conditions and opportunistic criminals."
+ },
+ {
+  "id": "service:untrained-hireling",
+  "name": "Untrained hireling",
+  "category": "service",
+  "page": 102,
+  "service_type": "hireling",
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "per": "day",
+  "summary": "Untrained hireling: 2 SP",
+  "markdown": "**Untrained hireling**: 2 SP"
+ },
+ {
+  "id": "service:wealthy-inn-stay-per-day",
+  "name": "Wealthy (Inn Stay per Day)",
+  "category": "service",
+  "page": 101,
+  "service_type": "inn_stay_per_day",
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "summary": "Wealthy (Inn Stay per Day): 2 GP",
+  "markdown": "**Wealthy (Inn Stay per Day)**: 2 GP"
+ },
+ {
+  "id": "service:wealthy-meal",
+  "name": "Wealthy (Meal)",
+  "category": "service",
+  "page": 101,
+  "service_type": "meal",
+  "cost": {
+   "amount": 3,
+   "unit": "sp"
+  },
+  "summary": "Wealthy (Meal): 3 SP",
+  "markdown": "**Wealthy (Meal)**: 3 SP"
+ },
+ {
+  "id": "service:wealthy-lifestyle",
+  "name": "Wealthy Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 4,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "You’re accustomed to the finer things in life and might have servants.",
+  "markdown": "You’re accustomed to the finer things in life and might have servants."
+ },
+ {
+  "id": "service:wretched-lifestyle",
+  "name": "Wretched Lifestyle",
+  "category": "service",
+  "page": 101,
+  "service_type": "lifestyle",
+  "cost": {
+   "amount": 0,
+   "unit": "gp"
+  },
+  "per": "day",
+  "summary": "You survive via chance and charity.",
+  "markdown": "You survive via chance and charity. You’re often exposed to natural dangers as a result of sleeping outside."
+ }
+]

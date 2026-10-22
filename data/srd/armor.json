@@ -1,0 +1,287 @@
+[
+ {
+  "id": "armor:breastplate",
+  "name": "Breastplate",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "medium",
+  "ac": {
+   "text": "14 + Dex modifier (max 2)",
+   "base": 14,
+   "dex_cap": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "5 Minutes to Don and 1 Minute to Doff",
+  "weight_lb": 20,
+  "cost": {
+   "amount": 400,
+   "unit": "gp"
+  },
+  "summary": "Medium Armor (5 Minutes to Don and 1 Minute to Doff): AC 14 + Dex modifier (max 2)",
+  "markdown": "**Armor:** Breastplate\n**Armor Class (AC):** 14 + Dex modifier (max 2)\n**Strength:** —\n**Stealth:** —\n**Weight:** 20 lb.\n**Cost:** 400 GP"
+ },
+ {
+  "id": "armor:chain-mail",
+  "name": "Chain Mail",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "heavy",
+  "ac": {
+   "text": "16",
+   "base": 16,
+   "dex_cap": 0
+  },
+  "strength_required": 13,
+  "stealth_disadvantage": true,
+  "don_doff": "10 Minutes to Don and 5 Minutes to Doff",
+  "weight_lb": 55,
+  "cost": {
+   "amount": 75,
+   "unit": "gp"
+  },
+  "summary": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff): AC 16",
+  "markdown": "**Armor:** Chain Mail\n**Armor Class (AC):** 16\n**Strength:** Str 13\n**Stealth:** Disadvantage\n**Weight:** 55 lb.\n**Cost:** 75 GP"
+ },
+ {
+  "id": "armor:chain-shirt",
+  "name": "Chain Shirt",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "medium",
+  "ac": {
+   "text": "13 + Dex modifier (max 2)",
+   "base": 13,
+   "dex_cap": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "5 Minutes to Don and 1 Minute to Doff",
+  "weight_lb": 20,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Medium Armor (5 Minutes to Don and 1 Minute to Doff): AC 13 + Dex modifier (max 2)",
+  "markdown": "**Armor:** Chain Shirt\n**Armor Class (AC):** 13 + Dex modifier (max 2)\n**Strength:** —\n**Stealth:** —\n**Weight:** 20 lb.\n**Cost:** 50 GP"
+ },
+ {
+  "id": "armor:half-plate-armor",
+  "name": "Half Plate Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "medium",
+  "ac": {
+   "text": "15 + Dex modifier (max 2)",
+   "base": 15,
+   "dex_cap": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": true,
+  "don_doff": "5 Minutes to Don and 1 Minute to Doff",
+  "weight_lb": 40,
+  "cost": {
+   "amount": 750,
+   "unit": "gp"
+  },
+  "summary": "Medium Armor (5 Minutes to Don and 1 Minute to Doff): AC 15 + Dex modifier (max 2)",
+  "markdown": "**Armor:** Half Plate Armor\n**Armor Class (AC):** 15 + Dex modifier (max 2)\n**Strength:** —\n**Stealth:** Disadvantage\n**Weight:** 40 lb.\n**Cost:** 750 GP"
+ },
+ {
+  "id": "armor:hide-armor",
+  "name": "Hide Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "medium",
+  "ac": {
+   "text": "12 + Dex modifier (max 2)",
+   "base": 12,
+   "dex_cap": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "5 Minutes to Don and 1 Minute to Doff",
+  "weight_lb": 12,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Medium Armor (5 Minutes to Don and 1 Minute to Doff): AC 12 + Dex modifier (max 2)",
+  "markdown": "**Armor:** Hide Armor\n**Armor Class (AC):** 12 + Dex modifier (max 2)\n**Strength:** —\n**Stealth:** —\n**Weight:** 12 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "armor:leather-armor",
+  "name": "Leather Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "light",
+  "ac": {
+   "text": "11 + Dex modifier",
+   "base": 11,
+   "dex_cap": null
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "1 Minute to Don or Doff",
+  "weight_lb": 10,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Light Armor (1 Minute to Don or Doff): AC 11 + Dex modifier",
+  "markdown": "**Armor:** Leather Armor\n**Armor Class (AC):** 11 + Dex modifier\n**Strength:** —\n**Stealth:** —\n**Weight:** 10 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "armor:padded-armor",
+  "name": "Padded Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "light",
+  "ac": {
+   "text": "11 + Dex modifier",
+   "base": 11,
+   "dex_cap": null
+  },
+  "strength_required": null,
+  "stealth_disadvantage": true,
+  "don_doff": "1 Minute to Don or Doff",
+  "weight_lb": 8,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Light Armor (1 Minute to Don or Doff): AC 11 + Dex modifier",
+  "markdown": "**Armor:** Padded Armor\n**Armor Class (AC):** 11 + Dex modifier\n**Strength:** —\n**Stealth:** Disadvantage\n**Weight:** 8 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "armor:plate-armor",
+  "name": "Plate Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "heavy",
+  "ac": {
+   "text": "18",
+   "base": 18,
+   "dex_cap": 0
+  },
+  "strength_required": 15,
+  "stealth_disadvantage": true,
+  "don_doff": "10 Minutes to Don and 5 Minutes to Doff",
+  "weight_lb": 65,
+  "cost": {
+   "amount": 1500,
+   "unit": "gp"
+  },
+  "summary": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff): AC 18",
+  "markdown": "**Armor:** Plate Armor\n**Armor Class (AC):** 18\n**Strength:** Str 15\n**Stealth:** Disadvantage\n**Weight:** 65 lb.\n**Cost:** 1,500 GP"
+ },
+ {
+  "id": "armor:ring-mail",
+  "name": "Ring Mail",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "heavy",
+  "ac": {
+   "text": "14",
+   "base": 14,
+   "dex_cap": 0
+  },
+  "strength_required": null,
+  "stealth_disadvantage": true,
+  "don_doff": "10 Minutes to Don and 5 Minutes to Doff",
+  "weight_lb": 40,
+  "cost": {
+   "amount": 30,
+   "unit": "gp"
+  },
+  "summary": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff): AC 14",
+  "markdown": "**Armor:** Ring Mail\n**Armor Class (AC):** 14\n**Strength:** —\n**Stealth:** Disadvantage\n**Weight:** 40 lb.\n**Cost:** 30 GP"
+ },
+ {
+  "id": "armor:scale-mail",
+  "name": "Scale Mail",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "medium",
+  "ac": {
+   "text": "14 + Dex modifier (max 2)",
+   "base": 14,
+   "dex_cap": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": true,
+  "don_doff": "5 Minutes to Don and 1 Minute to Doff",
+  "weight_lb": 45,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Medium Armor (5 Minutes to Don and 1 Minute to Doff): AC 14 + Dex modifier (max 2)",
+  "markdown": "**Armor:** Scale Mail\n**Armor Class (AC):** 14 + Dex modifier (max 2)\n**Strength:** —\n**Stealth:** Disadvantage\n**Weight:** 45 lb.\n**Cost:** 50 GP"
+ },
+ {
+  "id": "armor:shield",
+  "name": "Shield",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "shield",
+  "ac": {
+   "text": "+2",
+   "bonus": 2
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "Utilize Action to Don or Doff",
+  "weight_lb": 6,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Shield (Utilize Action to Don or Doff): AC +2",
+  "markdown": "**Armor:** Shield\n**Armor Class (AC):** +2\n**Strength:** —\n**Stealth:** —\n**Weight:** 6 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "armor:splint-armor",
+  "name": "Splint Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "heavy",
+  "ac": {
+   "text": "17",
+   "base": 17,
+   "dex_cap": 0
+  },
+  "strength_required": 15,
+  "stealth_disadvantage": true,
+  "don_doff": "10 Minutes to Don and 5 Minutes to Doff",
+  "weight_lb": 60,
+  "cost": {
+   "amount": 200,
+   "unit": "gp"
+  },
+  "summary": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff): AC 17",
+  "markdown": "**Armor:** Splint Armor\n**Armor Class (AC):** 17\n**Strength:** Str 15\n**Stealth:** Disadvantage\n**Weight:** 60 lb.\n**Cost:** 200 GP"
+ },
+ {
+  "id": "armor:studded-leather-armor",
+  "name": "Studded Leather Armor",
+  "category": "armor",
+  "page": 92,
+  "armor_category": "light",
+  "ac": {
+   "text": "12 + Dex modifier",
+   "base": 12,
+   "dex_cap": null
+  },
+  "strength_required": null,
+  "stealth_disadvantage": false,
+  "don_doff": "1 Minute to Don or Doff",
+  "weight_lb": 13,
+  "cost": {
+   "amount": 45,
+   "unit": "gp"
+  },
+  "summary": "Light Armor (1 Minute to Don or Doff): AC 12 + Dex modifier",
+  "markdown": "**Armor:** Studded Leather Armor\n**Armor Class (AC):** 12 + Dex modifier\n**Strength:** —\n**Stealth:** —\n**Weight:** 13 lb.\n**Cost:** 45 GP"
+ }
+]

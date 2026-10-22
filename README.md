@@ -99,6 +99,9 @@ immediately, and a character open in the app updates within a second.
   sheet decorations. `tools/make_textures.py` generates the background textures.
 - `crates/charsheet-mcp`: the MCP server, built on `dnd-core` with
   [rmcp](https://crates.io/crates/rmcp).
+- `data/srd`: the whole SRD 5.2.1 as structured, searchable JSON (spells, monsters, magic
+  items, classes, equipment, rules text and more), generated from the SRD PDF by
+  `tools/srd` with `make srd`. See `data/srd/README.md` for the format.
 
 Rules data comes from the System Reference Document 5.2 by Wizards of the Coast,
 licensed under CC-BY-4.0.

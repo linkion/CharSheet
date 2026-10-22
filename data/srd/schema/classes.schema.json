@@ -1,0 +1,297 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 classes",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^class:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "class"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "primary_ability": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "strength",
+      "dexterity",
+      "constitution",
+      "intelligence",
+      "wisdom",
+      "charisma"
+     ]
+    },
+    "minItems": 1
+   },
+   "primary_ability_text": {
+    "type": "string"
+   },
+   "hit_die": {
+    "enum": [
+     6,
+     8,
+     10,
+     12
+    ]
+   },
+   "saving_throws": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "strength",
+      "dexterity",
+      "constitution",
+      "intelligence",
+      "wisdom",
+      "charisma"
+     ]
+    },
+    "minItems": 2,
+    "maxItems": 2
+   },
+   "skill_choices": {
+    "type": "object",
+    "properties": {
+     "count": {
+      "type": "integer"
+     },
+     "from": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "acrobatics",
+        "animal_handling",
+        "arcana",
+        "athletics",
+        "deception",
+        "history",
+        "insight",
+        "intimidation",
+        "investigation",
+        "medicine",
+        "nature",
+        "perception",
+        "performance",
+        "persuasion",
+        "religion",
+        "sleight_of_hand",
+        "stealth",
+        "survival"
+       ]
+      },
+      "minItems": 1
+     }
+    },
+    "required": [
+     "count",
+     "from"
+    ],
+    "additionalProperties": false
+   },
+   "weapon_proficiencies": {
+    "type": "string"
+   },
+   "armor_training": {
+    "type": "string"
+   },
+   "starting_equipment": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "level_1": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "multiclass": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "features_table": {
+    "type": "object",
+    "properties": {
+     "columns": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "rows": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "level",
+        "proficiency_bonus",
+        "features"
+       ],
+       "properties": {
+        "level": {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 20
+        },
+        "proficiency_bonus": {
+         "type": "integer",
+         "minimum": 2,
+         "maximum": 6
+        },
+        "features": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        },
+        "spell_slots": {
+         "type": "array",
+         "items": {
+          "type": "integer"
+         }
+        }
+       }
+      },
+      "minItems": 20,
+      "maxItems": 20
+     }
+    },
+    "required": [
+     "columns",
+     "rows"
+    ],
+    "additionalProperties": false
+   },
+   "features": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "level": {
+       "type": "integer"
+      },
+      "name": {
+       "type": "string"
+      },
+      "markdown": {
+       "type": "string",
+       "description": "Markdown"
+      }
+     },
+     "required": [
+      "level",
+      "name",
+      "markdown"
+     ],
+     "additionalProperties": false
+    },
+    "minItems": 1
+   },
+   "option_groups": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "intro": {
+       "type": "string",
+       "description": "Markdown"
+      },
+      "options": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "name": {
+          "type": "string"
+         },
+         "repeatable": {
+          "type": "boolean"
+         },
+         "markdown": {
+          "type": "string",
+          "description": "Markdown"
+         },
+         "prerequisite": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "name",
+         "repeatable",
+         "markdown"
+        ],
+        "additionalProperties": false
+       }
+      }
+     },
+     "required": [
+      "name",
+      "intro",
+      "options"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "spell_list": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "pattern": "^spell:[a-z0-9-]+$"
+    }
+   },
+   "subclasses": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "pattern": "^subclass:[a-z0-9-]+$"
+    },
+    "minItems": 1
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "tool_proficiencies": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "primary_ability",
+   "primary_ability_text",
+   "hit_die",
+   "saving_throws",
+   "skill_choices",
+   "weapon_proficiencies",
+   "armor_training",
+   "starting_equipment",
+   "level_1",
+   "multiclass",
+   "features_table",
+   "features",
+   "option_groups",
+   "spell_list",
+   "subclasses",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

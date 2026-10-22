@@ -1,0 +1,69 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 rules",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^rule:[a-z0-9/-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "rule"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "page_end": {
+    "type": "integer"
+   },
+   "path": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "minItems": 1
+   },
+   "parent": {
+    "type": [
+     "string",
+     "null"
+    ],
+    "pattern": "^rule:[a-z0-9/-]+$"
+   },
+   "children": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "pattern": "^rule:[a-z0-9/-]+$"
+    }
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "page_end",
+   "path",
+   "parent",
+   "children",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}

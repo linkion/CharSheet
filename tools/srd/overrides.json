@@ -1,0 +1,7 @@
+{
+  "_comment": "Hand fixes for misprints in the SRD 5.2.1 PDF, deep-merged into records by id after parsing. Keys starting with _ are notes.",
+  "monster:young-white-dragon": {
+    "_why": "The PDF prints the Intelligence save as 2; with no proficiency it equals the modifier, -2.",
+    "abilities": {"int": {"save": -2}}
+  }
+}

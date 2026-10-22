@@ -1,0 +1,1196 @@
+[
+ {
+  "id": "weapon:battleaxe",
+  "name": "Battleaxe",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d10"
+   }
+  ],
+  "mastery": "mastery_property:topple",
+  "weight_lb": 4,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Slashing; Versatile (1d10); mastery Topple",
+  "markdown": "**Name:** Battleaxe\n**Damage:** 1d8 Slashing\n**Properties:** Versatile (1d10)\n**Mastery:** Topple\n**Weight:** 4 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:blowgun",
+  "name": "Blowgun",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 25,
+     "long": 100
+    },
+    "ammunition": "needle"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 1,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1 Piercing; Ammunition (Range 25/100; Needle), Loading; mastery Vex",
+  "markdown": "**Name:** Blowgun\n**Damage:** 1 Piercing\n**Properties:** Ammunition (Range 25/100; Needle), Loading\n**Mastery:** Vex\n**Weight:** 1 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:club",
+  "name": "Club",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d4",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "summary": "Simple Melee Weapon: 1d4 Bludgeoning; Light; mastery Slow",
+  "markdown": "**Name:** Club\n**Damage:** 1d4 Bludgeoning\n**Properties:** Light\n**Mastery:** Slow\n**Weight:** 2 lb.\n**Cost:** 1 SP"
+ },
+ {
+  "id": "weapon:dagger",
+  "name": "Dagger",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d4",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   },
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   },
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   }
+  ],
+  "mastery": "mastery_property:nick",
+  "weight_lb": 1,
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d4 Piercing; Finesse, Light, Thrown (Range 20/60); mastery Nick",
+  "markdown": "**Name:** Dagger\n**Damage:** 1d4 Piercing\n**Properties:** Finesse, Light, Thrown (Range 20/60)\n**Mastery:** Nick\n**Weight:** 1 lb.\n**Cost:** 2 GP"
+ },
+ {
+  "id": "weapon:dart",
+  "name": "Dart",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": true,
+  "damage": {
+   "dice": "1d4",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   },
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 0.25,
+  "cost": {
+   "amount": 5,
+   "unit": "cp"
+  },
+  "summary": "Simple Ranged Weapon: 1d4 Piercing; Finesse, Thrown (Range 20/60); mastery Vex",
+  "markdown": "**Name:** Dart\n**Damage:** 1d4 Piercing\n**Properties:** Finesse, Thrown (Range 20/60)\n**Mastery:** Vex\n**Weight:** 1/4 lb.\n**Cost:** 5 CP"
+ },
+ {
+  "id": "weapon:flail",
+  "name": "Flail",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "bludgeoning"
+  },
+  "properties": [],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Bludgeoning; —; mastery Sap",
+  "markdown": "**Name:** Flail\n**Damage:** 1d8 Bludgeoning\n**Properties:** —\n**Mastery:** Sap\n**Weight:** 2 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:glaive",
+  "name": "Glaive",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d10",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:reach",
+    "name": "Reach"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:graze",
+  "weight_lb": 6,
+  "cost": {
+   "amount": 20,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d10 Slashing; Heavy, Reach, Two-Handed; mastery Graze",
+  "markdown": "**Name:** Glaive\n**Damage:** 1d10 Slashing\n**Properties:** Heavy, Reach, Two-Handed\n**Mastery:** Graze\n**Weight:** 6 lb.\n**Cost:** 20 GP"
+ },
+ {
+  "id": "weapon:greataxe",
+  "name": "Greataxe",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d12",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:cleave",
+  "weight_lb": 7,
+  "cost": {
+   "amount": 30,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d12 Slashing; Heavy, Two-Handed; mastery Cleave",
+  "markdown": "**Name:** Greataxe\n**Damage:** 1d12 Slashing\n**Properties:** Heavy, Two-Handed\n**Mastery:** Cleave\n**Weight:** 7 lb.\n**Cost:** 30 GP"
+ },
+ {
+  "id": "weapon:greatclub",
+  "name": "Greatclub",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:push",
+  "weight_lb": 10,
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "summary": "Simple Melee Weapon: 1d8 Bludgeoning; Two-Handed; mastery Push",
+  "markdown": "**Name:** Greatclub\n**Damage:** 1d8 Bludgeoning\n**Properties:** Two-Handed\n**Mastery:** Push\n**Weight:** 10 lb.\n**Cost:** 2 SP"
+ },
+ {
+  "id": "weapon:greatsword",
+  "name": "Greatsword",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "2d6",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:graze",
+  "weight_lb": 6,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 2d6 Slashing; Heavy, Two-Handed; mastery Graze",
+  "markdown": "**Name:** Greatsword\n**Damage:** 2d6 Slashing\n**Properties:** Heavy, Two-Handed\n**Mastery:** Graze\n**Weight:** 6 lb.\n**Cost:** 50 GP"
+ },
+ {
+  "id": "weapon:halberd",
+  "name": "Halberd",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d10",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:reach",
+    "name": "Reach"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:cleave",
+  "weight_lb": 6,
+  "cost": {
+   "amount": 20,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d10 Slashing; Heavy, Reach, Two-Handed; mastery Cleave",
+  "markdown": "**Name:** Halberd\n**Damage:** 1d10 Slashing\n**Properties:** Heavy, Reach, Two-Handed\n**Mastery:** Cleave\n**Weight:** 6 lb.\n**Cost:** 20 GP"
+ },
+ {
+  "id": "weapon:hand-crossbow",
+  "name": "Hand Crossbow",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1d6",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 30,
+     "long": 120
+    },
+    "ammunition": "bolt"
+   },
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 75,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1d6 Piercing; Ammunition (Range 30/120; Bolt), Light, Loading; mastery Vex",
+  "markdown": "**Name:** Hand Crossbow\n**Damage:** 1d6 Piercing\n**Properties:** Ammunition (Range 30/120; Bolt), Light, Loading\n**Mastery:** Vex\n**Weight:** 3 lb.\n**Cost:** 75 GP"
+ },
+ {
+  "id": "weapon:handaxe",
+  "name": "Handaxe",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   },
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d6 Slashing; Light, Thrown (Range 20/60); mastery Vex",
+  "markdown": "**Name:** Handaxe\n**Damage:** 1d6 Slashing\n**Properties:** Light, Thrown (Range 20/60)\n**Mastery:** Vex\n**Weight:** 2 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "weapon:heavy-crossbow",
+  "name": "Heavy Crossbow",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1d10",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 100,
+     "long": 400
+    },
+    "ammunition": "bolt"
+   },
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:push",
+  "weight_lb": 18,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1d10 Piercing; Ammunition (Range 100/400; Bolt), Heavy, Loading, Two-Handed; mastery Push",
+  "markdown": "**Name:** Heavy Crossbow\n**Damage:** 1d10 Piercing\n**Properties:** Ammunition (Range 100/400; Bolt), Heavy, Loading, Two-Handed\n**Mastery:** Push\n**Weight:** 18 lb.\n**Cost:** 50 GP"
+ },
+ {
+  "id": "weapon:javelin",
+  "name": "Javelin",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 30,
+     "long": 120
+    }
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 5,
+   "unit": "sp"
+  },
+  "summary": "Simple Melee Weapon: 1d6 Piercing; Thrown (Range 30/120); mastery Slow",
+  "markdown": "**Name:** Javelin\n**Damage:** 1d6 Piercing\n**Properties:** Thrown (Range 30/120)\n**Mastery:** Slow\n**Weight:** 2 lb.\n**Cost:** 5 SP"
+ },
+ {
+  "id": "weapon:lance",
+  "name": "Lance",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d10",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:reach",
+    "name": "Reach"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed",
+    "note": "unless mounted"
+   }
+  ],
+  "mastery": "mastery_property:topple",
+  "weight_lb": 6,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d10 Piercing; Heavy, Reach, Two-Handed (unless mounted); mastery Topple",
+  "markdown": "**Name:** Lance\n**Damage:** 1d10 Piercing\n**Properties:** Heavy, Reach, Two-Handed (unless mounted)\n**Mastery:** Topple\n**Weight:** 6 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:light-crossbow",
+  "name": "Light Crossbow",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": true,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 80,
+     "long": 320
+    },
+    "ammunition": "bolt"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 5,
+  "cost": {
+   "amount": 25,
+   "unit": "gp"
+  },
+  "summary": "Simple Ranged Weapon: 1d8 Piercing; Ammunition (Range 80/320; Bolt), Loading, Two-Handed; mastery Slow",
+  "markdown": "**Name:** Light Crossbow\n**Damage:** 1d8 Piercing\n**Properties:** Ammunition (Range 80/320; Bolt), Loading, Two-Handed\n**Mastery:** Slow\n**Weight:** 5 lb.\n**Cost:** 25 GP"
+ },
+ {
+  "id": "weapon:light-hammer",
+  "name": "Light Hammer",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d4",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   },
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   }
+  ],
+  "mastery": "mastery_property:nick",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d4 Bludgeoning; Light, Thrown (Range 20/60); mastery Nick",
+  "markdown": "**Name:** Light Hammer\n**Damage:** 1d4 Bludgeoning\n**Properties:** Light, Thrown (Range 20/60)\n**Mastery:** Nick\n**Weight:** 2 lb.\n**Cost:** 2 GP"
+ },
+ {
+  "id": "weapon:longbow",
+  "name": "Longbow",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 150,
+     "long": 600
+    },
+    "ammunition": "arrow"
+   },
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 50,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1d8 Piercing; Ammunition (Range 150/600; Arrow), Heavy, Two-Handed; mastery Slow",
+  "markdown": "**Name:** Longbow\n**Damage:** 1d8 Piercing\n**Properties:** Ammunition (Range 150/600; Arrow), Heavy, Two-Handed\n**Mastery:** Slow\n**Weight:** 2 lb.\n**Cost:** 50 GP"
+ },
+ {
+  "id": "weapon:longsword",
+  "name": "Longsword",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d10"
+   }
+  ],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 15,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Slashing; Versatile (1d10); mastery Sap",
+  "markdown": "**Name:** Longsword\n**Damage:** 1d8 Slashing\n**Properties:** Versatile (1d10)\n**Mastery:** Sap\n**Weight:** 3 lb.\n**Cost:** 15 GP"
+ },
+ {
+  "id": "weapon:mace",
+  "name": "Mace",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "bludgeoning"
+  },
+  "properties": [],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 4,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d6 Bludgeoning; —; mastery Sap",
+  "markdown": "**Name:** Mace\n**Damage:** 1d6 Bludgeoning\n**Properties:** —\n**Mastery:** Sap\n**Weight:** 4 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "weapon:maul",
+  "name": "Maul",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "2d6",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:topple",
+  "weight_lb": 10,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 2d6 Bludgeoning; Heavy, Two-Handed; mastery Topple",
+  "markdown": "**Name:** Maul\n**Damage:** 2d6 Bludgeoning\n**Properties:** Heavy, Two-Handed\n**Mastery:** Topple\n**Weight:** 10 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:morningstar",
+  "name": "Morningstar",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 4,
+  "cost": {
+   "amount": 15,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Piercing; —; mastery Sap",
+  "markdown": "**Name:** Morningstar\n**Damage:** 1d8 Piercing\n**Properties:** —\n**Mastery:** Sap\n**Weight:** 4 lb.\n**Cost:** 15 GP"
+ },
+ {
+  "id": "weapon:musket",
+  "name": "Musket",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1d12",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 40,
+     "long": 120
+    },
+    "ammunition": "bullet"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 10,
+  "cost": {
+   "amount": 500,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1d12 Piercing; Ammunition (Range 40/120; Bullet), Loading, Two-Handed; mastery Slow",
+  "markdown": "**Name:** Musket\n**Damage:** 1d12 Piercing\n**Properties:** Ammunition (Range 40/120; Bullet), Loading, Two-Handed\n**Mastery:** Slow\n**Weight:** 10 lb.\n**Cost:** 500 GP"
+ },
+ {
+  "id": "weapon:pike",
+  "name": "Pike",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d10",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:heavy",
+    "name": "Heavy"
+   },
+   {
+    "id": "weapon_property:reach",
+    "name": "Reach"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:push",
+  "weight_lb": 18,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d10 Piercing; Heavy, Reach, Two-Handed; mastery Push",
+  "markdown": "**Name:** Pike\n**Damage:** 1d10 Piercing\n**Properties:** Heavy, Reach, Two-Handed\n**Mastery:** Push\n**Weight:** 18 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "weapon:pistol",
+  "name": "Pistol",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": true,
+  "damage": {
+   "dice": "1d10",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 30,
+     "long": 90
+    },
+    "ammunition": "bullet"
+   },
+   {
+    "id": "weapon_property:loading",
+    "name": "Loading"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 250,
+   "unit": "gp"
+  },
+  "summary": "Martial Ranged Weapon: 1d10 Piercing; Ammunition (Range 30/90; Bullet), Loading; mastery Vex",
+  "markdown": "**Name:** Pistol\n**Damage:** 1d10 Piercing\n**Properties:** Ammunition (Range 30/90; Bullet), Loading\n**Mastery:** Vex\n**Weight:** 3 lb.\n**Cost:** 250 GP"
+ },
+ {
+  "id": "weapon:quarterstaff",
+  "name": "Quarterstaff",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d8"
+   }
+  ],
+  "mastery": "mastery_property:topple",
+  "weight_lb": 4,
+  "cost": {
+   "amount": 2,
+   "unit": "sp"
+  },
+  "summary": "Simple Melee Weapon: 1d6 Bludgeoning; Versatile (1d8); mastery Topple",
+  "markdown": "**Name:** Quarterstaff\n**Damage:** 1d6 Bludgeoning\n**Properties:** Versatile (1d8)\n**Mastery:** Topple\n**Weight:** 4 lb.\n**Cost:** 2 SP"
+ },
+ {
+  "id": "weapon:rapier",
+  "name": "Rapier",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 25,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Piercing; Finesse; mastery Vex",
+  "markdown": "**Name:** Rapier\n**Damage:** 1d8 Piercing\n**Properties:** Finesse\n**Mastery:** Vex\n**Weight:** 2 lb.\n**Cost:** 25 GP"
+ },
+ {
+  "id": "weapon:scimitar",
+  "name": "Scimitar",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   },
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   }
+  ],
+  "mastery": "mastery_property:nick",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 25,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d6 Slashing; Finesse, Light; mastery Nick",
+  "markdown": "**Name:** Scimitar\n**Damage:** 1d6 Slashing\n**Properties:** Finesse, Light\n**Mastery:** Nick\n**Weight:** 3 lb.\n**Cost:** 25 GP"
+ },
+ {
+  "id": "weapon:shortbow",
+  "name": "Shortbow",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": true,
+  "damage": {
+   "dice": "1d6",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 80,
+     "long": 320
+    },
+    "ammunition": "arrow"
+   },
+   {
+    "id": "weapon_property:two-handed",
+    "name": "Two-Handed"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 25,
+   "unit": "gp"
+  },
+  "summary": "Simple Ranged Weapon: 1d6 Piercing; Ammunition (Range 80/320; Arrow), Two-Handed; mastery Vex",
+  "markdown": "**Name:** Shortbow\n**Damage:** 1d6 Piercing\n**Properties:** Ammunition (Range 80/320; Arrow), Two-Handed\n**Mastery:** Vex\n**Weight:** 2 lb.\n**Cost:** 25 GP"
+ },
+ {
+  "id": "weapon:shortsword",
+  "name": "Shortsword",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   },
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   }
+  ],
+  "mastery": "mastery_property:vex",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 10,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d6 Piercing; Finesse, Light; mastery Vex",
+  "markdown": "**Name:** Shortsword\n**Damage:** 1d6 Piercing\n**Properties:** Finesse, Light\n**Mastery:** Vex\n**Weight:** 2 lb.\n**Cost:** 10 GP"
+ },
+ {
+  "id": "weapon:sickle",
+  "name": "Sickle",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d4",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:light",
+    "name": "Light"
+   }
+  ],
+  "mastery": "mastery_property:nick",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 1,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d4 Slashing; Light; mastery Nick",
+  "markdown": "**Name:** Sickle\n**Damage:** 1d4 Slashing\n**Properties:** Light\n**Mastery:** Nick\n**Weight:** 2 lb.\n**Cost:** 1 GP"
+ },
+ {
+  "id": "weapon:sling",
+  "name": "Sling",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": true,
+  "damage": {
+   "dice": "1d4",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:ammunition",
+    "name": "Ammunition",
+    "range": {
+     "normal": 30,
+     "long": 120
+    },
+    "ammunition": "bullet"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": null,
+  "cost": {
+   "amount": 1,
+   "unit": "sp"
+  },
+  "summary": "Simple Ranged Weapon: 1d4 Bludgeoning; Ammunition (Range 30/120; Bullet); mastery Slow",
+  "markdown": "**Name:** Sling\n**Damage:** 1d4 Bludgeoning\n**Properties:** Ammunition (Range 30/120; Bullet)\n**Mastery:** Slow\n**Weight:** —\n**Cost:** 1 SP"
+ },
+ {
+  "id": "weapon:spear",
+  "name": "Spear",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "simple",
+  "ranged": false,
+  "damage": {
+   "dice": "1d6",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   },
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d8"
+   }
+  ],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 1,
+   "unit": "gp"
+  },
+  "summary": "Simple Melee Weapon: 1d6 Piercing; Thrown (Range 20/60), Versatile (1d8); mastery Sap",
+  "markdown": "**Name:** Spear\n**Damage:** 1d6 Piercing\n**Properties:** Thrown (Range 20/60), Versatile (1d8)\n**Mastery:** Sap\n**Weight:** 3 lb.\n**Cost:** 1 GP"
+ },
+ {
+  "id": "weapon:trident",
+  "name": "Trident",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:thrown",
+    "name": "Thrown",
+    "range": {
+     "normal": 20,
+     "long": 60
+    }
+   },
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d10"
+   }
+  ],
+  "mastery": "mastery_property:topple",
+  "weight_lb": 4,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Piercing; Thrown (Range 20/60), Versatile (1d10); mastery Topple",
+  "markdown": "**Name:** Trident\n**Damage:** 1d8 Piercing\n**Properties:** Thrown (Range 20/60), Versatile (1d10)\n**Mastery:** Topple\n**Weight:** 4 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "weapon:war-pick",
+  "name": "War Pick",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "piercing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d10"
+   }
+  ],
+  "mastery": "mastery_property:sap",
+  "weight_lb": 2,
+  "cost": {
+   "amount": 5,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Piercing; Versatile (1d10); mastery Sap",
+  "markdown": "**Name:** War Pick\n**Damage:** 1d8 Piercing\n**Properties:** Versatile (1d10)\n**Mastery:** Sap\n**Weight:** 2 lb.\n**Cost:** 5 GP"
+ },
+ {
+  "id": "weapon:warhammer",
+  "name": "Warhammer",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d8",
+   "type": "bludgeoning"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:versatile",
+    "name": "Versatile",
+    "damage": "1d10"
+   }
+  ],
+  "mastery": "mastery_property:push",
+  "weight_lb": 5,
+  "cost": {
+   "amount": 15,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d8 Bludgeoning; Versatile (1d10); mastery Push",
+  "markdown": "**Name:** Warhammer\n**Damage:** 1d8 Bludgeoning\n**Properties:** Versatile (1d10)\n**Mastery:** Push\n**Weight:** 5 lb.\n**Cost:** 15 GP"
+ },
+ {
+  "id": "weapon:whip",
+  "name": "Whip",
+  "category": "weapon",
+  "page": 91,
+  "weapon_category": "martial",
+  "ranged": false,
+  "damage": {
+   "dice": "1d4",
+   "type": "slashing"
+  },
+  "properties": [
+   {
+    "id": "weapon_property:finesse",
+    "name": "Finesse"
+   },
+   {
+    "id": "weapon_property:reach",
+    "name": "Reach"
+   }
+  ],
+  "mastery": "mastery_property:slow",
+  "weight_lb": 3,
+  "cost": {
+   "amount": 2,
+   "unit": "gp"
+  },
+  "summary": "Martial Melee Weapon: 1d4 Slashing; Finesse, Reach; mastery Slow",
+  "markdown": "**Name:** Whip\n**Damage:** 1d4 Slashing\n**Properties:** Finesse, Reach\n**Mastery:** Slow\n**Weight:** 3 lb.\n**Cost:** 2 GP"
+ }
+]

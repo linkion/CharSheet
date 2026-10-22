@@ -1,0 +1,87 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "SRD 5.2.1 conditions",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^condition:[a-z0-9-]+$"
+   },
+   "name": {
+    "type": "string"
+   },
+   "category": {
+    "const": "condition"
+   },
+   "page": {
+    "type": "integer",
+    "minimum": 5,
+    "maximum": 364
+   },
+   "glossary": {
+    "type": "string",
+    "pattern": "^glossary:[a-z0-9-]+$"
+   },
+   "effects": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "markdown": {
+       "type": "string",
+       "description": "Markdown"
+      }
+     },
+     "required": [
+      "name",
+      "markdown"
+     ],
+     "additionalProperties": false
+    },
+    "minItems": 1
+   },
+   "summary": {
+    "type": "string"
+   },
+   "markdown": {
+    "type": "string",
+    "description": "Markdown"
+   },
+   "max_level": {
+    "type": "integer"
+   },
+   "per_level": {
+    "type": "object",
+    "properties": {
+     "d20_tests": {
+      "type": "integer"
+     },
+     "speed_ft": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "d20_tests",
+     "speed_ft"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "category",
+   "page",
+   "glossary",
+   "effects",
+   "summary",
+   "markdown"
+  ],
+  "additionalProperties": false
+ }
+}
