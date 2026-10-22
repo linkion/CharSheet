@@ -13,7 +13,7 @@ uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it.
 Fedora packages needed:
 
 ```sh
-sudo dnf install cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
+sudo dnf install cargo gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel \
     kf6-kirigami kf6-qqc2-desktop-style
 ```
 
@@ -26,12 +26,16 @@ cargo build --release
 ## Installing for your user
 
 ```sh
-cargo build --release
-install -Dm755 target/release/charsheet ~/.local/bin/charsheet
-install -Dm644 packaging/io.github.porave.CharSheet.desktop -t ~/.local/share/applications/
-install -Dm644 packaging/io.github.porave.CharSheet.svg -t ~/.local/share/icons/hicolor/scalable/apps/
-install -Dm644 packaging/io.github.porave.CharSheet.metainfo.xml -t ~/.local/share/metainfo/
+make install       # builds a release binary and installs to ~/.local
+make uninstall     # removes it again; your characters are kept
 ```
+
+This installs `~/.local/bin/charsheet` plus the launcher, icon and AppStream metadata, so
+CharSheet shows up in the application launcher. Make sure `~/.local/bin` is on your `PATH`.
+For a system-wide install use `sudo make install PREFIX=/usr/local`. `DESTDIR` works for
+staged (packaging) installs.
+
+Other targets: `make run`, `make test`, `make clean`.
 
 ## Usage
 

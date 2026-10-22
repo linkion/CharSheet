@@ -1,4 +1,5 @@
 mod bridge {
+    pub mod application;
     pub mod library;
     pub mod sheet;
 }
@@ -44,7 +45,8 @@ fn main() {
         std::process::exit(2);
     });
 
-    let mut app = QGuiApplication::new();
+    let process_args: Vec<String> = std::env::args().collect();
+    let mut app = bridge::application::ffi::new_application(&process_args);
     QGuiApplication::set_desktop_file_name(&QString::from("io.github.porave.CharSheet"));
     if std::env::var_os("QT_QUICK_CONTROLS_STYLE").is_none() {
         QQuickStyle::set_style(&QString::from("org.kde.desktop"));
@@ -65,6 +67,6 @@ fn main() {
         ));
     }
     if let Some(app) = app.as_mut() {
-        app.exec();
+        bridge::application::ffi::exec_application(app);
     }
 }

@@ -29,7 +29,13 @@ fn main() {
         ]))
         .qt_module("Quick")
         .qt_module("QuickControls2")
-        .files(["src/bridge/library.rs", "src/bridge/sheet.rs"]);
+        .qt_module("Widgets")
+        .include_dir("cpp")
+        .files([
+            "src/bridge/application.rs",
+            "src/bridge/library.rs",
+            "src/bridge/sheet.rs",
+        ]);
 
     // SAFETY: only adds a warning flag; GCC 16 warns about Qt's own headers otherwise.
     let builder = unsafe {
