@@ -69,6 +69,7 @@ SheetTab {
                     visible: modelData.description.length > 0
                     text: modelData.description
                     wrapMode: Text.WordWrap
+                    font.family: Style.proseFamily
                     opacity: 0.85
                     Layout.fillWidth: true
                 }

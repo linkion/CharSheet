@@ -17,21 +17,30 @@ SheetTab {
     Section {
         title: "Currency"
 
-        GridLayout {
-            columns: 2
+        // One small box per coin, copper to platinum, as on the sheet.
+        Flow {
+            Layout.fillWidth: true
+            spacing: Kirigami.Units.smallSpacing
             Repeater {
-                model: [["pp", "Platinum"], ["gp", "Gold"], ["ep", "Electrum"], ["sp", "Silver"], ["cp", "Copper"]]
-                delegate: RowLayout {
+                model: [["cp", "Copper"], ["sp", "Silver"], ["ep", "Electrum"], ["gp", "Gold"], ["pp", "Platinum"]]
+                delegate: SheetCard {
                     required property var modelData
-                    Layout.columnSpan: 2
-                    QQC2.Label {
-                        text: modelData[1]
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                    }
-                    SheetSpin {
-                        pointer: "/currency/" + modelData[0]
-                        fieldValue: App.c.currency ? App.c.currency[modelData[0]] : 0
-                        to: 9999999
+                    knob: "none"
+                    curl: 8
+                    contentItem: ColumnLayout {
+                        spacing: Kirigami.Units.smallSpacing
+                        FrameTitle {
+                            text: Style.decorated ? modelData[0] : modelData[1]
+                            scale: 1
+                            QQC2.ToolTip.text: modelData[1]
+                            QQC2.ToolTip.visible: coinHover.hovered
+                            HoverHandler { id: coinHover }
+                        }
+                        SheetSpin {
+                            pointer: "/currency/" + modelData[0]
+                            fieldValue: App.c.currency ? App.c.currency[modelData[0]] : 0
+                            to: 9999999
+                        }
                     }
                 }
             }

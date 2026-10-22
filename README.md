@@ -25,8 +25,10 @@ Fedora packages needed:
 
 ```sh
 sudo dnf install cargo gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel \
-    kf6-kirigami kf6-qqc2-desktop-style
+    kf6-kirigami kf6-qqc2-desktop-style kf6-kcolorscheme-devel kf6-kconfig-devel
 ```
+
+Set `KF6_INCLUDE_DIR` if the KDE Frameworks headers aren't in `/usr/include/KF6`.
 
 ```sh
 cargo run -p charsheet                  # debug build
@@ -54,6 +56,10 @@ Other targets: `make run`, `make test`, `make clean`.
 charsheet                               # open the character library
 charsheet --open "Brakka" --tab 1       # open a character by name or id on a tab (0-6)
 ```
+
+The ⋮ menu's Theme entry switches between *Stone*, styled after the 2024 character sheet,
+*Parchment*, styled after the Player's Handbook, and *System*, which uses your desktop's
+colors and fonts.
 
 Characters and their recent dice rolls are stored in a SQLite database at
 `~/.local/share/charsheet/charsheet.db`. Use Export/Import on the library page to share a
@@ -88,9 +94,14 @@ immediately, and a character open in the app updates within a second.
 - `crates/dnd-core`: the model, rules (SRD 5.2 tables), dice, JSON-pointer edits, play
   actions and storage. It has no Qt dependency and is unit-tested.
 - `crates/charsheet`: the Qt app. `src/bridge/` exposes `CharacterLibrary` and
-  `CharacterSheet` to QML, and `qml/` holds the Kirigami UI.
+  `CharacterSheet` to QML, and `qml/` holds the Kirigami UI. `cpp/theme.h` applies the
+  bundled color schemes in `theme/`, and `qml/SheetFrame.qml` and its neighbours draw the
+  sheet decorations. `tools/make_textures.py` generates the background textures.
 - `crates/charsheet-mcp`: the MCP server, built on `dnd-core` with
   [rmcp](https://crates.io/crates/rmcp).
 
 Rules data comes from the System Reference Document 5.2 by Wizards of the Coast,
 licensed under CC-BY-4.0.
+
+The bundled fonts in `crates/charsheet/fonts/` are Solbera's 5e font imitations (with fixes
+by Ryrok, Ners and LUCASTUCIOUS), licensed under CC-BY-SA-4.0; see the README there.

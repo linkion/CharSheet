@@ -24,7 +24,11 @@ inline std::unique_ptr<QApplication> new_application(rust::Slice<const rust::Str
     }
     argv.push_back(nullptr);
     argc = static_cast<int>(storage.size());
-    return std::make_unique<QApplication>(argc, argv.data());
+    auto app = std::make_unique<QApplication>(argc, argv.data());
+    // Where QSettings keeps preferences such as the theme.
+    QApplication::setOrganizationName(QStringLiteral("porave"));
+    QApplication::setApplicationName(QStringLiteral("charsheet"));
+    return app;
 }
 
 inline int exec_application(QApplication &)

@@ -40,29 +40,71 @@ SheetTab {
         columns: 4
         columnSpacing: Kirigami.Units.largeSpacing
 
-        StatTile { label: "Armor Class"; value: App.d.armor_class ?? "" }
-        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0 }
-        StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft" }
-        StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0) }
+        StatTile { label: "Armor Class"; value: App.d.armor_class ?? ""; shape: "shield"; Layout.fillHeight: true }
+        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0; Layout.fillHeight: true }
+        StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft"; Layout.fillHeight: true }
+        StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0); Layout.fillHeight: true }
     }
 
     Section {
         title: "Hit Points"
 
+        // Current, temporary and maximum hit points, as on the sheet.
         RowLayout {
             Layout.fillWidth: true
-            Kirigami.Heading {
-                text: (App.c.hp?.current ?? 0) + " / " + (App.d.max_hp ?? 0)
-                level: 1
-                color: (App.c.hp?.current ?? 1) === 0 ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
+            spacing: Kirigami.Units.largeSpacing
+
+            // The model holds no theme colors: a model that changed with the theme would be
+            // rebuilt while Kirigami is still notifying its delegates, which crashes.
+            Repeater {
+                model: [
+                    { key: "current", label: "Current", large: true },
+                    { key: "temp", label: "Temp", large: false },
+                    { key: "max", label: "Max", large: false }
+                ]
+
+                RowLayout {
+                    required property var modelData
+                    required property int index
+                    Layout.fillWidth: modelData.large
+                    spacing: Kirigami.Units.largeSpacing
+
+                    Rectangle {
+                        visible: index > 0
+                        implicitWidth: 1.5
+                        color: Style.decorated ? Style.frameOuter : Kirigami.Theme.disabledTextColor
+                        Layout.fillHeight: true
+                    }
+                    ColumnLayout {
+                        spacing: 0
+                        Layout.fillWidth: true
+                        QQC2.Label {
+                            readonly property int current: App.c.hp?.current ?? 0
+                            readonly property int temp: App.c.hp?.temp ?? 0
+                            text: modelData.key === "current" ? current : modelData.key === "temp" ? temp : (App.d.max_hp ?? 0)
+                            color: modelData.key === "current" && current === 0 ? Kirigami.Theme.negativeTextColor
+                                 : modelData.key === "temp" ? (temp > 0 ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.disabledTextColor)
+                                 : Kirigami.Theme.textColor
+                            font.family: Style.displayFamily
+                            font.bold: !Style.decorated
+                            font.pointSize: Kirigami.Theme.defaultFont.pointSize * (modelData.large ? 2.6 : 1.7)
+                        }
+                        Rectangle {
+                            implicitHeight: 1
+                            color: Style.decorated ? Style.frameInner : Kirigami.Theme.disabledTextColor
+                            Layout.fillWidth: true
+                        }
+                        QQC2.Label {
+                            text: modelData.label
+                            opacity: 0.75
+                            font.family: Style.labelFamily
+                            font.capitalization: Font.AllUppercase
+                            font.letterSpacing: 1
+                            font.pointSize: Kirigami.Theme.smallFont.pointSize
+                        }
+                    }
+                }
             }
-            QQC2.Label {
-                visible: (App.c.hp?.temp ?? 0) > 0
-                text: "+" + (App.c.hp?.temp ?? 0) + " temp"
-                color: Kirigami.Theme.positiveTextColor
-                font.bold: true
-            }
-            Item { Layout.fillWidth: true }
         }
 
         QQC2.ProgressBar {

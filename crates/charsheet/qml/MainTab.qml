@@ -4,78 +4,130 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
+// The front of the character sheet: who the character is, their headline numbers, and
+// each ability with its saving throw and skills.
 SheetTab {
     id: tab
 
-    readonly property var proficiencyGlyph: ({ none: "○", proficient: "●", expertise: "◉" })
-    readonly property var nextProficiency: ({ none: "proficient", proficient: "expertise", expertise: "none" })
+    readonly property bool wide: width > Kirigami.Units.gridUnit * 36
 
-    // Summary line and quick stats span the full width.
-    QQC2.Label {
-        Layout.fillWidth: true
-        Layout.columnSpan: 2
-        text: "Level " + App.d.total_level + " " + [App.c.species, App.d.class_summary].filter(s => s).join(" · ")
-              + (App.c.background ? "  —  " + App.c.background : "")
-        wrapMode: Text.WordWrap
-        opacity: 0.8
+    function skillsFor(ability) {
+        return (App.d.skills || []).filter(s => s.ability === ability.abbrev)
     }
 
+    // Identity, level, armor class and hit points, like the top band of the sheet.
     GridLayout {
         Layout.fillWidth: true
         Layout.columnSpan: 2
-        columns: width > Kirigami.Units.gridUnit * 36 ? 6 : 3
+        columns: tab.wide ? 4 : 3
         columnSpacing: Kirigami.Units.largeSpacing
         rowSpacing: Kirigami.Units.largeSpacing
 
-        Repeater {
-            model: App.d.abilities
+        SheetCard {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.columnSpan: tab.wide ? 1 : 3
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 20
 
-            Kirigami.AbstractCard {
-                required property var modelData
-                Layout.fillWidth: true
-                contentItem: ColumnLayout {
-                    spacing: 0
-                    QQC2.Label {
-                        text: modelData.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
+            contentItem: GridLayout {
+                columns: 2
+                columnSpacing: Kirigami.Units.largeSpacing
+                rowSpacing: Kirigami.Units.smallSpacing
+
+                Repeater {
+                    model: [
+                        ["Background", App.c.background],
+                        ["Class", App.d.class_summary],
+                        ["Species", App.c.species],
+                        ["Alignment", App.c.alignment]
+                    ]
+
+                    ColumnLayout {
+                        required property var modelData
+                        spacing: 1
                         Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-                    RollButton {
-                        modifier: modelData.modifier
-                        rollLabel: modelData.name + " check"
-                        textScale: 1.8
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-                    QQC2.Label {
-                        text: modelData.score
-                        opacity: 0.7
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+
+                        QQC2.Label {
+                            text: modelData[1] || "—"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                        Rectangle {
+                            implicitHeight: 1
+                            color: Style.decorated ? Style.frameInner : Kirigami.Theme.disabledTextColor
+                            Layout.fillWidth: true
+                        }
+                        QQC2.Label {
+                            text: modelData[0]
+                            opacity: 0.75
+                            font.family: Style.labelFamily
+                            font.capitalization: Font.AllUppercase
+                            font.letterSpacing: 1
+                            font.pointSize: Kirigami.Theme.smallFont.pointSize
+                        }
                     }
                 }
             }
         }
+
+        StatTile {
+            label: "Level"
+            value: App.d.total_level ?? ""
+            shape: "oval"
+            Layout.fillWidth: false
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 6
+            Layout.fillHeight: true
+        }
+        StatTile {
+            label: "Armor Class"
+            value: App.d.armor_class ?? ""
+            shape: "shield"
+            Layout.fillWidth: false
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 6.5
+            Layout.fillHeight: true
+        }
+        StatTile {
+            label: "Hit Points"
+            value: (App.c.hp?.current ?? 0) + " / " + (App.d.max_hp ?? 0)
+                   + ((App.c.hp?.temp ?? 0) > 0 ? "  +" + App.c.hp.temp : "")
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+            Layout.fillHeight: true
+        }
+    }
+
+    BannerRule {
+        Layout.fillWidth: true
+        Layout.columnSpan: 2
+        text: App.c.name || ""
     }
 
     GridLayout {
         Layout.fillWidth: true
         Layout.columnSpan: 2
-        columns: width > Kirigami.Units.gridUnit * 36 ? 7 : 4
+        columns: tab.wide ? 7 : 4
         columnSpacing: Kirigami.Units.largeSpacing
         rowSpacing: Kirigami.Units.largeSpacing
 
         StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0) }
-        StatTile { label: "Armor Class"; value: App.d.armor_class ?? "" }
         StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0 }
         StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft" }
         StatTile { label: "Passive Perception"; value: App.d.passive_perception ?? "" }
         StatTile { label: "Passive Insight"; value: App.d.passive_insight ?? "" }
-        Kirigami.AbstractCard {
+        StatTile { label: "Passive Investigation"; value: App.d.passive_investigation ?? "" }
+        SheetCard {
             Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumWidth: Kirigami.Units.gridUnit * 5
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 6
             contentItem: ColumnLayout {
+                FrameTitle {
+                    visible: Style.decorated
+                    text: "Heroic Inspiration"
+                    scale: 1
+                }
                 QQC2.Label {
+                    visible: !Style.decorated
                     text: "Heroic Inspiration"
                     opacity: 0.7
                     font: Kirigami.Theme.smallFont
@@ -83,7 +135,15 @@ SheetTab {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                 }
+                DiamondPip {
+                    visible: Style.decorated
+                    size: Kirigami.Units.gridUnit * 1.8
+                    checked: App.c.heroic_inspiration ?? false
+                    onToggled: App.set("/heroic_inspiration", checked)
+                    Layout.alignment: Qt.AlignHCenter
+                }
                 QQC2.Switch {
+                    visible: !Style.decorated
                     checked: App.c.heroic_inspiration ?? false
                     onToggled: App.set("/heroic_inspiration", checked)
                     Layout.alignment: Qt.AlignHCenter
@@ -100,84 +160,24 @@ SheetTab {
         text: "Exhaustion " + App.c.exhaustion + ": " + App.d.d20_penalty + " to every d20 test (already included below)."
     }
 
-    Section {
-        title: "Saving Throws"
+    // The abilities in two columns, as on the sheet: STR, DEX, CON, then INT, WIS, CHA.
+    Repeater {
+        model: [[0, 1, 2], [3, 4, 5]]
 
-        Repeater {
-            model: App.d.abilities
-
-            RowLayout {
-                required property var modelData
-                Layout.fillWidth: true
-
-                QQC2.CheckBox {
-                    checked: modelData.save_proficient
-                    enabled: !modelData.save_from_class
-                    onToggled: {
-                        const saves = (App.c.extra_saves || []).filter(a => a !== modelData.key)
-                        if (checked)
-                            saves.push(modelData.key)
-                        App.set("/extra_saves", saves)
-                    }
-                    QQC2.ToolTip.text: modelData.save_from_class ? "Proficient from your starting class" : "Proficient"
-                    QQC2.ToolTip.visible: hovered
-                }
-                QQC2.Label {
-                    text: modelData.name
-                    Layout.fillWidth: true
-                }
-                RollButton {
-                    modifier: modelData.save
-                    rollLabel: modelData.name + " save"
-                }
-            }
-        }
-
-        Kirigami.Separator { Layout.fillWidth: true }
-
-        RowLayout {
+        ColumnLayout {
+            required property var modelData
             Layout.fillWidth: true
-            QQC2.Label {
-                text: "Passive Investigation"
-                Layout.fillWidth: true
-            }
-            QQC2.Label {
-                text: App.d.passive_investigation ?? ""
-                font.bold: true
-                rightPadding: Kirigami.Units.largeSpacing
-            }
-        }
-    }
+            Layout.alignment: Qt.AlignTop
+            Layout.preferredWidth: 1
+            spacing: Kirigami.Units.largeSpacing
 
-    Section {
-        title: "Skills"
+            Repeater {
+                model: modelData.map(i => (App.d.abilities || [])[i]).filter(a => a)
 
-        Repeater {
-            model: App.d.skills
-
-            RowLayout {
-                required property var modelData
-                Layout.fillWidth: true
-
-                QQC2.ToolButton {
-                    text: tab.proficiencyGlyph[modelData.proficiency]
-                    onClicked: App.set("/skills/" + modelData.key, tab.nextProficiency[modelData.proficiency])
-                    QQC2.ToolTip.text: ({ none: "Not proficient", proficient: "Proficient", expertise: "Expertise" })[modelData.proficiency] + " — click to change"
-                    QQC2.ToolTip.visible: hovered
-                }
-                QQC2.Label {
-                    text: modelData.name
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
-                }
-                QQC2.Label {
-                    text: modelData.ability
-                    opacity: 0.6
-                    font: Kirigami.Theme.smallFont
-                }
-                RollButton {
-                    modifier: modelData.modifier
-                    rollLabel: modelData.name
+                AbilityBox {
+                    required property var modelData
+                    ability: modelData
+                    skills: tab.skillsFor(modelData)
                 }
             }
         }

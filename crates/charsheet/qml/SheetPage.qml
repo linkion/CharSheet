@@ -55,8 +55,11 @@ Kirigami.Page {
             icon.name: "go-sleep"
             displayHint: Kirigami.DisplayHint.AlwaysHide
             onTriggered: longRestDialog.open()
-        }
+        },
+        ThemeAction {}
     ]
+
+    background: SheetBackground {}
 
     header: QQC2.TabBar {
         id: tabs

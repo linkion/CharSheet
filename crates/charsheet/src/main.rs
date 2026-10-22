@@ -2,6 +2,7 @@ mod bridge {
     pub mod application;
     pub mod library;
     pub mod sheet;
+    pub mod theme;
 }
 
 use cxx_qt_lib::{
@@ -51,6 +52,8 @@ fn main() {
     if std::env::var_os("QT_QUICK_CONTROLS_STYLE").is_none() {
         QQuickStyle::set_style(&QString::from("org.kde.desktop"));
     }
+    bridge::application::ffi::register_fonts();
+    bridge::application::ffi::apply_theme(&bridge::application::ffi::saved_theme());
 
     let mut properties = QMap::<QMapPair_QString_QVariant>::default();
     properties.insert(

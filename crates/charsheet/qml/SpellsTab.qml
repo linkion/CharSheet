@@ -60,6 +60,9 @@ SheetTab {
 
                 QQC2.Label {
                     text: tab.levelNames[index + 1]
+                    font.family: Style.labelFamily
+                    font.capitalization: Style.decorated ? Font.AllUppercase : Font.MixedCase
+                    font.letterSpacing: Style.decorated ? 1 : 0
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 5
                 }
                 PipRow {
@@ -76,6 +79,9 @@ SheetTab {
             Layout.fillWidth: true
             QQC2.Label {
                 text: "Pact (level " + App.d.pact_slot_level + ")"
+                font.family: Style.labelFamily
+                font.capitalization: Style.decorated ? Font.AllUppercase : Font.MixedCase
+                font.letterSpacing: Style.decorated ? 1 : 0
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 5
             }
             PipRow {

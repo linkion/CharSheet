@@ -2,9 +2,10 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import io.github.porave.charsheet
 
 // A titled card used to group parts of the sheet.
-Kirigami.AbstractCard {
+SheetCard {
     id: section
 
     property string title
@@ -19,16 +20,23 @@ Kirigami.AbstractCard {
 
         RowLayout {
             Layout.fillWidth: true
-            Kirigami.Heading {
-                text: section.title
-                level: 3
-                Layout.fillWidth: true
+            // Balances the actions so a centered title stays centered.
+            Item {
+                visible: Style.decorated
+                implicitWidth: actions.implicitWidth
             }
-            Repeater {
-                model: section.headerActions
-                QQC2.ToolButton {
-                    required property var modelData
-                    action: modelData
+            FrameTitle {
+                text: section.title
+            }
+            RowLayout {
+                id: actions
+                spacing: 0
+                Repeater {
+                    model: section.headerActions
+                    QQC2.ToolButton {
+                        required property var modelData
+                        action: modelData
+                    }
                 }
             }
         }

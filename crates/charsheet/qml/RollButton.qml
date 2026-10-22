@@ -26,6 +26,8 @@ QQC2.Button {
     contentItem: QQC2.Label {
         text: button.label
         font.bold: true
+        // Large modifiers use the sheet's display face; row-sized ones stay in the UI font.
+        font.family: button.textScale > 1 ? Style.displayFamily : Style.uiFamily
         font.pointSize: Kirigami.Theme.defaultFont.pointSize * button.textScale
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter

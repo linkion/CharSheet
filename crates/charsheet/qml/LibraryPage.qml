@@ -20,8 +20,11 @@ Kirigami.ScrollablePage {
             text: "Import…"
             icon.name: "document-import"
             onTriggered: importDialog.open()
-        }
+        },
+        ThemeAction {}
     ]
+
+    background: SheetBackground {}
 
     Kirigami.CardsLayout {
         id: cards
@@ -30,7 +33,18 @@ Kirigami.ScrollablePage {
             model: App.entries
 
             Kirigami.Card {
+                id: card
                 required property var modelData
+
+                background.visible: !Style.decorated
+                padding: Style.decorated ? Kirigami.Units.largeSpacing + 4 : Kirigami.Units.largeSpacing
+
+                SheetFrame {
+                    parent: card
+                    z: -1
+                    anchors.fill: parent
+                    visible: Style.decorated
+                }
 
                 banner.title: modelData.name
                 banner.titleIcon: "user-identity"
