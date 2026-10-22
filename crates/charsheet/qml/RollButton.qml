@@ -12,8 +12,11 @@ QQC2.Button {
     // Text size relative to the default font.
     property real textScale: 1
 
-    text: App.signed(modifier)
+    // The desktop style paints `text` itself, under the label below, so it stays empty.
+    readonly property string label: App.signed(modifier)
+
     flat: true
+    Accessible.name: label
     onClicked: App.rollD20(modifier, rollLabel)
     QQC2.ToolTip.text: "Roll " + rollLabel
     QQC2.ToolTip.visible: hovered
@@ -21,7 +24,7 @@ QQC2.Button {
 
     // The desktop style ignores font changes on buttons, so draw the label ourselves.
     contentItem: QQC2.Label {
-        text: button.text
+        text: button.label
         font.bold: true
         font.pointSize: Kirigami.Theme.defaultFont.pointSize * button.textScale
         horizontalAlignment: Text.AlignHCenter
