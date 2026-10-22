@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=CharSheet
+GenericName=D&D Character Sheet
+Comment=Keep your D&D 5e (2024) character sheets
+Exec=charsheet
+Icon=io.github.porave.CharSheet
+Terminal=false
+Categories=Game;RolePlaying;
+Keywords=dnd;d&d;dungeons;dragons;rpg;ttrpg;character;sheet;dice;
+StartupWMClass=charsheet

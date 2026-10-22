@@ -1,0 +1,54 @@
+# CharSheet
+
+A KDE desktop app for Dungeons & Dragons 5e (2024 rules) character sheets, written in Rust
+with Qt 6 and Kirigami ([cxx-qt](https://github.com/KDAB/cxx-qt)).
+
+You enter ability scores, classes and gear. The sheet works out modifiers, proficiency,
+saves, skills, AC, initiative, spell save DC and attack, and spell slots (including
+multiclassing and Pact Magic). It also tracks HP, hit dice, death saves, slots, feature
+uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it.
+
+## Building
+
+Fedora packages needed:
+
+```sh
+sudo dnf install cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
+    kf6-kirigami kf6-qqc2-desktop-style
+```
+
+```sh
+cargo run -p charsheet                  # debug build
+cargo test -p dnd-core                  # rules engine tests
+cargo build --release
+```
+
+## Installing for your user
+
+```sh
+cargo build --release
+install -Dm755 target/release/charsheet ~/.local/bin/charsheet
+install -Dm644 packaging/io.github.porave.CharSheet.desktop -t ~/.local/share/applications/
+install -Dm644 packaging/io.github.porave.CharSheet.svg -t ~/.local/share/icons/hicolor/scalable/apps/
+install -Dm644 packaging/io.github.porave.CharSheet.metainfo.xml -t ~/.local/share/metainfo/
+```
+
+## Usage
+
+```sh
+charsheet                               # open the character library
+charsheet --open "Brakka" --tab 1       # open a character by name or id on a tab (0-6)
+```
+
+Characters are stored as one JSON file each in `~/.local/share/charsheet/characters/`.
+Use Export/Import on the library page to share them.
+
+## Layout
+
+- `crates/dnd-core`: the model, rules (SRD 5.2 tables), dice, JSON-pointer edits and
+  storage. It has no Qt dependency and is unit-tested.
+- `crates/charsheet`: the Qt app. `src/bridge/` exposes `CharacterLibrary` and
+  `CharacterSheet` to QML, and `qml/` holds the Kirigami UI.
+
+Rules data comes from the System Reference Document 5.2 by Wizards of the Coast,
+licensed under CC-BY-4.0.
