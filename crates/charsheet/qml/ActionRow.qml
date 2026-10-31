@@ -30,6 +30,10 @@ SheetRow {
             maximumLineCount: 2
         }
     }
+    RuleButton {
+        name: row.action.name
+        categories: row.action.owner === "spell" ? ["spell"] : []
+    }
     QQC2.Label {
         visible: !!row.action.resource
         text: row.action.resource ? row.action.resource.left + (row.action.resource.label === "left" ? " left" : " / " + row.action.resource.max) : ""

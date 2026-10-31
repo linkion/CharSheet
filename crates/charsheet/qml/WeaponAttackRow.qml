@@ -39,12 +39,13 @@ ColumnLayout {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
-            QQC2.Label {
-                text: [row.a.range === "melee" ? "Melee" : "Range " + row.a.range, row.a.damage_type,
-                       row.a.mastery ? "Mastery: " + row.a.mastery : ""].filter(s => s).join(" · ")
+            ProseLine {
+                links: [App.escaped(row.a.range === "melee" ? "Melee" : "Range " + row.a.range),
+                        App.escaped(row.a.damage_type ?? ""),
+                        row.a.mastery ? "Mastery: " + App.ruleLink(row.a.mastery, ["mastery_property"]) : ""]
+                       .concat((row.a.properties ?? []).map(p => App.ruleLink(p.split(" (")[0], ["weapon_property"], p)))
+                       .filter(s => s).join(" · ")
                 opacity: 0.7
-                Layout.fillWidth: true
-                elide: Text.ElideRight
             }
         }
         QQC2.Button {

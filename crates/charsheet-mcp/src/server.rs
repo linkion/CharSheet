@@ -1248,7 +1248,12 @@ mod tests {
             .await,
         );
         assert_eq!(rec["name"], "Prone");
-        assert!(rec["markdown"].as_str().unwrap().contains("Restricted Movement"));
+        assert!(
+            rec["markdown"]
+                .as_str()
+                .unwrap()
+                .contains("Restricted Movement")
+        );
         assert!(rec["attribution"].as_str().unwrap().contains("SRD 5.2.1"));
         assert!(
             s.get_srd(Parameters(GetSrdArg {

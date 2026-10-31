@@ -371,8 +371,9 @@ SheetTab {
                         elide: Text.ElideRight
                     }
                     ProseLine {
-                        prefix: [modelData.damage_type, modelData.mastery ? "Mastery: " + modelData.mastery : ""]
-                                .filter(s => s).join(" · ")
+                        links: [App.escaped(modelData.damage_type ?? ""),
+                                modelData.mastery ? "Mastery: " + App.ruleLink(modelData.mastery, ["mastery_property"]) : ""]
+                               .filter(s => s).join(" · ")
                         source: modelData.notes ?? ""
                         opacity: 0.7
                     }
@@ -499,7 +500,10 @@ SheetTab {
         title: "Conditions"
 
         RowLayout {
-            QQC2.Label { text: "Exhaustion" }
+            ProseLine {
+                links: App.ruleLink("Exhaustion", ["condition"])
+                Layout.fillWidth: false
+            }
             SheetSpin {
                 pointer: "/exhaustion"
                 fieldValue: App.c.exhaustion ?? 0
@@ -529,8 +533,26 @@ SheetTab {
                             list.push(modelData.key)
                         App.set("/conditions", list)
                     }
+
+                    readonly property string rule: Srd.find(modelData.name, JSON.stringify(["condition"]))
+                    QQC2.ToolTip.text: "Right-click for the rules"
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    // A TapHandler would let the chip see the click and toggle as well.
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.RightButton
+                        onClicked: App.ruleRequested(parent.rule)
+                    }
                 }
             }
+        }
+
+        // The conditions in force, as links for screens with no right click.
+        ProseLine {
+            links: App.catalog.conditions
+                   .filter(c => (App.c.conditions || []).includes(c.key))
+                   .map(c => App.ruleLink(c.name, ["condition"])).join(" · ")
         }
     }
 
