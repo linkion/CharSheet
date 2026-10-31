@@ -4,12 +4,14 @@ use crate::classes::{self, CasterKind, ClassId};
 use crate::effects::{
     Action, Activation, Cost, Effect, Modifier, ModifierKind, Outcome, RollEffect,
 };
+use crate::formula::{self, FormulaError, Vars};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
-/// 2 added items with weapon stats, modifiers and actions, plus active effects.
-pub const SCHEMA_VERSION: u32 = 2;
+/// 2 added items with weapon stats, modifiers and actions, plus active effects. 3 added
+/// formulas that keep values following the character, and dawn recharge.
+pub const SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -98,6 +100,8 @@ pub struct Spell {
     pub free_uses_spent: u32,
     /// Dice rolled when cast, e.g. `2d8+2`; empty for none.
     pub roll: String,
+    /// Keeps `roll` following the character, e.g. `{cantrip}d10`; empty for fixed dice.
+    pub roll_formula: String,
     pub roll_effect: RollEffect,
     /// Applied to the character when cast.
     pub effect: Option<Effect>,
@@ -116,6 +120,7 @@ impl Default for Spell {
             free_uses_max: 0,
             free_uses_spent: 0,
             roll: String::new(),
+            roll_formula: String::new(),
             roll_effect: RollEffect::None,
             effect: None,
         }
@@ -207,6 +212,8 @@ pub struct Item {
     pub charges_max: u32,
     pub charges_spent: u32,
     pub recharge: Recharge,
+    /// Dice of charges regained at dawn, e.g. `1d6+1`; empty regains them all.
+    pub regain: String,
     /// Apply while equipped (and attuned, if it needs attunement). Ammunition modifiers
     /// apply to the weapon firing it instead.
     pub modifiers: Vec<Modifier>,
@@ -230,6 +237,7 @@ impl Default for Item {
             charges_max: 0,
             charges_spent: 0,
             recharge: Recharge::None,
+            regain: String::new(),
             modifiers: Vec::new(),
             actions: Vec::new(),
         }
@@ -259,6 +267,8 @@ pub struct Feature {
     pub source: String,
     pub description: String,
     pub uses_max: u32,
+    /// Keeps `uses_max` following the character, e.g. `{pb}`; empty for a fixed number.
+    pub uses_formula: String,
     pub uses_spent: u32,
     pub recharge: Recharge,
     /// Always apply.
@@ -273,6 +283,7 @@ impl Default for Feature {
             source: String::new(),
             description: String::new(),
             uses_max: 0,
+            uses_formula: String::new(),
             uses_spent: 0,
             recharge: Recharge::None,
             modifiers: Vec::new(),
@@ -492,6 +503,32 @@ impl Default for Character {
             riders_used: BTreeSet::new(),
         }
     }
+}
+
+fn resolve_modifiers(modifiers: &mut [Modifier], vars: &Vars) -> Result<(), FormulaError> {
+    modifiers
+        .iter_mut()
+        .filter(|m| !m.value_formula.trim().is_empty())
+        .map(|m| formula::number(&m.value_formula, vars).map(|n| m.value = n))
+        .fold(Ok(()), Result::and)
+}
+
+fn resolve_actions(actions: &mut [Action], vars: &Vars) -> Result<(), FormulaError> {
+    actions
+        .iter_mut()
+        .map(|a| {
+            let roll = if a.roll_formula.trim().is_empty() {
+                Ok(())
+            } else {
+                formula::dice(&a.roll_formula, vars).map(|d| a.roll = d)
+            };
+            let effect = match &mut a.effect {
+                Some(e) => resolve_modifiers(&mut e.modifiers, vars),
+                None => Ok(()),
+            };
+            roll.and(effect)
+        })
+        .fold(Ok(()), Result::and)
 }
 
 impl Character {
@@ -1219,6 +1256,23 @@ impl Character {
         seen
     }
 
+    /// The spellcasting ability of the highest-level casting class.
+    pub fn main_spell_ability(&self) -> Option<Ability> {
+        self.classes
+            .iter()
+            .filter_map(|c| {
+                let info = c.class.info();
+                let third = c.third_caster && info.caster == CasterKind::None;
+                let ability = info.spell_ability.or(third.then_some(Ability::Int))?;
+                Some((c.level, ability))
+            })
+            .fold(None, |best: Option<(u32, Ability)>, next| match best {
+                Some((level, _)) if level >= next.0 => best,
+                _ => Some(next),
+            })
+            .map(|(_, ability)| ability)
+    }
+
     pub fn spell_save_dc(&self, ability: Ability) -> i32 {
         8 + self.proficiency_bonus() + self.ability_mod(ability)
     }
@@ -1370,7 +1424,42 @@ impl Character {
         self.exhaustion = self.exhaustion.saturating_sub(1);
     }
 
-    /// Clamps values that edits could push out of range.
+    /// Recomputes every value that has a formula, returning the first bad formula. A bad one
+    /// leaves its value alone, so a character with one still loads.
+    pub fn resolve_formulas(&mut self) -> Result<(), FormulaError> {
+        let vars = Vars::of(self);
+        let mut first = Ok(());
+        let mut note = |r: Result<(), FormulaError>| {
+            if first.is_ok() {
+                first = r;
+            }
+        };
+        for f in &mut self.features {
+            if !f.uses_formula.trim().is_empty() {
+                note(formula::number(&f.uses_formula, &vars).map(|n| f.uses_max = n.max(0) as u32));
+            }
+            note(resolve_modifiers(&mut f.modifiers, &vars));
+            note(resolve_actions(&mut f.actions, &vars));
+        }
+        for item in &mut self.inventory {
+            note(resolve_modifiers(&mut item.modifiers, &vars));
+            note(resolve_actions(&mut item.actions, &vars));
+        }
+        for s in &mut self.spells {
+            if !s.roll_formula.trim().is_empty() {
+                note(formula::dice(&s.roll_formula, &vars).map(|d| s.roll = d));
+            }
+            if let Some(e) = &mut s.effect {
+                note(resolve_modifiers(&mut e.modifiers, &vars));
+            }
+        }
+        for e in &mut self.effects {
+            note(resolve_modifiers(&mut e.modifiers, &vars));
+        }
+        first
+    }
+
+    /// Clamps values that edits could push out of range, and follows formulas.
     pub fn normalize(&mut self) {
         for c in &mut self.classes {
             c.level = c.level.clamp(1, 20);
@@ -1379,6 +1468,9 @@ impl Character {
         for s in self.base_scores.iter_mut() {
             *s = (*s).clamp(1, 30);
         }
+        // First, as maximum hit points and use counts below depend on the results. A bad
+        // formula is reported by edits and otherwise leaves the last good value in place.
+        let _ = self.resolve_formulas();
         self.hp.max = self.hp.max.max(1);
         self.hp.current = self.hp.current.clamp(0, self.max_hp());
         self.hp.temp = self.hp.temp.max(0);
@@ -1944,5 +2036,122 @@ mod tests {
         assert_eq!(c.spell_slots_used, [2, 0, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(c.exhaustion, 6);
         assert_eq!(c.classes[0].level, 20);
+    }
+
+    fn scaling() -> Character {
+        let mut c = Character::new("Scaling");
+        c.classes[0].class = ClassId::Wizard;
+        c.classes[0].level = 1;
+        c.base_scores[Ability::Int.index()] = 16;
+        c.features.push(Feature {
+            name: "Stonecunning".into(),
+            uses_formula: "{pb}".into(),
+            actions: vec![Action {
+                roll_formula: "{pb}".into(),
+                ..Default::default()
+            }],
+            modifiers: vec![
+                Modifier {
+                    kind: ModifierKind::MaxHp,
+                    value_formula: "{level}".into(),
+                    ..Default::default()
+                },
+                Modifier {
+                    kind: ModifierKind::Initiative,
+                    value_formula: "{pb}".into(),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        });
+        c.spells.push(Spell {
+            name: "Fire Bolt".into(),
+            roll_formula: "{cantrip}d10".into(),
+            ..Default::default()
+        });
+        c.spells.push(Spell {
+            name: "Cure Wounds".into(),
+            level: 1,
+            roll_formula: "2d8+{spell}".into(),
+            ..Default::default()
+        });
+        c.normalize();
+        c
+    }
+
+    #[test]
+    fn formulas_follow_the_character() {
+        let mut c = scaling();
+        assert_eq!(c.features[0].uses_max, 2);
+        assert_eq!(c.features[0].actions[0].roll, "2");
+        assert_eq!(c.features[0].modifiers[0].value, 1);
+        assert_eq!(c.features[0].modifiers[1].value, 2);
+        assert_eq!(c.spells[0].roll, "1d10");
+        assert_eq!(c.spells[1].roll, "2d8+3");
+
+        crate::edit::set(&mut c, "/classes/0/level", serde_json::json!(11)).unwrap();
+        assert_eq!(c.features[0].uses_max, 4);
+        assert_eq!(c.features[0].modifiers[0].value, 11);
+        assert_eq!(c.spells[0].roll, "3d10");
+        crate::edit::set(&mut c, "/base_scores/3", serde_json::json!(8)).unwrap();
+        assert_eq!(c.spells[1].roll, "2d8-1");
+    }
+
+    #[test]
+    fn scaled_max_hp_counts_before_current_hp_is_clamped() {
+        let mut c = scaling();
+        let base = c.max_hp() - 1;
+        c.hp.max = base;
+        crate::edit::set(&mut c, "/classes/0/level", serde_json::json!(5)).unwrap();
+        assert_eq!(c.max_hp(), base + 5);
+        crate::edit::set(&mut c, "/hp/current", serde_json::json!(base + 5)).unwrap();
+        assert_eq!(c.hp.current, base + 5);
+    }
+
+    #[test]
+    fn clearing_a_formula_keeps_the_value_as_a_manual_one() {
+        let mut c = scaling();
+        crate::edit::set(&mut c, "/features/0/uses_formula", serde_json::json!("")).unwrap();
+        crate::edit::set(&mut c, "/classes/0/level", serde_json::json!(11)).unwrap();
+        assert_eq!(c.features[0].uses_max, 2);
+    }
+
+    #[test]
+    fn a_bad_formula_is_rejected_and_changes_nothing() {
+        let mut c = scaling();
+        let before = c.clone();
+        let bad = crate::edit::set(
+            &mut c,
+            "/features/0/uses_formula",
+            serde_json::json!("{nope}"),
+        );
+        assert!(bad.is_err());
+        let dice = crate::edit::set(&mut c, "/features/0/uses_formula", serde_json::json!("1d4"));
+        assert!(dice.is_err());
+        assert_eq!(c, before);
+    }
+
+    #[test]
+    fn a_bad_formula_in_stored_data_keeps_the_last_value() {
+        let mut c = scaling();
+        c.features[0].uses_formula = "{nope}".into();
+        c.normalize();
+        assert_eq!(c.features[0].uses_max, 2);
+    }
+
+    #[test]
+    fn main_spell_ability_is_the_highest_level_casting_class() {
+        let mut c = Character::new("Multi");
+        c.classes[0].class = ClassId::Cleric;
+        c.classes[0].level = 2;
+        c.classes.push(ClassLevel {
+            class: ClassId::Wizard,
+            level: 5,
+            ..Default::default()
+        });
+        assert_eq!(c.main_spell_ability(), Some(Ability::Int));
+        c.classes[0].class = ClassId::Barbarian;
+        c.classes[1].class = ClassId::Fighter;
+        assert_eq!(c.main_spell_ability(), None);
     }
 }

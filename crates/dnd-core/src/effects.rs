@@ -53,6 +53,8 @@ pub struct Modifier {
     pub kind: ModifierKind,
     /// Flat bonus for armor_class, attack_roll, save, speed, initiative and max_hp.
     pub value: i32,
+    /// Keeps `value` following the character, e.g. `{pb}`; empty for a fixed value.
+    pub value_formula: String,
     /// For attack_roll and damage.
     pub scope: Scope,
     /// Extra damage for damage modifiers, e.g. `1d6`.
@@ -76,6 +78,7 @@ impl Default for Modifier {
         Modifier {
             kind: ModifierKind::Note,
             value: 0,
+            value_formula: String::new(),
             scope: Scope::AllWeapons,
             dice: String::new(),
             damage_type: String::new(),
@@ -213,6 +216,8 @@ pub struct Action {
     pub cost_amount: u32,
     /// Dice to roll when used, e.g. `2d4+2`; empty for none.
     pub roll: String,
+    /// Keeps `roll` following the character, e.g. `{pb}`; empty for fixed dice.
+    pub roll_formula: String,
     pub roll_effect: RollEffect,
     /// Applied to the character when used.
     pub effect: Option<Effect>,
@@ -227,6 +232,7 @@ impl Default for Action {
             cost: Cost::None,
             cost_amount: 1,
             roll: String::new(),
+            roll_formula: String::new(),
             roll_effect: RollEffect::None,
             effect: None,
         }

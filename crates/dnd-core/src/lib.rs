@@ -7,6 +7,7 @@ pub mod classes;
 pub mod dice;
 pub mod edit;
 pub mod effects;
+pub mod formula;
 pub mod notify;
 pub mod play;
 pub mod storage;

@@ -78,7 +78,15 @@ ColumnLayout {
                     QQC2.TextField {
                         placeholderText: "e.g. 2d4+2"
                         text: card.a.roll ?? ""
+                        enabled: !(card.a.roll_formula ?? "")
                         onEditingFinished: if (text !== card.a.roll) card.save("roll", text)
+                    }
+                    QQC2.TextField {
+                        placeholderText: "Formula, e.g. {pb}d6"
+                        text: card.a.roll_formula ?? ""
+                        onEditingFinished: if (text !== card.a.roll_formula) card.save("roll_formula", text)
+                        QQC2.ToolTip.text: "Keeps the roll following the character. Uses {pb}, {level}, {cantrip}, {spell} and {str} to {cha}."
+                        QQC2.ToolTip.visible: hovered
                     }
                     QQC2.ComboBox {
                         visible: (card.a.roll ?? "").length > 0

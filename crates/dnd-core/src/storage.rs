@@ -90,6 +90,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_initial.sql"),
     include_str!("../migrations/0002_items_effects.sql"),
     include_str!("../migrations/0003_revision.sql"),
+    include_str!("../migrations/0004_formulas.sql"),
 ];
 
 /// Tables holding a character's sheet entries, cleared and rewritten on every save.
@@ -458,7 +459,8 @@ impl Library {
         character.spells = tx
             .prepare(
                 "SELECT name, level, prepared, ritual, concentration, notes, casting_time,
-                        free_uses_max, free_uses_spent, roll, roll_effect, effect_json
+                        free_uses_max, free_uses_spent, roll, roll_effect, effect_json,
+                        roll_formula
                  FROM spells WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -475,6 +477,7 @@ impl Library {
                     roll: r.get(9)?,
                     roll_effect: text_col(r, 10)?,
                     effect: opt_json_col(r, 11)?,
+                    roll_formula: r.get(12)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
@@ -483,7 +486,7 @@ impl Library {
             .prepare(
                 "SELECT name, quantity, weight, requires_attunement, attuned, notes, kind,
                         equipped, weapon_json, armor, ac_bonus, charges_max, charges_spent,
-                        recharge, modifiers_json, actions_json
+                        recharge, modifiers_json, actions_json, regain
                  FROM items WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -505,6 +508,7 @@ impl Library {
                     recharge: text_col(r, 13)?,
                     modifiers: json_col(r, 14)?,
                     actions: json_col(r, 15)?,
+                    regain: r.get(16)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
@@ -512,7 +516,7 @@ impl Library {
         character.features = tx
             .prepare(
                 "SELECT name, source, description, uses_max, uses_spent, recharge,
-                        modifiers_json, actions_json
+                        modifiers_json, actions_json, uses_formula
                  FROM features WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -525,6 +529,7 @@ impl Library {
                     recharge: text_col(r, 5)?,
                     modifiers: json_col(r, 6)?,
                     actions: json_col(r, 7)?,
+                    uses_formula: r.get(8)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
@@ -748,8 +753,9 @@ impl Library {
             let mut stmt = tx.prepare(
                 "INSERT INTO spells
                  (character_id, position, name, level, prepared, ritual, concentration, notes,
-                  casting_time, free_uses_max, free_uses_spent, roll, roll_effect, effect_json)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                  casting_time, free_uses_max, free_uses_spent, roll, roll_effect, effect_json,
+                  roll_formula)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             )?;
             for (i, s) in spells.iter().enumerate() {
                 stmt.execute(params![
@@ -766,7 +772,8 @@ impl Library {
                     s.free_uses_spent,
                     s.roll,
                     to_text(&s.roll_effect)?,
-                    s.effect.as_ref().map(serde_json::to_string).transpose()?
+                    s.effect.as_ref().map(serde_json::to_string).transpose()?,
+                    s.roll_formula
                 ])?;
             }
 
@@ -774,9 +781,9 @@ impl Library {
                 "INSERT INTO items
                  (character_id, position, name, quantity, weight, requires_attunement, attuned, notes,
                   kind, equipped, weapon_json, armor, ac_bonus, charges_max, charges_spent,
-                  recharge, modifiers_json, actions_json)
+                  recharge, modifiers_json, actions_json, regain)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16,
-                         ?17, ?18)",
+                         ?17, ?18, ?19)",
             )?;
             for (i, item) in inventory.iter().enumerate() {
                 stmt.execute(params![
@@ -800,15 +807,16 @@ impl Library {
                     item.charges_spent,
                     to_text(&item.recharge)?,
                     serde_json::to_string(&item.modifiers)?,
-                    serde_json::to_string(&item.actions)?
+                    serde_json::to_string(&item.actions)?,
+                    item.regain
                 ])?;
             }
 
             let mut stmt = tx.prepare(
                 "INSERT INTO features
                  (character_id, position, name, source, description, uses_max, uses_spent, recharge,
-                  modifiers_json, actions_json)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                  modifiers_json, actions_json, uses_formula)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             )?;
             for (i, f) in features.iter().enumerate() {
                 stmt.execute(params![
@@ -821,7 +829,8 @@ impl Library {
                     f.uses_spent,
                     to_text(&f.recharge)?,
                     serde_json::to_string(&f.modifiers)?,
-                    serde_json::to_string(&f.actions)?
+                    serde_json::to_string(&f.actions)?,
+                    f.uses_formula
                 ])?;
             }
 
@@ -1126,6 +1135,7 @@ mod tests {
             source: "Rogue".into(),
             description: "Dash, Disengage or Hide".into(),
             uses_max: 3,
+            uses_formula: "{pb}".into(),
             uses_spent: 1,
             recharge: Recharge::Short,
             modifiers: vec![Modifier {
@@ -1273,6 +1283,9 @@ mod tests {
         assert!(c.inventory[0].actions.is_empty());
         assert_eq!(c.features[0].uses_spent, 1);
         assert_eq!(c.spells[0].casting_time, Activation::Action);
+        assert_eq!(c.spells[0].roll_formula, "");
+        assert_eq!(c.features[0].uses_formula, "");
+        assert_eq!(c.inventory[0].regain, "");
         assert!(c.effects.is_empty());
         lib.save(&c).unwrap();
         assert_eq!(lib.load(c.id).unwrap(), c);

@@ -47,11 +47,21 @@ ColumnLayout {
                     from: -50
                     to: 50
                     editable: true
+                    enabled: !(card.m.value_formula ?? "")
                     value: card.m.value ?? 0
                     onValueModified: card.save("value", value)
                     textFromValue: (v) => (v > 0 ? "+" : "") + v
                     valueFromText: (t) => parseInt(t) || 0
                     QQC2.ToolTip.text: card.m.kind === "damage" ? "Flat damage added to the weapon's damage" : "Bonus"
+                    QQC2.ToolTip.visible: hovered
+                }
+                QQC2.TextField {
+                    visible: card.numeric
+                    implicitWidth: Kirigami.Units.gridUnit * 6
+                    placeholderText: "Formula"
+                    text: card.m.value_formula ?? ""
+                    onEditingFinished: if (text !== card.m.value_formula) card.save("value_formula", text)
+                    QQC2.ToolTip.text: "Keeps the bonus following the character, e.g. {pb}. Uses {pb}, {level}, {cantrip}, {spell} and {str} to {cha}."
                     QQC2.ToolTip.visible: hovered
                 }
                 QQC2.ComboBox {

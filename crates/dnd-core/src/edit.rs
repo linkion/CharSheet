@@ -16,6 +16,8 @@ pub enum EditError {
     OutOfRange(String, usize),
     #[error("invalid value: {0}")]
     Invalid(#[from] serde_json::Error),
+    #[error(transparent)]
+    Formula(#[from] crate::formula::FormulaError),
 }
 
 fn apply(
@@ -27,6 +29,7 @@ fn apply(
     let mut updated: Character = serde_json::from_value(value)?;
     updated.id = c.id;
     updated.normalize();
+    updated.resolve_formulas()?;
     *c = updated;
     Ok(())
 }

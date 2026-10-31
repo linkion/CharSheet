@@ -207,7 +207,8 @@ SheetTab {
             { key: "notes", label: "Notes", type: "area" },
             { label: "Casting", type: "section" },
             { key: "free_uses_max", label: "Free casts per long rest", type: "int", from: 0, to: 20 },
-            { key: "roll", label: "Roll when cast", type: "text", placeholder: "e.g. 2d8+3" },
+            { key: "roll", label: "Roll when cast", type: "text", placeholder: "e.g. 2d8+3", visibleWhen: spell => !spell.roll_formula },
+            { key: "roll_formula", label: "Roll formula", type: "text", placeholder: "e.g. {cantrip}d10 or 2d8+{spell}" },
             { key: "roll_effect", label: "With the roll", type: "choice", options: App.catalog.roll_effects, visibleWhen: spell => (spell.roll || "").length > 0 },
             { label: "Effect on you", type: "section" },
             { key: "effect", label: "Effect", type: "effect" }
