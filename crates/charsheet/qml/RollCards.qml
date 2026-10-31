@@ -39,6 +39,7 @@ ColumnLayout {
 
     QQC2.Button {
         visible: cards.count > 1
+        Layout.alignment: Qt.AlignRight
         text: "Clear all"
         icon.name: "edit-clear-all"
         onClicked: stack.clear()
@@ -63,7 +64,7 @@ ColumnLayout {
         add: Transition {
             NumberAnimation {
                 property: "x"
-                from: -Kirigami.Units.gridUnit * 3
+                from: Kirigami.Units.gridUnit * 3
                 to: 0
                 duration: Kirigami.Units.longDuration
                 easing.type: Easing.OutCubic
@@ -140,13 +141,19 @@ ColumnLayout {
                     }
                 }
                 QQC2.ToolButton {
+                    id: dismiss
                     Layout.alignment: Qt.AlignVCenter
                     icon.name: "window-close"
                     text: "Dismiss"
                     display: QQC2.AbstractButton.IconOnly
                     onClicked: cards.remove(card.index)
-                    QQC2.ToolTip.text: text
-                    QQC2.ToolTip.visible: hovered
+
+                    // Its own tooltip, as the shared one would open beneath the stack.
+                    QQC2.ToolTip {
+                        z: stack.z + 1
+                        text: dismiss.text
+                        visible: dismiss.hovered
+                    }
                 }
             }
         }

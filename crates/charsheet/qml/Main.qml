@@ -84,7 +84,7 @@ Kirigami.ApplicationWindow {
     RollCards {
         id: rollCards
         parent: QQC2.Overlay.overlay
-        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: Kirigami.Units.largeSpacing
         z: 1001
