@@ -1,11 +1,10 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Shapes
 import QtQuick3D
 import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
-// Throws 3D dice across the window for new rolls, then shows their totals and fades.
+// Throws 3D dice across the window for new rolls, announces them as they land, then fades.
 // A click anywhere dismisses it and still reaches the sheet underneath.
 Item {
     id: overlay
@@ -14,6 +13,8 @@ Item {
     property var rolls: []
     property var thrown: null
     property real time: 0
+    // True once the rolls on the table have been announced by landed().
+    property bool announced: true
     readonly property real duration: thrown ? Math.max(...thrown.dice.map(d => d.frames.length)) / thrown.fps : 0
     readonly property bool settled: time >= duration
 
@@ -28,6 +29,9 @@ Item {
     visible: opacity > 0
     opacity: 0
 
+    // The dice of `rolls` have come to rest, or been swept away before they could.
+    signal landed(var rolls)
+
     Behavior on opacity {
         id: fade
         enabled: false
@@ -38,6 +42,7 @@ Item {
 
     // Throws every die of `newRolls` together; they replace whatever is on the table.
     function show(newRolls) {
+        land()
         // One throw for all of them, so they share the table without passing through each other.
         const combined = { expression: "", mode: newRolls[0].mode, terms: [], total: 0, natural: null, label: "", breakdown: "" }
         for (const roll of newRolls)
@@ -46,27 +51,40 @@ Item {
         thrown = json.length > 0 ? JSON.parse(json) : null
         rolls = newRolls
         time = 0
+        announced = false
         hideTimer.stop()
         fade.enabled = false
         opacity = 1
-        if (!thrown)
+        if (settled) {
+            land()
             hideTimer.start()
+        }
+    }
+
+    function land() {
+        if (announced)
+            return
+        announced = true
+        landed(rolls)
     }
 
     function hide() {
+        land()
         hideTimer.stop()
         fade.enabled = true
         opacity = 0
     }
 
     onSettledChanged: {
-        if (settled && visible)
+        if (settled && visible) {
+            land()
             hideTimer.restart()
+        }
     }
 
     Timer {
         id: hideTimer
-        interval: 3500 + 1000 * Math.max(0, overlay.rolls.length - 1)
+        interval: 3500
         onTriggered: overlay.hide()
     }
 
@@ -230,74 +248,6 @@ Item {
                             baseColorMap: shadowTexture
                             alphaMode: PrincipledMaterial.Blend
                             depthDrawMode: Material.NeverDepthDraw
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // The totals, once the dice settle.
-    Rectangle {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Kirigami.Units.gridUnit * 2
-        width: Math.min(parent.width - Kirigami.Units.gridUnit * 2, totals.implicitWidth + Kirigami.Units.gridUnit * 2)
-        height: totals.implicitHeight + Kirigami.Units.largeSpacing * 2
-        radius: Kirigami.Units.cornerRadius
-        color: Style.panel
-        border.color: Style.frameOuter
-        border.width: 2
-        opacity: overlay.settled ? 1 : 0
-        scale: overlay.settled ? 1 : 0.9
-
-        Behavior on opacity {
-            NumberAnimation { duration: Kirigami.Units.shortDuration }
-        }
-        Behavior on scale {
-            NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutBack }
-        }
-
-        ColumnLayout {
-            id: totals
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, parent.width - Kirigami.Units.gridUnit * 2)
-            spacing: Kirigami.Units.smallSpacing
-
-            Repeater {
-                model: overlay.rolls
-
-                RowLayout {
-                    id: line
-                    required property var modelData
-                    readonly property string verdict: modelData.natural === 20 ? "Natural 20!"
-                        : modelData.natural === 1 ? "Natural 1" : ""
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: Kirigami.Units.largeSpacing
-
-                    Text {
-                        text: line.modelData.total
-                        font.family: Style.displayFamily
-                        font.pixelSize: Kirigami.Units.gridUnit * 2.2
-                        color: line.verdict === "Natural 20!" ? Kirigami.Theme.positiveTextColor
-                            : line.verdict === "Natural 1" ? Kirigami.Theme.negativeTextColor : Style.heading
-                    }
-                    ColumnLayout {
-                        spacing: 0
-                        Text {
-                            Layout.fillWidth: true
-                            text: line.modelData.label + (line.verdict ? "  — " + line.verdict : "")
-                            font.family: Style.labelFamily
-                            font.bold: true
-                            color: Style.heading
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: line.modelData.breakdown
-                            font.family: Style.uiFamily
-                            color: Kirigami.Theme.disabledTextColor
-                            elide: Text.ElideRight
                         }
                     }
                 }

@@ -58,6 +58,7 @@ fn main() {
             QmlFile::from("qml/Prose.qml"),
             QmlFile::from("qml/ProseLine.qml"),
             QmlFile::from("qml/RollButton.qml"),
+            QmlFile::from("qml/RollCards.qml"),
             QmlFile::from("qml/RollLogDrawer.qml"),
             QmlFile::from("qml/Section.qml"),
             QmlFile::from("qml/SheetArea.qml"),

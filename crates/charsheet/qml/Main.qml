@@ -40,17 +40,6 @@ Kirigami.ApplicationWindow {
 
     Connections {
         target: App
-        function onRolled(result) {
-            // The dice overlay shows the total instead.
-            if (App.appearance.dice3d)
-                return
-            let text = result.label + ": " + result.total + "   " + result.breakdown
-            if (result.natural === 20)
-                text += "  — Natural 20!"
-            else if (result.natural === 1)
-                text += "  — Natural 1"
-            root.showPassiveNotification(text, "long")
-        }
         function onNotice(message) {
             root.showPassiveNotification(message, "long")
         }
@@ -78,13 +67,34 @@ Kirigami.ApplicationWindow {
         parent: QQC2.Overlay.overlay
         anchors.fill: parent
         z: 1000
+        onLanded: rolls => rollCards.add(rolls)
+    }
+
+    RollCards {
+        id: rollCards
+        parent: QQC2.Overlay.overlay
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: Kirigami.Units.largeSpacing
+        z: 1001
+    }
+
+    // Leaving the sheet takes its rolls along.
+    Connections {
+        target: root.pageStack.layers
+        function onDepthChanged() {
+            if (root.pageStack.layers.depth < 2)
+                rollCards.clear()
+        }
     }
 
     Connections {
         target: App
-        enabled: App.appearance.dice3d
         function onThrown(rolls) {
-            diceOverlay.show(rolls)
+            if (App.appearance.dice3d)
+                diceOverlay.show(rolls)
+            else
+                rollCards.add(rolls)
         }
     }
 

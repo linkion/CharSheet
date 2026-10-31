@@ -30,7 +30,7 @@ QtObject {
         onTriggered: app.syncNow()
     }
 
-    // Every new roll, made here or elsewhere, to throw as 3D dice.
+    // Every new roll, made here or elsewhere.
     readonly property Connections rollWatcher: Connections {
         target: app.sheet
         function onRollsThrown(rollsJson) {
@@ -57,7 +57,6 @@ QtObject {
     // Tab the next opened sheet starts on.
     property int requestedTab: 0
 
-    signal rolled(var result)
     // New rolls (StoredRoll objects, oldest first), from any source, including the MCP server.
     signal thrown(var rolls)
     // A short message for a passive notification, e.g. what an action did.
@@ -80,15 +79,7 @@ QtObject {
     }
 
     function roll(expression, label, mode) {
-        const json = sheet.roll(expression, label || expression, mode || "normal")
-        if (json.length > 0)
-            rolled(JSON.parse(json))
-    }
-
-    // Shows a roll the backend made (JSON from CharacterSheet), like roll() does.
-    function showRoll(json) {
-        if (json.length > 0)
-            rolled(JSON.parse(json))
+        sheet.roll(expression, label || expression, mode || "normal")
     }
 
     function report(message) {

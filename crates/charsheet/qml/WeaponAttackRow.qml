@@ -21,7 +21,7 @@ ColumnLayout {
     property var excluded: []
 
     function rollDamage(crit) {
-        App.showRoll(App.sheet.weaponDamage(attackIndex, crit, JSON.stringify(excluded)))
+        App.sheet.weaponDamage(attackIndex, crit, JSON.stringify(excluded))
     }
 
     Layout.fillWidth: true
@@ -51,7 +51,7 @@ ColumnLayout {
             text: App.signed(row.a.to_hit ?? 0)
             font.bold: true
             enabled: !row.firesAmmo || row.a.capacity === 0 || row.a.loaded > 0
-            onClicked: App.showRoll(App.sheet.weaponAttack(row.attackIndex, App.rollMode))
+            onClicked: App.sheet.weaponAttack(row.attackIndex, App.rollMode)
             QQC2.ToolTip.text: "Roll to hit" + (row.firesAmmo ? " (fires a shot)" : "")
             QQC2.ToolTip.visible: hovered
         }
