@@ -105,6 +105,11 @@ SheetTab {
 
         headerActions: [
             Kirigami.Action {
+                text: "From Compendium"
+                icon.name: "search"
+                onTriggered: compendium.show()
+            },
+            Kirigami.Action {
                 text: "Add Spell"
                 icon.name: "list-add"
                 onTriggered: {
@@ -160,6 +165,9 @@ SheetTab {
                                 opacity: 0.7
                             }
                         }
+                        RuleButton {
+                            name: modelData.spell.name
+                        }
                         PipRow {
                             visible: modelData.spell.free_uses_max > 0
                             total: Math.min(modelData.spell.free_uses_max, 10)
@@ -194,6 +202,11 @@ SheetTab {
         }
     }
 
+    CompendiumDialog {
+        id: compendium
+        title: "Add a Spell"
+        categories: [{ key: "spell", name: "Spells" }]
+    }
     ItemDialog {
         id: spellDialog
         title: "Spell"

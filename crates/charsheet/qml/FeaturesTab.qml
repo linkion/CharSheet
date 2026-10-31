@@ -13,6 +13,11 @@ SheetTab {
 
         headerActions: [
             Kirigami.Action {
+                text: "From Compendium"
+                icon.name: "search"
+                onTriggered: compendium.show()
+            },
+            Kirigami.Action {
                 text: "Add Feature"
                 icon.name: "list-add"
                 onTriggered: {
@@ -117,6 +122,17 @@ SheetTab {
         }
     }
 
+    CompendiumDialog {
+        id: compendium
+        title: "Add a Feature"
+        categories: [
+            { key: "feat", name: "Feats" },
+            { key: "species_trait", name: "Species traits" },
+            { key: "class_feature", name: "Class features" },
+            { key: "subclass_feature", name: "Subclass features" },
+            { key: "class_option", name: "Class options" }
+        ]
+    }
     ItemDialog {
         id: featureDialog
         title: "Feature"

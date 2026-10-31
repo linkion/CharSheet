@@ -71,6 +71,11 @@ SheetTab {
 
         headerActions: [
             Kirigami.Action {
+                text: "From Compendium"
+                icon.name: "search"
+                onTriggered: compendium.show()
+            },
+            Kirigami.Action {
                 text: "Add Item"
                 icon.name: "list-add"
                 onTriggered: {
@@ -203,6 +208,17 @@ SheetTab {
         }
     }
 
+    CompendiumDialog {
+        id: compendium
+        title: "Add an Item"
+        categories: [
+            { key: "magic_item", name: "Magic items" },
+            { key: "weapon", name: "Weapons" },
+            { key: "armor", name: "Armor" },
+            { key: "gear", name: "Gear" },
+            { key: "tool", name: "Tools" }
+        ]
+    }
     ItemDialog {
         id: itemDialog
         title: "Item"
