@@ -77,7 +77,8 @@ claude mcp add charsheet -- ~/.local/bin/charsheet-mcp
 ```
 
 It works on the same library as the app (`--db <path>` picks another one). Changes are saved
-immediately, and a character open in the app updates within a second.
+immediately, and the server tells any running app, so a character open there updates at
+once.
 
 - **Library:** `list_characters`, `create_character`, `duplicate_character`,
   `delete_character`, `import_character`, `export_character`

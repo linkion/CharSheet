@@ -10,16 +10,24 @@ QtObject {
     readonly property CharacterLibrary library: CharacterLibrary {}
     readonly property CharacterSheet sheet: CharacterSheet {}
 
-    // Picks up changes made elsewhere, such as by the MCP server.
+    // Picks up changes made elsewhere.
+    function syncNow() {
+        library.sync()
+        if (sheet.loaded)
+            sheet.sync()
+    }
+
+    // The MCP server signals its changes as it makes them.
+    readonly property LibraryWatcher watcher: LibraryWatcher {
+        onLibraryChanged: app.syncNow()
+    }
+
+    // Catches what isn't signalled, such as changes from another window.
     readonly property Timer syncTimer: Timer {
-        interval: 1000
+        interval: 5000
         repeat: true
         running: true
-        onTriggered: {
-            app.library.sync()
-            if (app.sheet.loaded)
-                app.sheet.sync()
-        }
+        onTriggered: app.syncNow()
     }
 
     // Every new roll, made here or elsewhere, to throw as 3D dice.

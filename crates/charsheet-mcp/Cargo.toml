@@ -12,3 +12,6 @@ rmcp = { version = "3.6", features = ["server", "transport-io", "macros"] }
 schemars = "1"
 tokio = { version = "1", features = ["rt", "macros", "io-std"] }
 uuid = "1"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,11 +1,12 @@
 //! The MCP tools. Every call loads the character fresh from the library and saves it
-//! straight back, so the server never holds stale data and the app (which watches the
-//! library) shows the change within a second.
+//! straight back, so the server never holds stale data. Every write then wakes any running
+//! app, which picks up the change at once.
 
 use dnd_core::abilities::{Proficiency, Skill};
 use dnd_core::character::PlayError;
 use dnd_core::dice::{self, RollMode};
 use dnd_core::effects::Effect;
+use dnd_core::notify::Notifier;
 use dnd_core::play::{self, Played};
 use dnd_core::storage::{StoredRoll, Summary};
 use dnd_core::view::{SheetView, catalog};
@@ -274,6 +275,7 @@ pub struct EffectArg {
 #[derive(Clone)]
 pub struct CharSheetServer {
     library: Arc<Mutex<Library>>,
+    notifier: Notifier,
     tool_router: ToolRouter<Self>,
 }
 
@@ -375,9 +377,10 @@ fn play_err(e: PlayError) -> String {
 }
 
 impl CharSheetServer {
-    pub fn new(library: Library) -> CharSheetServer {
+    pub fn new(library: Library, notifier: Notifier) -> CharSheetServer {
         CharSheetServer {
             library: Arc::new(Mutex::new(library)),
+            notifier,
             tool_router: Self::tool_router(),
         }
     }
@@ -388,6 +391,14 @@ impl CharSheetServer {
             .lock()
             .map_err(|_| "the library is unavailable after an earlier failure".to_owned())?;
         f(&lib)
+    }
+
+    /// Runs a write, then wakes any running app. That happens even if `f` fails, since it
+    /// may have saved something first.
+    fn write_library<T>(&self, f: impl FnOnce(&Library) -> Result<T, String>) -> Result<T, String> {
+        let result = self.with_library(f);
+        self.notifier.notify();
+        result
     }
 
     fn read<T>(
@@ -408,7 +419,7 @@ impl CharSheetServer {
         character: &str,
         f: impl FnOnce(&mut Character) -> Result<(String, Vec<StoredRoll>), String>,
     ) -> ToolResult {
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             let mut c = lib.load(find(lib, character)?).map_err(err)?;
             let (output, rolls) = f(&mut c)?;
             lib.save(&c).map_err(err)?;
@@ -473,12 +484,12 @@ impl CharSheetServer {
             "" => "New Adventurer",
             name => name,
         };
-        self.with_library(|lib| to_json(&Summary::from(&lib.create(name).map_err(err)?)))
+        self.write_library(|lib| to_json(&Summary::from(&lib.create(name).map_err(err)?)))
     }
 
     #[tool(description = "Copy a character, named \"<name> (copy)\". Returns the copy's summary.")]
     async fn duplicate_character(&self, Parameters(a): Parameters<CharacterArg>) -> ToolResult {
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             let copy = lib.duplicate(find(lib, &a.character)?).map_err(err)?;
             to_json(&Summary::from(&copy))
         })
@@ -489,7 +500,7 @@ impl CharSheetServer {
         annotations(destructive_hint = true)
     )]
     async fn delete_character(&self, Parameters(a): Parameters<CharacterArg>) -> ToolResult {
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             let id = find(lib, &a.character)?;
             let name = lib.load(id).map_err(err)?.name;
             lib.delete(id).map_err(err)?;
@@ -501,7 +512,7 @@ impl CharSheetServer {
         description = "Import a character from a JSON file into the library. Returns its summary."
     )]
     async fn import_character(&self, Parameters(a): Parameters<ImportArg>) -> ToolResult {
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             let c = lib.import(Path::new(&a.path)).map_err(err)?;
             to_json(&Summary::from(&c))
         })
@@ -702,7 +713,7 @@ impl CharSheetServer {
     async fn roll(&self, Parameters(a): Parameters<RollArg>) -> ToolResult {
         let result = dice::roll(&a.expression, a.mode.into()).map_err(err)?;
         let roll = StoredRoll::new(a.label.unwrap_or_else(|| a.expression.clone()), result);
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             lib.add_roll(find(lib, &a.character)?, &roll).map_err(err)?;
             to_json(&roll_summary(&roll))
         })
@@ -724,7 +735,7 @@ impl CharSheetServer {
         annotations(destructive_hint = true)
     )]
     async fn clear_rolls(&self, Parameters(a): Parameters<CharacterArg>) -> ToolResult {
-        self.with_library(|lib| {
+        self.write_library(|lib| {
             lib.clear_rolls(find(lib, &a.character)?).map_err(err)?;
             Ok("Cleared the roll log".to_owned())
         })
@@ -838,9 +849,10 @@ impl ServerHandler for CharSheetServer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::net::UnixDatagram;
 
     fn server() -> CharSheetServer {
-        CharSheetServer::new(Library::open_in_memory().unwrap())
+        CharSheetServer::new(Library::open_in_memory().unwrap(), Notifier::disabled())
     }
 
     fn parse(text: ToolResult) -> Value {
@@ -882,6 +894,40 @@ mod tests {
             }))
             .await,
         )
+    }
+
+    #[tokio::test]
+    async fn writes_wake_the_app_and_reads_do_not() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = UnixDatagram::bind(dir.path().join("app-1.sock")).unwrap();
+        app.set_nonblocking(true).unwrap();
+        let woken = || app.recv(&mut [0]).is_ok();
+        let s = CharSheetServer::new(
+            Library::open_in_memory().unwrap(),
+            Notifier::in_dir(dir.path()),
+        );
+
+        import_sable(&s).await;
+        assert!(woken());
+        s.roll(Parameters(RollArg {
+            character: "sable".into(),
+            expression: "1d20".into(),
+            label: None,
+            mode: Default::default(),
+        }))
+        .await
+        .unwrap();
+        assert!(woken());
+        s.clear_rolls(Parameters(character("sable"))).await.unwrap();
+        assert!(woken());
+        s.long_rest(Parameters(character("sable"))).await.unwrap();
+        assert!(woken());
+        assert!(!woken());
+
+        sheet(&s).await;
+        parse(s.list_characters().await);
+        s.get_rolls(Parameters(character("sable"))).await.unwrap();
+        assert!(!woken());
     }
 
     #[tokio::test]

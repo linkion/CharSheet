@@ -4,6 +4,7 @@
 mod server;
 
 use dnd_core::Library;
+use dnd_core::notify::Notifier;
 use rmcp::ServiceExt;
 use std::process::ExitCode;
 
@@ -32,7 +33,7 @@ async fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let served = server::CharSheetServer::new(library)
+    let served = server::CharSheetServer::new(library, Notifier::new())
         .serve(rmcp::transport::stdio())
         .await;
     let result = match served {

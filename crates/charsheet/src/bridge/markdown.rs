@@ -127,7 +127,10 @@ mod tests {
 
     #[test]
     fn escapes_html() {
-        assert_eq!(inline_html("a < b & <b>c</b>"), "a &lt; b &amp; &lt;b&gt;c&lt;/b&gt;");
+        assert_eq!(
+            inline_html("a < b & <b>c</b>"),
+            "a &lt; b &amp; &lt;b&gt;c&lt;/b&gt;"
+        );
         assert_eq!(inline_html("<div>x</div>"), "&lt;div&gt;x&lt;/div&gt;");
     }
 
@@ -139,7 +142,10 @@ mod tests {
 
     #[test]
     fn lists_flatten() {
-        assert_eq!(inline_html("- one\n- **two**\n\nafter"), "• one  • <b>two</b>");
+        assert_eq!(
+            inline_html("- one\n- **two**\n\nafter"),
+            "• one  • <b>two</b>"
+        );
         assert_eq!(inline_html("1. a\n\n2. b"), "• a  • b");
     }
 

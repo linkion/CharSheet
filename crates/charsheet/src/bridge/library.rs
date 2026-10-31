@@ -20,8 +20,8 @@ pub mod qobject {
         #[qinvokable]
         fn refresh(self: Pin<&mut Self>);
 
-        /// Refreshes the list if another window or process changed the library. Called on
-        /// a timer.
+        /// Refreshes the list if another window or process changed the library. Called
+        /// when the MCP server signals a change, and on a timer.
         #[qinvokable]
         fn sync(self: Pin<&mut Self>);
 

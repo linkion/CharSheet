@@ -33,7 +33,7 @@ pub mod qobject {
         fn close(self: Pin<&mut Self>);
 
         /// Reloads the character if another window or process (such as the MCP server)
-        /// changed it. Called on a timer.
+        /// changed it. Called when the MCP server signals a change, and on a timer.
         #[qinvokable]
         fn sync(self: Pin<&mut Self>);
 

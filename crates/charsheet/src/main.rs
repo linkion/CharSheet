@@ -5,6 +5,7 @@ mod bridge {
     pub mod markdown;
     pub mod sheet;
     pub mod theme;
+    pub mod watcher;
 }
 mod dice3d;
 

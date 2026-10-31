@@ -89,11 +89,15 @@ fn main() {
             "src/bridge/markdown.rs",
             "src/bridge/sheet.rs",
             "src/bridge/theme.rs",
+            "src/bridge/watcher.rs",
         ])
         // Served from :/fonts and :/theme rather than under the QML module.
         .qrc_resources(
-            QResources::new()
-                .resource(QResource::new().prefix("/").files(FONTS.iter().chain(THEME_FILES))),
+            QResources::new().resource(
+                QResource::new()
+                    .prefix("/")
+                    .files(FONTS.iter().chain(THEME_FILES)),
+            ),
         );
 
     // KDE Frameworks, for applying the bundled color schemes (cpp/theme.h).
