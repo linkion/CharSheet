@@ -52,6 +52,13 @@ pub struct TermResult {
     /// Every die rolled, with whether it was kept.
     pub rolls: Vec<(u32, bool)>,
     pub value: i32,
+    /// Where this term came from, e.g. `DEX` or `Hunter's Mark`; empty for free-form dice
+    /// and rolls logged before sources were tracked.
+    #[serde(default)]
+    pub source: String,
+    /// The type of damage this term deals, if any.
+    #[serde(default)]
+    pub damage_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -64,7 +71,81 @@ pub struct RollResult {
     pub natural: Option<u32>,
 }
 
+/// One labelled piece of a roll, such as a weapon's dice or a bonus from a feature. Every term
+/// of `expression` carries the part's source and damage type through to the result.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RollPart {
+    pub expression: String,
+    pub source: String,
+    pub damage_type: String,
+}
+
+impl RollPart {
+    pub fn new(expression: impl Into<String>, source: impl Into<String>) -> Self {
+        RollPart {
+            expression: expression.into(),
+            source: source.into(),
+            damage_type: String::new(),
+        }
+    }
+
+    pub fn typed(mut self, damage_type: impl Into<String>) -> Self {
+        self.damage_type = damage_type.into();
+        self
+    }
+
+    /// The part with every die count doubled, for critical hits.
+    pub fn doubled(mut self) -> Result<Self, DiceError> {
+        if !self.expression.trim().is_empty() {
+            self.expression = double_dice(&self.expression)?;
+        }
+        Ok(self)
+    }
+}
+
+/// A flat number added to a roll and what it comes from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bonus {
+    pub value: i32,
+    pub source: String,
+}
+
+impl Bonus {
+    pub fn new(value: i32, source: impl Into<String>) -> Self {
+        Bonus {
+            value,
+            source: source.into(),
+        }
+    }
+
+    pub fn part(&self) -> RollPart {
+        RollPart::new(self.value.to_string(), self.source.clone())
+    }
+
+    pub fn total(bonuses: &[Bonus]) -> i32 {
+        bonuses.iter().map(|b| b.value).sum()
+    }
+}
+
 impl RollResult {
+    /// The total dealt of each damage type, in the order they first appear; empty unless
+    /// some term has a type. Terms without one are grouped under an empty name, so the
+    /// amounts always add up to the total.
+    pub fn damage_by_type(&self) -> Vec<(String, i32)> {
+        if self.terms.iter().all(|t| t.damage_type.is_empty()) {
+            return Vec::new();
+        }
+        let mut out: Vec<(String, i32)> = Vec::new();
+        for term in &self.terms {
+            let amount = term.sign * term.value;
+            match out.iter_mut().find(|(t, _)| *t == term.damage_type) {
+                Some((_, sum)) => *sum += amount,
+                None => out.push((term.damage_type.clone(), amount)),
+            }
+        }
+        out
+    }
+
     pub fn breakdown(&self) -> String {
         let mut out = String::new();
         for (i, term) in self.terms.iter().enumerate() {
@@ -224,6 +305,8 @@ impl Expr {
                     label: term.to_string(),
                     rolls,
                     value,
+                    source: String::new(),
+                    damage_type: String::new(),
                 }
             })
             .collect();
@@ -259,12 +342,7 @@ pub fn roll_with(
     mode: RollMode,
     rng: &mut impl Rng,
 ) -> Result<RollResult, DiceError> {
-    let expr = Expr::parse(expression)?.with_mode(mode);
-    let (terms, total) = expr.roll(rng);
-    let natural = terms
-        .iter()
-        .find(|t| t.label.starts_with("1d20") || t.label.starts_with("2d20k"))
-        .and_then(|t| t.rolls.iter().find(|(_, kept)| *kept).map(|(r, _)| *r));
+    let (terms, total, natural) = roll_expr(Expr::parse(expression)?.with_mode(mode), rng);
     Ok(RollResult {
         expression: expression.trim().to_owned(),
         mode,
@@ -272,6 +350,114 @@ pub fn roll_with(
         total,
         natural,
     })
+}
+
+/// Rolls labelled parts together with the thread-local RNG.
+pub fn roll_parts(parts: &[RollPart], mode: RollMode) -> Result<RollResult, DiceError> {
+    roll_parts_with(parts, mode, &mut rand::rng())
+}
+
+/// Rolls labelled parts as one roll, each term keeping its part's source and damage type.
+/// Parts that add nothing are left out of the result.
+pub fn roll_parts_with(
+    parts: &[RollPart],
+    mode: RollMode,
+    rng: &mut impl Rng,
+) -> Result<RollResult, DiceError> {
+    let (terms, owners) = parsed_parts(parts)?;
+    let expression = compact(&terms);
+    let (mut results, total, natural) = roll_expr(Expr { terms }.with_mode(mode), rng);
+    for (result, part) in results.iter_mut().zip(owners) {
+        result.source = part.source.clone();
+        result.damage_type = part.damage_type.clone();
+    }
+    Ok(RollResult {
+        expression,
+        mode,
+        terms: results,
+        total,
+        natural,
+    })
+}
+
+/// The compact expression for `parts`, as `RollResult::expression` will show it.
+pub fn expression_of(parts: &[RollPart]) -> Result<String, DiceError> {
+    Ok(compact(&parsed_parts(parts)?.0))
+}
+
+type ParsedParts<'a> = (Vec<(i32, Term)>, Vec<&'a RollPart>);
+
+/// Every term of `parts` that adds something, with the part it came from.
+fn parsed_parts(parts: &[RollPart]) -> Result<ParsedParts<'_>, DiceError> {
+    let mut terms = Vec::new();
+    let mut owners = Vec::new();
+    for part in parts.iter().filter(|p| !p.expression.trim().is_empty()) {
+        for (sign, term) in Expr::parse(&part.expression)?.terms {
+            if term != Term::Constant(0) {
+                terms.push((sign, term));
+                owners.push(part);
+            }
+        }
+    }
+    if terms.is_empty() {
+        // Nothing but zeroes is a roll of 0, and no parts at all isn't a roll.
+        let first = parts.iter().find(|p| !p.expression.trim().is_empty());
+        let owner = first.ok_or(DiceError::Empty)?;
+        return Ok((vec![(1, Term::Constant(0))], vec![owner]));
+    }
+    Ok((terms, owners))
+}
+
+/// The dice in order, then the sum of the constants: `1d8+1d6+5`.
+fn compact(terms: &[(i32, Term)]) -> String {
+    let mut out = String::new();
+    let mut flat = 0;
+    for (sign, term) in terms {
+        match term {
+            Term::Constant(n) => flat += sign * n,
+            dice => {
+                if *sign < 0 {
+                    out.push('-');
+                } else if !out.is_empty() {
+                    out.push('+');
+                }
+                out.push_str(&dice.to_string());
+            }
+        }
+    }
+    match flat {
+        0 if out.is_empty() => "0".to_owned(),
+        0 => out,
+        n if n > 0 && !out.is_empty() => format!("{out}+{n}"),
+        n => format!("{out}{n}"),
+    }
+}
+
+fn is_d20_test(term: &Term) -> bool {
+    match *term {
+        Term::Dice {
+            count: 1,
+            sides: 20,
+            ..
+        } => true,
+        Term::Dice {
+            count: 2,
+            sides: 20,
+            keep,
+        } => keep != Keep::All,
+        _ => false,
+    }
+}
+
+fn roll_expr(expr: Expr, rng: &mut impl Rng) -> (Vec<TermResult>, i32, Option<u32>) {
+    let (terms, total) = expr.roll(rng);
+    let natural = expr
+        .terms
+        .iter()
+        .zip(&terms)
+        .find(|((_, term), _)| is_d20_test(term))
+        .and_then(|(_, t)| t.rolls.iter().find(|(_, kept)| *kept).map(|(r, _)| *r));
+    (terms, total, natural)
 }
 
 /// The expression with every die count doubled, for critical hits: `1d8+1d6+4` → `2d8+2d6+4`.
@@ -400,6 +586,89 @@ mod tests {
         }
     }
 
+    fn seeded() -> rand::rngs::StdRng {
+        use rand::SeedableRng;
+        rand::rngs::StdRng::seed_from_u64(7)
+    }
+
+    #[test]
+    fn parts_tag_their_terms() {
+        let parts = [
+            RollPart::new("1d8", "Longsword").typed("slashing"),
+            RollPart::new("3", "STR").typed("slashing"),
+            RollPart::new("1d6+1", "Flame Tongue").typed("fire"),
+            RollPart::new("-1", "Curse").typed("fire"),
+            RollPart::new("0", "Magic bonus").typed("slashing"),
+        ];
+        let r = roll_parts_with(&parts, RollMode::Normal, &mut seeded()).unwrap();
+        assert_eq!(r.expression, "1d8+1d6+3");
+        let sources: Vec<_> = r.terms.iter().map(|t| t.source.as_str()).collect();
+        assert_eq!(
+            sources,
+            ["Longsword", "STR", "Flame Tongue", "Flame Tongue", "Curse"]
+        );
+        assert_eq!(
+            r.total,
+            r.terms.iter().map(|t| t.sign * t.value).sum::<i32>()
+        );
+        let by_type = r.damage_by_type();
+        assert_eq!(by_type.len(), 2);
+        assert_eq!(by_type[0], ("slashing".to_owned(), r.terms[0].value + 3));
+        assert_eq!(by_type[1], ("fire".to_owned(), r.terms[2].value));
+    }
+
+    #[test]
+    fn parts_take_advantage_and_keep_the_natural() {
+        let parts = [RollPart::new("1d20", "d20"), RollPart::new("5", "DEX")];
+        let r = roll_parts_with(&parts, RollMode::Advantage, &mut seeded()).unwrap();
+        assert_eq!(r.expression, "1d20+5");
+        assert_eq!(r.terms[0].label, "2d20kh1");
+        assert_eq!(r.terms[0].source, "d20");
+        assert_eq!(r.natural, Some(r.terms[0].value as u32));
+        assert!(r.damage_by_type().is_empty());
+    }
+
+    #[test]
+    fn parts_edge_cases() {
+        let none = roll_parts_with(&[], RollMode::Normal, &mut seeded());
+        assert_eq!(none, Err(DiceError::Empty));
+        let zero = [RollPart::new("0", "STR")];
+        let r = roll_parts_with(&zero, RollMode::Normal, &mut seeded()).unwrap();
+        assert_eq!((r.expression.as_str(), r.total), ("0", 0));
+        let minus = [RollPart::new("-1d4", "Bane"), RollPart::new("-2", "Hex")];
+        assert_eq!(expression_of(&minus).unwrap(), "-1d4-2");
+        // A blank weapon die shouldn't stop the rest of the damage rolling.
+        let blank = [RollPart::new("", "Fist"), RollPart::new("3", "STR")];
+        assert_eq!(expression_of(&blank).unwrap(), "3");
+    }
+
+    #[test]
+    fn natural_ignores_other_dice() {
+        let r = roll_with("1d200", RollMode::Normal, &mut seeded()).unwrap();
+        assert_eq!(r.natural, None);
+    }
+
+    #[test]
+    fn untyped_terms_keep_damage_by_type_adding_up() {
+        let parts = [
+            RollPart::new("2", "Fire").typed("fire"),
+            RollPart::new("3", "Other"),
+        ];
+        let r = roll_parts_with(&parts, RollMode::Normal, &mut seeded()).unwrap();
+        assert_eq!(
+            r.damage_by_type(),
+            [("fire".to_owned(), 2), (String::new(), 3)]
+        );
+    }
+
+    #[test]
+    fn terms_logged_before_sources_load() {
+        let old = r#"[{"sign":1,"label":"1d6","rolls":[[3,true]],"value":3}]"#;
+        let terms: Vec<TermResult> = serde_json::from_str(old).unwrap();
+        assert_eq!(terms[0].source, "");
+        assert_eq!(terms[0].damage_type, "");
+    }
+
     #[test]
     fn breakdown_marks_dropped_dice() {
         let r = RollResult {
@@ -411,12 +680,16 @@ mod tests {
                     label: "2d20kh1".into(),
                     rolls: vec![(4, false), (17, true)],
                     value: 17,
+                    source: String::new(),
+                    damage_type: String::new(),
                 },
                 TermResult {
                     sign: 1,
                     label: "3".into(),
                     rolls: vec![],
                     value: 3,
+                    source: String::new(),
+                    damage_type: String::new(),
                 },
             ],
             total: 20,

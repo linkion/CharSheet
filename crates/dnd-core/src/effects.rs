@@ -219,6 +219,8 @@ pub struct Action {
     /// Keeps `roll` following the character, e.g. `{pb}`; empty for fixed dice.
     pub roll_formula: String,
     pub roll_effect: RollEffect,
+    /// The type of damage `roll` deals, if it deals any.
+    pub damage_type: String,
     /// Applied to the character when used.
     pub effect: Option<Effect>,
 }
@@ -234,6 +236,7 @@ impl Default for Action {
             roll: String::new(),
             roll_formula: String::new(),
             roll_effect: RollEffect::None,
+            damage_type: String::new(),
             effect: None,
         }
     }
@@ -243,8 +246,11 @@ impl Default for Action {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Outcome {
     pub label: String,
+    /// The item, feature or spell that produced it.
+    pub source: String,
     pub roll: String,
     pub roll_effect: RollEffect,
+    pub damage_type: String,
     /// A description of the resource spent, e.g. `1 of 3 uses left`.
     pub spent: String,
 }

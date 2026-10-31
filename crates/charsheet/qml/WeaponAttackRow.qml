@@ -99,7 +99,7 @@ ColumnLayout {
             model: row.a.riders
             Kirigami.Chip {
                 required property var modelData
-                text: "+" + modelData.dice + " " + modelData.name + (modelData.used ? " (used)" : "")
+                text: "+" + modelData.dice + (modelData.damage_type ? " " + modelData.damage_type : "") + " " + modelData.name + (modelData.used ? " (used)" : "")
                 checkable: true
                 closable: false
                 enabled: !modelData.used

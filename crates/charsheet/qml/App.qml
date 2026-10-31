@@ -113,8 +113,13 @@ QtObject {
         return pointer.split("/").filter(p => p).reduce((o, k) => o == null ? undefined : o[k], c)
     }
 
-    function rollD20(modifier, label) {
-        roll("1d20" + (modifier !== 0 ? signed(modifier) : ""), label, rollMode)
+    // Rolls something on the sheet, named by a play::RollTarget, so the roll lists its sources.
+    function rollCheck(target) {
+        sheet.rollCheck(JSON.stringify(target), rollMode)
+    }
+
+    function capitalized(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1)
     }
 
     readonly property var masteryOptions: [""].concat(["Cleave", "Graze", "Nick", "Push", "Sap", "Slow", "Topple", "Vex"])

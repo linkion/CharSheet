@@ -12,6 +12,7 @@ SheetCard {
     property string value
     property bool rollable: false
     property int rollModifier
+    property var rollTarget
     // "box", or "shield" (Armor Class) or "oval" (Level) in the decorated themes.
     property string shape: "box"
 
@@ -90,6 +91,7 @@ SheetCard {
                 anchors.centerIn: parent
                 visible: tile.rollable
                 modifier: tile.rollModifier
+                target: tile.rollTarget
                 rollLabel: tile.label
                 textScale: Style.decorated ? 2.1 : 1.6
             }

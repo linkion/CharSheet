@@ -32,6 +32,7 @@ SheetTab {
                 QQC2.Label { text: "Attack"; opacity: 0.7 }
                 RollButton {
                     modifier: modelData.attack
+                    target: ({ kind: "spell_attack", ability: modelData.ability.toLowerCase() })
                     rollLabel: "Spell attack"
                 }
             }
@@ -223,6 +224,7 @@ SheetTab {
             { key: "roll", label: "Roll when cast", type: "text", placeholder: "e.g. 2d8+3", visibleWhen: spell => !spell.roll_formula },
             { key: "roll_formula", label: "Roll formula", type: "text", placeholder: "e.g. {cantrip}d10 or 2d8+{spell}" },
             { key: "roll_effect", label: "With the roll", type: "choice", options: App.catalog.roll_effects, visibleWhen: spell => (spell.roll || "").length > 0 },
+            { key: "damage_type", label: "Damage type", type: "text", visibleWhen: spell => (spell.roll || "").length > 0 },
             { label: "Effect on you", type: "section" },
             { key: "effect", label: "Effect", type: "effect" }
         ]

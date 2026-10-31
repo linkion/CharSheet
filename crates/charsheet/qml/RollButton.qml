@@ -3,11 +3,12 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
-// Shows a signed modifier; clicking rolls a d20 with it.
+// Shows a signed modifier; clicking rolls `target`, a play::RollTarget, which adds it to a d20.
 QQC2.Button {
     id: button
 
     property int modifier
+    property var target
     property string rollLabel
     // Text size relative to the default font.
     property real textScale: 1
@@ -17,7 +18,7 @@ QQC2.Button {
 
     flat: true
     Accessible.name: label
-    onClicked: App.rollD20(modifier, rollLabel)
+    onClicked: App.rollCheck(target)
     QQC2.ToolTip.text: "Roll " + rollLabel
     QQC2.ToolTip.visible: hovered
     QQC2.ToolTip.delay: 600

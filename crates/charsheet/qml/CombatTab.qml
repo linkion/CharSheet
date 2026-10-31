@@ -17,10 +17,6 @@ SheetTab {
         { key: "other", title: "Other" }
     ]
 
-    function doubleDice(expression) {
-        return expression.replace(/(\d*)d(\d+)/gi, (m, n, sides) => (2 * (parseInt(n) || 1)) + "d" + sides)
-    }
-
     function takeDamage(amount) {
         if (amount <= 0)
             return
@@ -29,9 +25,8 @@ SheetTab {
         if (!concentrating)
             return
         const dc = Math.min(30, Math.max(10, Math.floor(amount / 2)))
-        const save = (App.d.abilities || []).find(a => a.key === "con")?.save ?? 0
         applicationWindow().showPassiveNotification("Concentrating on " + concentrating + ": CON save DC " + dc,
-            "long", "Roll Save", () => App.rollD20(save, "Concentration save (DC " + dc + ")"))
+            "long", "Roll Save", () => App.rollCheck({ kind: "concentration", dc: dc }))
     }
 
     GridLayout {
@@ -41,7 +36,7 @@ SheetTab {
         columnSpacing: Kirigami.Units.largeSpacing
 
         StatTile { label: "Armor Class"; value: App.d.armor_class ?? ""; shape: "shield"; Layout.fillHeight: true }
-        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0; Layout.fillHeight: true }
+        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0; rollTarget: ({ kind: "initiative" }); Layout.fillHeight: true }
         StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft"; Layout.fillHeight: true }
         StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0); Layout.fillHeight: true }
     }
@@ -174,7 +169,7 @@ SheetTab {
             QQC2.Button {
                 text: "Roll Death Save"
                 icon.name: "roll"
-                onClicked: App.rollD20(App.d.d20_penalty, "Death save")
+                onClicked: App.rollCheck({ kind: "death_save" })
             }
         }
     }
@@ -380,18 +375,19 @@ SheetTab {
                 }
                 RollButton {
                     modifier: derived ? derived.to_hit : 0
+                    target: ({ kind: "manual_attack", attack: index })
                     rollLabel: modelData.name + " attack"
                 }
                 QQC2.Button {
                     text: derived ? derived.damage : ""
                     flat: true
-                    onClicked: App.roll(derived.damage, modelData.name + " damage")
+                    onClicked: App.rollCheck({ kind: "manual_damage", attack: index, crit: false })
                     QQC2.ToolTip.text: "Roll damage"
                     QQC2.ToolTip.visible: hovered
                 }
                 QQC2.ToolButton {
                     text: "Crit"
-                    onClicked: App.roll(tab.doubleDice(derived.damage), modelData.name + " critical damage")
+                    onClicked: App.rollCheck({ kind: "manual_damage", attack: index, crit: true })
                     QQC2.ToolTip.text: "Roll critical damage (dice doubled)"
                     QQC2.ToolTip.visible: hovered
                 }

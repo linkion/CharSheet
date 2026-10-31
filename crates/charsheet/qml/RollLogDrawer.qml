@@ -5,6 +5,11 @@ import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
 Kirigami.OverlayDrawer {
+    id: drawer
+
+    // Ids of the rows showing their breakdown. Kept here, as App.rolls remakes the rows.
+    property var expandedIds: []
+
     edge: Qt.application.layoutDirection === Qt.RightToLeft ? Qt.LeftEdge : Qt.RightEdge
     modal: true
     width: Math.min(Kirigami.Units.gridUnit * 20, parent ? parent.width : 0)
@@ -56,31 +61,57 @@ Kirigami.OverlayDrawer {
                 clip: true
 
                 delegate: QQC2.ItemDelegate {
+                    id: row
+
                     required property var modelData
+                    readonly property bool expanded: drawer.expandedIds.includes(modelData.id)
+
                     width: ListView.view.width
-                    contentItem: RowLayout {
-                        ColumnLayout {
+                    onClicked: drawer.expandedIds = expanded
+                        ? drawer.expandedIds.filter(id => id !== modelData.id)
+                        : drawer.expandedIds.concat([modelData.id])
+
+                    contentItem: ColumnLayout {
+                        RowLayout {
                             Layout.fillWidth: true
-                            spacing: 0
-                            QQC2.Label {
-                                text: modelData.label
-                                font.bold: true
-                                elide: Text.ElideRight
+                            ColumnLayout {
                                 Layout.fillWidth: true
+                                spacing: 0
+                                QQC2.Label {
+                                    text: modelData.label
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                                QQC2.Label {
+                                    text: modelData.expression + (modelData.mode !== "normal" ? " (" + modelData.mode + ")" : "") + "  " + modelData.breakdown
+                                    opacity: 0.7
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
                             }
-                            QQC2.Label {
-                                text: modelData.expression + (modelData.mode !== "normal" ? " (" + modelData.mode + ")" : "") + "  " + modelData.breakdown
-                                opacity: 0.7
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
+                            Kirigami.Heading {
+                                text: modelData.total
+                                level: 2
+                                color: modelData.natural === 20 ? Kirigami.Theme.positiveTextColor
+                                     : modelData.natural === 1 ? Kirigami.Theme.negativeTextColor
+                                     : Kirigami.Theme.textColor
+                            }
+                            Kirigami.Icon {
+                                Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                                Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                                source: row.expanded ? "go-up" : "go-down"
                             }
                         }
-                        Kirigami.Heading {
-                            text: modelData.total
-                            level: 2
-                            color: modelData.natural === 20 ? Kirigami.Theme.positiveTextColor
-                                 : modelData.natural === 1 ? Kirigami.Theme.negativeTextColor
-                                 : Kirigami.Theme.textColor
+                        QQC2.Label {
+                            visible: row.expanded && (modelData.rolled_at ?? "").length > 0
+                            text: visible ? new Date(modelData.rolled_at).toLocaleString(Qt.locale(), Locale.ShortFormat) : ""
+                            opacity: 0.7
+                        }
+                        RollBreakdown {
+                            Layout.fillWidth: true
+                            visible: row.expanded
+                            roll: row.expanded ? modelData : null
                         }
                     }
                 }

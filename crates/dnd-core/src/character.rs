@@ -1,7 +1,7 @@
 use crate::abilities::{Ability, Proficiency, Skill, modifier, proficiency_bonus};
 use crate::armor::ArmorKind;
 use crate::classes::{self, CasterKind, ClassId};
-use crate::dice::{self, RollMode, RollResult};
+use crate::dice::{self, Bonus, RollMode, RollPart, RollResult};
 use crate::effects::{
     Action, Activation, Cost, Effect, Modifier, ModifierKind, Outcome, RollEffect,
 };
@@ -105,6 +105,8 @@ pub struct Spell {
     /// Keeps `roll` following the character, e.g. `{cantrip}d10`; empty for fixed dice.
     pub roll_formula: String,
     pub roll_effect: RollEffect,
+    /// The type of damage `roll` deals, if it deals any.
+    pub damage_type: String,
     /// Applied to the character when cast.
     pub effect: Option<Effect>,
 }
@@ -124,6 +126,7 @@ impl Default for Spell {
             roll: String::new(),
             roll_formula: String::new(),
             roll_effect: RollEffect::None,
+            damage_type: String::new(),
             effect: None,
         }
     }
@@ -330,6 +333,15 @@ impl Default for Feature {
     }
 }
 
+/// A modifier's name in a breakdown: what it comes from, and its own label if it has one.
+fn modifier_name(source: &str, m: &Modifier) -> String {
+    if m.text.is_empty() {
+        source.to_owned()
+    } else {
+        format!("{source} ({})", m.text)
+    }
+}
+
 /// A damage rider on a weapon attack, such as Hunter's Mark or Slash Draw.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Rider {
@@ -379,8 +391,14 @@ pub struct WeaponAttack {
     pub ranged: bool,
     pub ability: Ability,
     pub to_hit: i32,
+    /// What `to_hit` adds up from.
+    #[serde(skip)]
+    pub to_hit_parts: Vec<Bonus>,
     /// Base damage with flat bonuses, e.g. `1d8+4`; riders are listed separately.
     pub damage: String,
+    /// What `damage` is made of, each piece with its source and type.
+    #[serde(skip)]
+    pub damage_parts: Vec<RollPart>,
     pub damage_type: String,
     pub range: String,
     pub mastery: String,
@@ -626,29 +644,68 @@ impl Character {
         from_class || self.extra_saves.contains(&ability)
     }
 
+    fn ability_bonus(&self, ability: Ability) -> Bonus {
+        Bonus::new(self.ability_mod(ability), ability.abbrev())
+    }
+
+    fn exhaustion_bonus(&self) -> Bonus {
+        Bonus::new(self.d20_penalty(), "Exhaustion")
+    }
+
+    /// The modifiers of a kind in force, each as a bonus named after its source.
+    fn modifier_bonuses(&self, kind: ModifierKind) -> impl Iterator<Item = (Bonus, &Modifier)> {
+        self.modifiers()
+            .into_iter()
+            .filter(move |(_, m)| m.kind == kind)
+            .map(|(source, m)| (Bonus::new(m.value, modifier_name(source, m)), m))
+    }
+
+    /// What's added to a plain ability check.
+    pub fn check_parts(&self, ability: Ability) -> Vec<Bonus> {
+        vec![self.ability_bonus(ability), self.exhaustion_bonus()]
+    }
+
+    /// What's added to a saving throw.
+    pub fn save_parts(&self, ability: Ability) -> Vec<Bonus> {
+        let mut parts = vec![self.ability_bonus(ability)];
+        if self.save_proficient(ability) {
+            parts.push(Bonus::new(self.proficiency_bonus(), "Proficiency"));
+        }
+        parts.extend(
+            self.modifier_bonuses(ModifierKind::Save)
+                .filter(|(_, m)| m.ability.is_none_or(|a| a == ability))
+                .map(|(bonus, _)| bonus),
+        );
+        parts.push(self.exhaustion_bonus());
+        parts
+    }
+
     pub fn save_mod(&self, ability: Ability) -> i32 {
-        let prof = if self.save_proficient(ability) {
-            self.proficiency_bonus()
-        } else {
-            0
-        };
-        let bonus: i32 = self
-            .modifiers_of(ModifierKind::Save)
-            .filter(|m| m.ability.is_none_or(|a| a == ability))
-            .map(|m| m.value)
-            .sum();
-        self.ability_mod(ability) + prof + bonus + self.d20_penalty()
+        Bonus::total(&self.save_parts(ability))
     }
 
     pub fn skill_proficiency(&self, skill: Skill) -> Proficiency {
         self.skills.get(&skill).copied().unwrap_or_default()
     }
 
+    /// What's added to a skill check.
+    pub fn skill_parts(&self, skill: Skill) -> Vec<Bonus> {
+        let proficiency = self.skill_proficiency(skill);
+        let source = match proficiency {
+            Proficiency::None => "Jack of All Trades",
+            Proficiency::Proficient => "Proficiency",
+            Proficiency::Expertise => "Expertise",
+        };
+        let prof = proficiency.bonus(self.proficiency_bonus(), self.jack_of_all_trades);
+        vec![
+            self.ability_bonus(skill.ability()),
+            Bonus::new(prof, source),
+            self.exhaustion_bonus(),
+        ]
+    }
+
     pub fn skill_mod(&self, skill: Skill) -> i32 {
-        let prof = self
-            .skill_proficiency(skill)
-            .bonus(self.proficiency_bonus(), self.jack_of_all_trades);
-        self.ability_mod(skill.ability()) + prof + self.d20_penalty()
+        Bonus::total(&self.skill_parts(skill))
     }
 
     /// Passive score: 10 + skill modifier (Exhaustion only affects actual d20 rolls).
@@ -656,14 +713,28 @@ impl Character {
         10 + self.skill_mod(skill) - self.d20_penalty()
     }
 
-    pub fn initiative(&self) -> i32 {
+    /// What's added to an initiative roll.
+    pub fn initiative_parts(&self) -> Vec<Bonus> {
         let joat = if self.jack_of_all_trades {
             self.proficiency_bonus() / 2
         } else {
             0
         };
-        let bonus = self.modifier_total(ModifierKind::Initiative);
-        self.ability_mod(Ability::Dex) + self.initiative_bonus + bonus + joat + self.d20_penalty()
+        let mut parts = vec![
+            self.ability_bonus(Ability::Dex),
+            Bonus::new(self.initiative_bonus, "Initiative bonus"),
+        ];
+        parts.extend(
+            self.modifier_bonuses(ModifierKind::Initiative)
+                .map(|(bonus, _)| bonus),
+        );
+        parts.push(Bonus::new(joat, "Jack of All Trades"));
+        parts.push(self.exhaustion_bonus());
+        parts
+    }
+
+    pub fn initiative(&self) -> i32 {
+        Bonus::total(&self.initiative_parts())
     }
 
     pub fn speed(&self) -> i32 {
@@ -969,33 +1040,59 @@ impl Character {
         } else {
             0
         };
-        let attack_bonus: i32 = applicable
-            .iter()
-            .filter(|(_, m)| m.kind == ModifierKind::AttackRoll)
-            .map(|(_, m)| m.value)
-            .sum();
-        let to_hit = self.ability_mod(ability)
-            + prof
-            + weapon.magic_bonus
-            + attack_bonus
-            + self.d20_penalty();
+        let mut to_hit_parts = vec![
+            self.ability_bonus(ability),
+            Bonus::new(prof, "Proficiency"),
+            Bonus::new(weapon.magic_bonus, "Magic bonus"),
+        ];
+        to_hit_parts.extend(
+            applicable
+                .iter()
+                .filter(|(_, m)| m.kind == ModifierKind::AttackRoll)
+                .map(|(source, m)| Bonus::new(m.value, modifier_name(source, m))),
+        );
+        to_hit_parts.push(self.exhaustion_bonus());
+        let to_hit = Bonus::total(&to_hit_parts);
 
+        let dice = match grip {
+            Grip::TwoHanded => &weapon.versatile,
+            _ => &weapon.damage,
+        };
+        let typed = |bonus: Bonus, damage_type: &str| {
+            let part = bonus.part();
+            part.typed(if damage_type.trim().is_empty() {
+                weapon.damage_type.as_str()
+            } else {
+                damage_type
+            })
+        };
+        let mut damage_parts = vec![
+            RollPart::new(dice.clone(), item.name.clone()).typed(weapon.damage_type.clone()),
+            typed(self.ability_bonus(ability), ""),
+            typed(Bonus::new(weapon.magic_bonus, "Magic bonus"), ""),
+        ];
         let mut flat = self.ability_mod(ability) + weapon.magic_bonus;
         let mut riders = Vec::new();
         let mut notes = Vec::new();
         for (source, m) in &applicable {
             match m.kind {
-                ModifierKind::Damage if m.dice.trim().is_empty() => flat += m.value,
+                ModifierKind::Damage if m.dice.trim().is_empty() => {
+                    flat += m.value;
+                    damage_parts.push(typed(
+                        Bonus::new(m.value, modifier_name(source, m)),
+                        &m.damage_type,
+                    ));
+                }
                 ModifierKind::Damage => {
-                    let name = if m.text.is_empty() {
-                        source.to_string()
-                    } else {
-                        format!("{source} ({})", m.text)
-                    };
+                    let name = modifier_name(source, m);
                     riders.push(Rider {
                         used: m.once_per_turn && self.riders_used.contains(&name),
                         name,
-                        dice: m.dice.trim().to_owned(),
+                        dice: match m.value {
+                            0 => m.dice.trim().to_owned(),
+                            n if n > 0 => format!("{}+{n}", m.dice.trim()),
+                            n => format!("{}{n}", m.dice.trim()),
+                        },
                         damage_type: m.damage_type.clone(),
                         once_per_turn: m.once_per_turn,
                     });
@@ -1009,10 +1106,6 @@ impl Character {
                 _ => {}
             }
         }
-        let dice = match grip {
-            Grip::TwoHanded => &weapon.versatile,
-            _ => &weapon.damage,
-        };
         let damage = match flat {
             0 => dice.clone(),
             n if n > 0 => format!("{dice}+{n}"),
@@ -1034,7 +1127,9 @@ impl Character {
             ranged: ranged_attack,
             ability,
             to_hit,
+            to_hit_parts,
             damage,
+            damage_parts,
             damage_type: weapon.damage_type.clone(),
             range,
             mastery: weapon.mastery.clone(),
@@ -1093,29 +1188,36 @@ impl Character {
         Ok(())
     }
 
-    /// The damage expression for an attack with every rider not in `excluded`, doubled on a
-    /// critical hit. Marks the once-per-turn riders it includes as used.
+    /// The damage of an attack with every rider not in `excluded`, doubled on a critical
+    /// hit. Marks the once-per-turn riders it includes as used.
     pub fn weapon_damage(
         &mut self,
         attack: &WeaponAttack,
         crit: bool,
         excluded: &[String],
-    ) -> Result<String, PlayError> {
-        let mut expression = attack.damage.clone();
+    ) -> Result<Vec<RollPart>, PlayError> {
+        let mut parts = attack.damage_parts.clone();
         for rider in &attack.riders {
             if rider.used || excluded.contains(&rider.name) {
                 continue;
             }
-            expression.push('+');
-            expression.push_str(&rider.dice);
+            let damage_type = if rider.damage_type.trim().is_empty() {
+                &attack.damage_type
+            } else {
+                &rider.damage_type
+            };
+            parts.push(RollPart::new(rider.dice.clone(), rider.name.clone()).typed(damage_type));
             if rider.once_per_turn {
                 self.riders_used.insert(rider.name.clone());
             }
         }
         if crit {
-            expression = crate::dice::double_dice(&expression)?;
+            parts = parts
+                .into_iter()
+                .map(RollPart::doubled)
+                .collect::<Result<_, _>>()?;
         }
-        Ok(expression)
+        Ok(parts)
     }
 
     // --- Actions and spells -----------------------------------------------------------
@@ -1129,8 +1231,10 @@ impl Character {
         }
         Outcome {
             label: format!("{source}: {}", action.name),
+            source: source.to_owned(),
             roll: action.roll,
             roll_effect: action.roll_effect,
+            damage_type: action.damage_type,
             spent,
         }
     }
@@ -1260,6 +1364,7 @@ impl Character {
             activation: sp.casting_time,
             roll: sp.roll.clone(),
             roll_effect: sp.roll_effect,
+            damage_type: sp.damage_type.clone(),
             effect: sp.effect.clone().map(|mut e| {
                 e.concentration |= sp.concentration;
                 e
@@ -1334,17 +1439,53 @@ impl Character {
         8 + self.proficiency_bonus() + self.ability_mod(ability)
     }
 
-    pub fn spell_attack(&self, ability: Ability) -> i32 {
-        self.proficiency_bonus() + self.ability_mod(ability) + self.d20_penalty()
+    /// What's added to a spell attack roll.
+    pub fn spell_attack_parts(&self, ability: Ability) -> Vec<Bonus> {
+        vec![
+            Bonus::new(self.proficiency_bonus(), "Proficiency"),
+            self.ability_bonus(ability),
+            self.exhaustion_bonus(),
+        ]
     }
 
-    pub fn attack_bonus(&self, attack: &Attack) -> i32 {
+    pub fn spell_attack(&self, ability: Ability) -> i32 {
+        Bonus::total(&self.spell_attack_parts(ability))
+    }
+
+    /// What's added to a manual attack's roll to hit.
+    pub fn attack_parts(&self, attack: &Attack) -> Vec<Bonus> {
         let prof = if attack.proficient {
             self.proficiency_bonus()
         } else {
             0
         };
-        self.ability_mod(attack.ability) + prof + attack.bonus + self.d20_penalty()
+        vec![
+            self.ability_bonus(attack.ability),
+            Bonus::new(prof, "Proficiency"),
+            Bonus::new(attack.bonus, "Attack bonus"),
+            self.exhaustion_bonus(),
+        ]
+    }
+
+    pub fn attack_bonus(&self, attack: &Attack) -> i32 {
+        Bonus::total(&self.attack_parts(attack))
+    }
+
+    /// A manual attack's damage, each piece with its source and type.
+    pub fn attack_damage_parts(&self, attack: &Attack) -> Vec<RollPart> {
+        let ability = if attack.add_ability_to_damage {
+            self.ability_mod(attack.ability)
+        } else {
+            0
+        };
+        [
+            RollPart::new(attack.damage.clone(), attack.name.clone()),
+            Bonus::new(ability, attack.ability.abbrev()).part(),
+            Bonus::new(attack.bonus, "Attack bonus").part(),
+        ]
+        .into_iter()
+        .map(|p| p.typed(attack.damage_type.clone()))
+        .collect()
     }
 
     /// Full damage expression, e.g. `1d8+3`.
@@ -1421,20 +1562,23 @@ impl Character {
     // --- Rests ----------------------------------------------------------------------
 
     /// Spends one hit die of the class at `class_index`, healing by the roll plus the
-    /// CON modifier (minimum 1). Returns the roll, or None if no dice are left.
+    /// CON modifier (minimum 1). Returns the roll and the amount healed, or None if no dice
+    /// are left.
     pub fn spend_hit_die(
         &mut self,
         class_index: usize,
         rng: &mut impl rand::Rng,
-    ) -> Option<(u32, i32)> {
-        let con = self.ability_mod(Ability::Con);
+    ) -> Option<(RollResult, i32)> {
+        let con = self.ability_bonus(Ability::Con).part();
         let class = self.classes.get_mut(class_index)?;
         if class.hit_dice_spent >= class.level {
             return None;
         }
         class.hit_dice_spent += 1;
-        let roll = rng.random_range(1..=class.class.info().hit_die as u32);
-        let healed = (roll as i32 + con).max(1);
+        let info = class.class.info();
+        let die = RollPart::new(format!("1d{}", info.hit_die), info.name);
+        let roll = dice::roll_parts_with(&[die, con], RollMode::Normal, rng).ok()?;
+        let healed = roll.total.max(1);
         self.heal(healed);
         Some((roll, healed))
     }
@@ -1759,8 +1903,10 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let (roll, healed) = c.spend_hit_die(0, &mut rng).unwrap();
-        assert!((1..=10).contains(&roll));
-        assert_eq!(healed, roll as i32 + 2);
+        let die = roll.terms[0].value;
+        assert!((1..=10).contains(&die));
+        assert_eq!(roll.terms[1].source, "CON");
+        assert_eq!(healed, die + 2);
         assert_eq!(c.hp.current, 10 + healed);
         assert_eq!(c.classes[0].hit_dice_spent, 1);
         c.classes[1].hit_dice_spent = 1;
@@ -1957,6 +2103,59 @@ mod tests {
     }
 
     #[test]
+    fn bonus_parts_add_up_to_the_sheet() {
+        let mut c = sable();
+        c.exhaustion = 1;
+        for a in Ability::ALL {
+            assert_eq!(Bonus::total(&c.save_parts(a)), c.save_mod(a));
+        }
+        for skill in Skill::ALL {
+            assert_eq!(Bonus::total(&c.skill_parts(skill)), c.skill_mod(skill));
+        }
+        assert_eq!(Bonus::total(&c.initiative_parts()), c.initiative());
+        for a in c.weapon_attacks() {
+            assert_eq!(Bonus::total(&a.to_hit_parts), a.to_hit, "{}", a.name);
+            assert_eq!(
+                dice::expression_of(&a.damage_parts).unwrap(),
+                a.damage,
+                "{}",
+                a.name
+            );
+        }
+    }
+
+    #[test]
+    fn damage_modifiers_keep_their_source_type_and_value() {
+        let mut c = sable();
+        let i = c.inventory.iter().position(|i| i.name == "Katana").unwrap();
+        c.inventory[i].modifiers = vec![
+            Modifier {
+                kind: ModifierKind::Damage,
+                value: 2,
+                damage_type: "fire".into(),
+                text: "Ember".into(),
+                ..Default::default()
+            },
+            Modifier {
+                kind: ModifierKind::Damage,
+                dice: "1d6".into(),
+                value: 2,
+                damage_type: "cold".into(),
+                ..Default::default()
+            },
+        ];
+        let katana = attack(&c.weapon_attacks(), "Katana").clone();
+        let flat = katana
+            .damage_parts
+            .iter()
+            .find(|p| p.source == "Katana (Ember)")
+            .unwrap();
+        assert_eq!(flat.damage_type, "fire");
+        let rider = katana.riders.iter().find(|r| r.dice == "1d6+2").unwrap();
+        assert_eq!(rider.damage_type, "cold");
+    }
+
+    #[test]
     fn riders_once_per_turn() {
         let mut c = sable();
         let hm = c
@@ -1966,20 +2165,18 @@ mod tests {
             .unwrap();
         c.cast_spell(hm, 0).unwrap();
         let katana = attack(&c.weapon_attacks(), "Katana").clone();
-        assert_eq!(
-            c.weapon_damage(&katana, false, &[]).unwrap(),
-            "1d8+4+1d6+1d6"
-        );
+        let parts = c.weapon_damage(&katana, false, &[]).unwrap();
+        assert_eq!(dice::expression_of(&parts).unwrap(), "1d8+1d6+1d6+4");
 
         // Slash Draw's melee rider is spent; Hunter's Mark still applies.
         let katana = attack(&c.weapon_attacks(), "Katana").clone();
-        assert_eq!(c.weapon_damage(&katana, true, &[]).unwrap(), "2d8+4+2d6");
+        let crit = c.weapon_damage(&katana, true, &[]).unwrap();
+        assert_eq!(dice::expression_of(&crit).unwrap(), "2d8+2d6+4");
         let revolver = attack(&c.weapon_attacks(), "Revolver").clone();
-        assert_eq!(
-            c.weapon_damage(&revolver, false, &["Hunter's Mark".into()])
-                .unwrap(),
-            "1d6+4+1d4"
-        );
+        let parts = c
+            .weapon_damage(&revolver, false, &["Hunter's Mark".into()])
+            .unwrap();
+        assert_eq!(dice::expression_of(&parts).unwrap(), "1d6+1d4+4");
 
         c.new_turn();
         assert!(c.riders_used.is_empty());

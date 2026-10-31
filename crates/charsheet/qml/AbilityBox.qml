@@ -78,6 +78,7 @@ SheetCard {
                 RollButton {
                     anchors.centerIn: parent
                     modifier: box.ability.modifier
+                    target: ({ kind: "ability", ability: box.ability.key })
                     rollLabel: box.ability.name + " check"
                     textScale: 2.3
                 }
@@ -120,6 +121,7 @@ SheetCard {
             Layout.fillWidth: true
             RollButton {
                 modifier: box.ability.modifier
+                target: ({ kind: "ability", ability: box.ability.key })
                 rollLabel: box.ability.name + " check"
                 textScale: 1.8
                 Layout.alignment: Qt.AlignHCenter
@@ -156,6 +158,7 @@ SheetCard {
             }
             RollButton {
                 modifier: box.ability.save
+                target: ({ kind: "save", ability: box.ability.key })
                 rollLabel: box.ability.name + " save"
             }
             QQC2.Label {
@@ -190,6 +193,7 @@ SheetCard {
                 }
                 RollButton {
                     modifier: modelData.modifier
+                    target: ({ kind: "skill", skill: modelData.key })
                     rollLabel: modelData.name
                 }
                 QQC2.Label {

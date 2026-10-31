@@ -69,6 +69,9 @@ pub struct StoredRoll {
     pub id: i64,
     pub label: String,
     pub breakdown: String,
+    /// When it was logged, in UTC as `2026-10-31T18:04:05.123Z`; empty until it's saved.
+    #[serde(default)]
+    pub rolled_at: String,
     #[serde(flatten)]
     pub result: RollResult,
 }
@@ -79,6 +82,7 @@ impl StoredRoll {
             id: 0,
             label: label.into(),
             breakdown: result.breakdown(),
+            rolled_at: String::new(),
             result,
         }
     }
@@ -91,6 +95,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0002_items_effects.sql"),
     include_str!("../migrations/0003_revision.sql"),
     include_str!("../migrations/0004_formulas.sql"),
+    include_str!("../migrations/0005_spell_damage_type.sql"),
 ];
 
 /// Tables holding a character's sheet entries, cleared and rewritten on every save.
@@ -460,7 +465,7 @@ impl Library {
             .prepare(
                 "SELECT name, level, prepared, ritual, concentration, notes, casting_time,
                         free_uses_max, free_uses_spent, roll, roll_effect, effect_json,
-                        roll_formula
+                        roll_formula, damage_type
                  FROM spells WHERE character_id = ?1 ORDER BY position",
             )?
             .query_map([&key], |r| {
@@ -478,6 +483,7 @@ impl Library {
                     roll_effect: text_col(r, 10)?,
                     effect: opt_json_col(r, 11)?,
                     roll_formula: r.get(12)?,
+                    damage_type: r.get(13)?,
                 })
             })?
             .collect::<Result<_, _>>()?;
@@ -754,8 +760,8 @@ impl Library {
                 "INSERT INTO spells
                  (character_id, position, name, level, prepared, ritual, concentration, notes,
                   casting_time, free_uses_max, free_uses_spent, roll, roll_effect, effect_json,
-                  roll_formula)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+                  roll_formula, damage_type)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             )?;
             for (i, s) in spells.iter().enumerate() {
                 stmt.execute(params![
@@ -773,7 +779,8 @@ impl Library {
                     s.roll,
                     to_text(&s.roll_effect)?,
                     s.effect.as_ref().map(serde_json::to_string).transpose()?,
-                    s.roll_formula
+                    s.roll_formula,
+                    s.damage_type
                 ])?;
             }
 
@@ -928,12 +935,21 @@ impl Library {
         Ok(roll_id)
     }
 
+    /// When the logged roll with this id was made.
+    pub fn rolled_at(&self, roll_id: i64) -> Result<String, StorageError> {
+        Ok(self.conn.query_row(
+            "SELECT rolled_at FROM rolls WHERE id = ?1",
+            [roll_id],
+            |r| r.get(0),
+        )?)
+    }
+
     /// The character's logged rolls, newest first.
     pub fn recent_rolls(&self, id: Uuid) -> Result<Vec<StoredRoll>, StorageError> {
         let rows = self
             .conn
             .prepare(
-                "SELECT label, breakdown, expression, mode, total, natural, terms_json, id
+                "SELECT label, breakdown, expression, mode, total, natural, terms_json, id, rolled_at
                  FROM rolls WHERE character_id = ?1 ORDER BY id DESC LIMIT ?2",
             )?
             .query_map(params![id.to_string(), MAX_ROLLS as u32], |r| {
@@ -949,16 +965,18 @@ impl Library {
                     },
                     r.get::<_, String>(6)?,
                     r.get::<_, i64>(7)?,
+                    r.get::<_, String>(8)?,
                 ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
         rows.into_iter()
-            .map(|(label, breakdown, mut result, terms, id)| {
+            .map(|(label, breakdown, mut result, terms, id, rolled_at)| {
                 result.terms = serde_json::from_str(&terms)?;
                 Ok(StoredRoll {
                     id,
                     label,
                     breakdown,
+                    rolled_at,
                     result,
                 })
             })
@@ -1248,6 +1266,8 @@ mod tests {
         assert_eq!(rolls[MAX_ROLLS - 1].label, "roll 5");
         assert_eq!(rolls[0].result.mode, RollMode::Advantage);
         assert_eq!(rolls[0].breakdown, rolls[0].result.breakdown());
+        assert!(rolls[0].rolled_at.ends_with('Z'));
+        assert_eq!(lib.rolled_at(last_id).unwrap(), rolls[0].rolled_at);
 
         lib.clear_rolls(c.id).unwrap();
         assert!(lib.recent_rolls(c.id).unwrap().is_empty());
@@ -1284,6 +1304,7 @@ mod tests {
         assert_eq!(c.features[0].uses_spent, 1);
         assert_eq!(c.spells[0].casting_time, Activation::Action);
         assert_eq!(c.spells[0].roll_formula, "");
+        assert_eq!(c.spells[0].damage_type, "");
         assert_eq!(c.features[0].uses_formula, "");
         assert_eq!(c.inventory[0].regain, "");
         assert!(c.effects.is_empty());

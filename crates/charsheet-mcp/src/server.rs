@@ -417,12 +417,37 @@ fn status(c: &Character) -> Value {
 }
 
 fn roll_summary(r: &StoredRoll) -> Value {
-    json!({
+    let parts: Vec<Value> = r
+        .result
+        .terms
+        .iter()
+        .map(|t| {
+            json!({
+                "source": t.source,
+                "damage_type": t.damage_type,
+                "dice": t.label,
+                "value": t.sign * t.value,
+            })
+        })
+        .collect();
+    let damage: Vec<Value> = r
+        .result
+        .damage_by_type()
+        .into_iter()
+        .map(|(damage_type, amount)| json!({ "type": damage_type, "amount": amount }))
+        .collect();
+    let mut summary = json!({
         "label": r.label,
         "total": r.result.total,
         "breakdown": r.breakdown,
         "natural": r.result.natural,
-    })
+        "parts": parts,
+        "damage_by_type": damage,
+    });
+    if !r.rolled_at.is_empty() {
+        summary["rolled_at"] = json!(r.rolled_at);
+    }
+    summary
 }
 
 fn played_json(c: &Character, played: &Played) -> ToolResult {
@@ -805,11 +830,7 @@ impl CharSheetServer {
 
     #[tool(description = "Spend a hit die: roll it, add the CON modifier and heal that much.")]
     async fn spend_hit_die(&self, Parameters(a): Parameters<HitDieArg>) -> ToolResult {
-        self.update(&a.character, |c| {
-            let message = play::spend_hit_die(c, a.class_index).map_err(play_err)?;
-            let output = to_json(&json!({ "message": message, "status": status(c) }))?;
-            Ok((output, Vec::new()))
-        })
+        self.played(&a.character, |c| play::spend_hit_die(c, a.class_index))
     }
 
     #[tool(description = "Take a short rest: recharges short-rest uses and Pact Magic slots.")]
@@ -1187,6 +1208,17 @@ mod tests {
         );
         assert_eq!(cast["status"]["spell_slots"][0]["left"], 3);
         assert_eq!(cast["rolls"][0]["label"], "Cure Wounds");
+        assert_eq!(cast["rolls"][0]["parts"][0]["source"], "Cure Wounds");
+
+        let healed = parse(
+            s.spend_hit_die(Parameters(HitDieArg {
+                character: "Sable".into(),
+                class_index: 0,
+            }))
+            .await,
+        );
+        assert_eq!(healed["rolls"][0]["label"], "Hit die");
+        assert_eq!(healed["rolls"][0]["parts"][1]["source"], "CON");
 
         let attack = parse(
             s.weapon_attack(Parameters(AttackArg {
@@ -1203,7 +1235,7 @@ mod tests {
                 .ends_with("attack")
         );
         let rolls = parse(s.get_rolls(Parameters(character("Sable"))).await);
-        assert_eq!(rolls.as_array().unwrap().len(), 2);
+        assert_eq!(rolls.as_array().unwrap().len(), 3);
 
         let rested = parse(s.long_rest(Parameters(character("Sable"))).await);
         assert_eq!(rested["status"]["hp"]["current"], 52);

@@ -110,7 +110,7 @@ SheetTab {
         rowSpacing: Kirigami.Units.largeSpacing
 
         StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0) }
-        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0 }
+        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0; rollTarget: ({ kind: "initiative" }) }
         StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft" }
         StatTile { label: "Passive Perception"; value: App.d.passive_perception ?? "" }
         StatTile { label: "Passive Insight"; value: App.d.passive_insight ?? "" }

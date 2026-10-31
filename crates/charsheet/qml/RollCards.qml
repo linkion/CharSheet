@@ -22,7 +22,10 @@ ColumnLayout {
                 rollTotal: roll.total,
                 rollLabel: roll.label,
                 detail: roll.expression + mode + "  " + roll.breakdown,
-                natural: roll.natural || 0
+                natural: roll.natural || 0,
+                // As text, since a ListModel turns nested arrays into models of their own.
+                rollJson: JSON.stringify(roll),
+                expanded: false
             })
         }
         if (cards.count > maxCards)
@@ -99,61 +102,83 @@ ColumnLayout {
             required property string rollLabel
             required property string detail
             required property int natural
+            required property string rollJson
+            required property bool expanded
 
+            readonly property real headerHeight: Kirigami.Units.gridUnit * 2.8
             readonly property string verdict: natural === 20 ? "Natural 20!" : natural === 1 ? "Natural 1" : ""
             readonly property color ink: Style.decorated ? Style.heading : Kirigami.Theme.textColor
 
             width: ListView.view.width
             // Explicit, since the list places a card before its layout has a size.
-            height: Kirigami.Units.gridUnit * 2.8 + topPadding + bottomPadding
+            height: headerHeight + topPadding + bottomPadding
+                + (expanded ? breakdown.implicitHeight + Kirigami.Units.smallSpacing : 0)
             knob: "none"
+            onClicked: cards.setProperty(index, "expanded", !expanded)
 
-            contentItem: RowLayout {
-                spacing: Kirigami.Units.largeSpacing
+            contentItem: ColumnLayout {
+                spacing: Kirigami.Units.smallSpacing
 
-                Text {
-                    Layout.minimumWidth: Kirigami.Units.gridUnit * 2.5
-                    horizontalAlignment: Text.AlignHCenter
-                    text: card.rollTotal
-                    font.family: Style.displayFamily
-                    font.pixelSize: Kirigami.Units.gridUnit * 2.2
-                    color: card.natural === 20 ? Kirigami.Theme.positiveTextColor
-                        : card.natural === 1 ? Kirigami.Theme.negativeTextColor : card.ink
-                }
-                ColumnLayout {
+                RowLayout {
                     Layout.fillWidth: true
-                    spacing: 0
+                    Layout.preferredHeight: card.headerHeight
+                    spacing: Kirigami.Units.largeSpacing
 
                     Text {
-                        Layout.fillWidth: true
-                        text: card.rollLabel + (card.verdict ? "  — " + card.verdict : "")
-                        font.family: Style.labelFamily
-                        font.bold: true
-                        color: card.ink
-                        elide: Text.ElideRight
+                        Layout.minimumWidth: Kirigami.Units.gridUnit * 2.5
+                        horizontalAlignment: Text.AlignHCenter
+                        text: card.rollTotal
+                        font.family: Style.displayFamily
+                        font.pixelSize: Kirigami.Units.gridUnit * 2.2
+                        color: card.natural === 20 ? Kirigami.Theme.positiveTextColor
+                            : card.natural === 1 ? Kirigami.Theme.negativeTextColor : card.ink
                     }
-                    Text {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: card.detail
-                        font.family: Style.uiFamily
-                        color: Kirigami.Theme.disabledTextColor
-                        elide: Text.ElideRight
+                        spacing: 0
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: card.rollLabel + (card.verdict ? "  — " + card.verdict : "")
+                            font.family: Style.labelFamily
+                            font.bold: true
+                            color: card.ink
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: card.detail
+                            font.family: Style.uiFamily
+                            color: Kirigami.Theme.disabledTextColor
+                            elide: Text.ElideRight
+                        }
+                    }
+                    Kirigami.Icon {
+                        Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                        Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                        source: card.expanded ? "go-up" : "go-down"
+                    }
+                    QQC2.ToolButton {
+                        id: dismiss
+                        Layout.alignment: Qt.AlignVCenter
+                        icon.name: "window-close"
+                        text: "Dismiss"
+                        display: QQC2.AbstractButton.IconOnly
+                        onClicked: cards.remove(card.index)
+
+                        // Its own tooltip, as the shared one would open beneath the stack.
+                        QQC2.ToolTip {
+                            z: stack.z + 1
+                            text: dismiss.text
+                            visible: dismiss.hovered
+                        }
                     }
                 }
-                QQC2.ToolButton {
-                    id: dismiss
-                    Layout.alignment: Qt.AlignVCenter
-                    icon.name: "window-close"
-                    text: "Dismiss"
-                    display: QQC2.AbstractButton.IconOnly
-                    onClicked: cards.remove(card.index)
-
-                    // Its own tooltip, as the shared one would open beneath the stack.
-                    QQC2.ToolTip {
-                        z: stack.z + 1
-                        text: dismiss.text
-                        visible: dismiss.hovered
-                    }
+                RollBreakdown {
+                    id: breakdown
+                    Layout.fillWidth: true
+                    visible: card.expanded
+                    roll: card.expanded ? JSON.parse(card.rollJson) : null
                 }
             }
         }

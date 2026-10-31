@@ -567,12 +567,18 @@ fn spell_rounds(rec: &Value) -> u32 {
 /// The dice a spell's structured fields make certain: a single damage roll from an attack or
 /// a save that's over at once. Anything else may be a rider or a later effect.
 fn spell_dice(rec: &Value) -> Option<&str> {
-    let [damage] = rec["damage"].as_array()?.as_slice() else {
-        return None;
-    };
+    let damage = spell_damage(rec)?;
     let instant_save = rec["saves"].is_array() && rec["duration"]["kind"] == "instantaneous";
     let certain = rec["concentration"] == false && (rec["attack"].is_string() || instant_save);
     damage["dice"].as_str().filter(|_| certain)
+}
+
+/// The spell's damage entry, if it has exactly one.
+fn spell_damage(rec: &Value) -> Option<&Value> {
+    match rec["damage"].as_array()?.as_slice() {
+        [damage] => Some(damage),
+        _ => None,
+    }
 }
 
 /// `{cantrip}d10` for a cantrip that prints its dice at each tier, such as `(2d10)`.
@@ -604,6 +610,9 @@ fn spell(rec: &Value, m: Option<&Mechanics>, derived: &mut Vec<String>) -> Spell
         match cantrip_formula(rec, dice) {
             Some(formula) => spell.roll_formula = formula,
             None => spell.roll = dice.to_owned(),
+        }
+        if let Some(kind) = spell_damage(rec).and_then(|d| d["type"].as_str()) {
+            spell.damage_type = kind.to_owned();
         }
     }
     if let Some(m) = m {
@@ -1039,6 +1048,16 @@ mod tests {
             (blast.roll.as_str(), blast.roll_formula.as_str()),
             ("1d10", "")
         );
+    }
+
+    #[test]
+    fn rollable_spells_know_their_damage_type() {
+        for rec in records("spells.json") {
+            let spell = spell(rec, None, &mut Vec::new());
+            if !spell.roll.is_empty() || !spell.roll_formula.is_empty() {
+                assert_ne!(spell.damage_type, "", "{}", spell.name);
+            }
+        }
     }
 
     #[test]

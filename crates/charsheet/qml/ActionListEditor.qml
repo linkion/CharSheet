@@ -96,6 +96,12 @@ ColumnLayout {
                         currentIndex: (App.catalog.roll_effects).findIndex(o => o.key === card.a.roll_effect)
                         onActivated: card.save("roll_effect", currentValue)
                     }
+                    QQC2.TextField {
+                        visible: (card.a.roll ?? "").length > 0
+                        placeholderText: "Damage type"
+                        text: card.a.damage_type ?? ""
+                        onEditingFinished: if (text !== (card.a.damage_type ?? "")) card.save("damage_type", text)
+                    }
                 }
                 QQC2.Label {
                     text: "Description:"

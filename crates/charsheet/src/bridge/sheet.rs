@@ -136,6 +136,12 @@ pub mod qobject {
             excluded_json: &QString,
         ) -> QString;
 
+        /// Rolls something on the sheet, named by a `play::RollTarget` as JSON, so the roll
+        /// knows where its bonuses come from. Returns the roll as JSON, or "" on failure.
+        #[qinvokable]
+        #[cxx_name = "rollCheck"]
+        fn roll_check(self: Pin<&mut Self>, target_json: &QString, mode: &QString) -> QString;
+
         #[qinvokable]
         fn reload(self: Pin<&mut Self>, item: i32);
 
@@ -161,7 +167,7 @@ use cxx_qt::CxxQtType;
 use cxx_qt_lib::QString;
 use dnd_core::dice::{self, RollMode};
 use dnd_core::effects::Effect;
-use dnd_core::play::{self, Played};
+use dnd_core::play::{self, Played, RollTarget};
 use dnd_core::srd;
 use dnd_core::storage::{MAX_ROLLS, StorageError, StoredRoll};
 use dnd_core::view::{SheetView, catalog};
@@ -343,6 +349,7 @@ impl qobject::CharacterSheet {
             (Some(lib), Some(c)) => match lib.add_roll(c.id, &logged) {
                 Ok(id) => {
                     logged.id = id;
+                    logged.rolled_at = lib.rolled_at(id).unwrap_or_default();
                     None
                 }
                 Err(e) => Some(format!("Could not save roll: {e}")),
@@ -513,10 +520,11 @@ impl qobject::CharacterSheet {
         });
     }
 
-    pub fn spend_hit_die(self: Pin<&mut Self>, class_index: i32) -> QString {
-        let message =
-            self.mutate(|c| play::spend_hit_die(c, index(class_index)?).map_err(|e| e.to_string()));
-        QString::from(&message.unwrap_or_default())
+    pub fn spend_hit_die(mut self: Pin<&mut Self>, class_index: i32) -> QString {
+        let played = self
+            .as_mut()
+            .mutate(|c| play::spend_hit_die(c, index(class_index)?).map_err(|e| e.to_string()));
+        self.finish(played)
     }
 
     pub fn short_rest(self: Pin<&mut Self>) {
@@ -625,6 +633,16 @@ impl qobject::CharacterSheet {
             serde_json::from_str(&excluded_json.to_string()).unwrap_or_default();
         let rolled = self.as_mut().mutate(|c| {
             play::weapon_damage(c, index(attack)?, crit, &excluded).map_err(|e| e.to_string())
+        });
+        roll_json(rolled.map(|r| self.log_roll(r)))
+    }
+
+    pub fn roll_check(mut self: Pin<&mut Self>, target_json: &QString, mode: &QString) -> QString {
+        let mode = roll_mode(mode);
+        let target = serde_json::from_str::<RollTarget>(&target_json.to_string());
+        let rolled = self.as_mut().mutate(|c| {
+            let target = target.map_err(|e| e.to_string())?;
+            play::roll_check(c, target, mode).map_err(|e| e.to_string())
         });
         roll_json(rolled.map(|r| self.log_roll(r)))
     }

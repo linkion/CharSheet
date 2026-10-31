@@ -6,7 +6,8 @@ with Qt 6 and Kirigami ([cxx-qt](https://github.com/KDAB/cxx-qt)).
 You enter ability scores, classes and gear. The sheet works out modifiers, proficiency,
 saves, skills, AC, initiative, spell save DC and attack, and spell slots (including
 multiclassing and Pact Magic). It also tracks HP, hit dice, death saves, slots, feature
-uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it. Every roll,
+uses, conditions and Exhaustion, and rolls dice. Click any modifier to roll it, and click a
+roll to see where its total came from, with damage split by type. Every roll,
 including those made through the MCP server, throws 3D dice across the window that land on
 the rolled numbers (turn them off with **3D Dice** in the sheet's menu).
 

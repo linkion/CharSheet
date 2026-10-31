@@ -5,11 +5,12 @@
 //! Each function works on a copy and only changes the character when everything
 //! succeeded, so a bad roll expression doesn't spend a use.
 
+use crate::abilities::{Ability, Skill};
 use crate::character::{Character, PlayError, WeaponAttack};
-use crate::dice::{self, RollMode};
+use crate::dice::{self, Bonus, RollMode, RollPart};
 use crate::effects::{Outcome, RollEffect};
 use crate::storage::StoredRoll;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// What an action did: a short message for a notification and the rolls to log.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -33,7 +34,8 @@ fn resolve(c: &mut Character, outcome: Outcome) -> Result<Played, PlayError> {
     let mut parts = vec![outcome.label.clone()];
     let mut rolls = Vec::new();
     if !outcome.roll.trim().is_empty() {
-        let rolled = StoredRoll::new(&outcome.label, dice::roll(&outcome.roll, RollMode::Normal)?);
+        let part = RollPart::new(&outcome.roll, &outcome.source).typed(&outcome.damage_type);
+        let rolled = StoredRoll::new(&outcome.label, dice::roll_parts(&[part], RollMode::Normal)?);
         let total = rolled.result.total;
         parts.push(match outcome.roll_effect {
             RollEffect::None => format!("rolled {total}"),
@@ -112,12 +114,7 @@ pub fn weapon_attack(
         if a.ranged && !a.thrown {
             c.fire(a.item)?;
         }
-        let modifier = match a.to_hit {
-            0 => String::new(),
-            n if n > 0 => format!("+{n}"),
-            n => n.to_string(),
-        };
-        let rolled = dice::roll(&format!("1d20{modifier}"), mode)?;
+        let rolled = roll_d20(&a.to_hit_parts, mode)?;
         Ok(StoredRoll::new(format!("{} attack", a.name), rolled))
     })
 }
@@ -131,26 +128,104 @@ pub fn weapon_damage(
 ) -> Result<StoredRoll, PlayError> {
     transact(c, |c| {
         let a = nth_attack(c, attack)?;
-        let expression = c.weapon_damage(&a, crit, excluded)?;
-        let label = if crit {
-            format!("{} critical damage", a.name)
-        } else {
-            format!("{} damage", a.name)
-        };
+        let parts = c.weapon_damage(&a, crit, excluded)?;
         Ok(StoredRoll::new(
-            label,
-            dice::roll(&expression, RollMode::Normal)?,
+            damage_label(&a.name, crit),
+            dice::roll_parts(&parts, RollMode::Normal)?,
         ))
     })
 }
 
-/// Spends a hit die of the class at `class_index` and describes the result.
-pub fn spend_hit_die(c: &mut Character, class_index: usize) -> Result<String, PlayError> {
+fn damage_label(name: &str, crit: bool) -> String {
+    if crit {
+        format!("{name} critical damage")
+    } else {
+        format!("{name} damage")
+    }
+}
+
+/// A d20 test with `bonuses` added.
+fn roll_d20(bonuses: &[Bonus], mode: RollMode) -> Result<dice::RollResult, PlayError> {
+    let mut parts = vec![RollPart::new("1d20", "d20")];
+    parts.extend(bonuses.iter().map(Bonus::part));
+    Ok(dice::roll_parts(&parts, mode)?)
+}
+
+/// A roll made from the sheet that needs no resources, named by what it's for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum RollTarget {
+    Ability { ability: Ability },
+    Save { ability: Ability },
+    Skill { skill: Skill },
+    Initiative,
+    SpellAttack { ability: Ability },
+    ManualAttack { attack: usize },
+    ManualDamage { attack: usize, crit: bool },
+    DeathSave,
+    Concentration { dc: i32 },
+}
+
+/// Makes a roll from the sheet. `mode` applies to d20 tests, not damage.
+pub fn roll_check(
+    c: &Character,
+    target: RollTarget,
+    mode: RollMode,
+) -> Result<StoredRoll, PlayError> {
+    let d20 =
+        |label: String, bonuses: Vec<Bonus>| Ok(StoredRoll::new(label, roll_d20(&bonuses, mode)?));
+    let manual = |attack: usize| c.attacks.get(attack).ok_or(PlayError::NotFound("attack"));
+    match target {
+        RollTarget::Ability { ability } => {
+            d20(format!("{} check", ability.name()), c.check_parts(ability))
+        }
+        RollTarget::Save { ability } => {
+            d20(format!("{} save", ability.name()), c.save_parts(ability))
+        }
+        RollTarget::Skill { skill } => d20(skill.name().to_owned(), c.skill_parts(skill)),
+        RollTarget::Initiative => d20("Initiative".to_owned(), c.initiative_parts()),
+        RollTarget::SpellAttack { ability } => {
+            d20("Spell attack".to_owned(), c.spell_attack_parts(ability))
+        }
+        RollTarget::ManualAttack { attack } => {
+            let a = manual(attack)?;
+            d20(format!("{} attack", a.name), c.attack_parts(a))
+        }
+        RollTarget::ManualDamage { attack, crit } => {
+            let a = manual(attack)?;
+            let mut parts = c.attack_damage_parts(a);
+            if crit {
+                parts = parts
+                    .into_iter()
+                    .map(RollPart::doubled)
+                    .collect::<Result<_, _>>()?;
+            }
+            Ok(StoredRoll::new(
+                damage_label(&a.name, crit),
+                dice::roll_parts(&parts, RollMode::Normal)?,
+            ))
+        }
+        RollTarget::DeathSave => d20(
+            "Death save".to_owned(),
+            vec![Bonus::new(c.d20_penalty(), "Exhaustion")],
+        ),
+        RollTarget::Concentration { dc } => d20(
+            format!("Concentration save (DC {dc})"),
+            c.save_parts(Ability::Con),
+        ),
+    }
+}
+
+/// Spends a hit die of the class at `class_index`, logging its roll.
+pub fn spend_hit_die(c: &mut Character, class_index: usize) -> Result<Played, PlayError> {
     if class_index >= c.classes.len() {
         return Err(PlayError::NotFound("class"));
     }
     match c.spend_hit_die(class_index, &mut rand::rng()) {
-        Some((roll, healed)) => Ok(format!("Rolled {roll}, regained {healed} HP")),
+        Some((roll, healed)) => Ok(Played {
+            message: format!("Rolled {}, regained {healed} HP", roll.terms[0].value),
+            rolls: vec![StoredRoll::new("Hit die", roll)],
+        }),
         None => Err(PlayError::Unavailable(
             "No hit dice of that type left".to_owned(),
         )),
@@ -169,6 +244,158 @@ mod tests {
 
     fn spell(c: &Character, name: &str) -> usize {
         c.spells.iter().position(|s| s.name == name).unwrap()
+    }
+
+    fn term<'a>(roll: &'a StoredRoll, source: &str) -> &'a dice::TermResult {
+        roll.result
+            .terms
+            .iter()
+            .find(|t| t.source == source)
+            .unwrap_or_else(|| panic!("no {source} in {:?}", roll.result.terms))
+    }
+
+    fn sum(roll: &StoredRoll) -> i32 {
+        roll.result.terms.iter().map(|t| t.sign * t.value).sum()
+    }
+
+    #[test]
+    fn checks_name_their_sources_and_add_up() {
+        let mut c = sable();
+        c.exhaustion = 1;
+        let roll = roll_check(
+            &c,
+            RollTarget::Save {
+                ability: Ability::Dex,
+            },
+            RollMode::Advantage,
+        )
+        .unwrap();
+        assert_eq!(roll.label, "Dexterity save");
+        assert_eq!(roll.result.mode, RollMode::Advantage);
+        assert_eq!(term(&roll, "d20").label, "2d20kh1");
+        assert_eq!(
+            term(&roll, "Exhaustion").sign * term(&roll, "Exhaustion").value,
+            -2
+        );
+        assert_eq!(sum(&roll), roll.result.total);
+        let d20 = term(&roll, "d20").value;
+        assert_eq!(roll.result.total, d20 + c.save_mod(Ability::Dex));
+    }
+
+    #[test]
+    fn exhaustion_applies_to_ability_checks_but_not_passives() {
+        let mut c = sable();
+        let fresh = Bonus::total(&c.check_parts(Ability::Wis));
+        let passive = c.passive(Skill::Perception);
+        c.exhaustion = 2;
+        assert_eq!(Bonus::total(&c.check_parts(Ability::Wis)), fresh - 4);
+        assert_eq!(c.passive(Skill::Perception), passive);
+        let roll = roll_check(
+            &c,
+            RollTarget::Ability {
+                ability: Ability::Wis,
+            },
+            RollMode::Normal,
+        )
+        .unwrap();
+        assert_eq!(roll.label, "Wisdom check");
+        assert_eq!(term(&roll, "Exhaustion").value, 4);
+    }
+
+    #[test]
+    fn weapon_damage_splits_by_type_and_source() {
+        let mut c = sable();
+        let i = c
+            .weapon_attacks()
+            .iter()
+            .position(|a| !a.riders.is_empty())
+            .unwrap();
+        let attack = c.weapon_attacks()[i].clone();
+        let rider = attack.riders[0].clone();
+        let roll = weapon_damage(&mut c, i, false, &[]).unwrap();
+        assert_eq!(roll.result.total, sum(&roll));
+        assert_eq!(term(&roll, &rider.name).source, rider.name);
+        let by_type = roll.result.damage_by_type();
+        assert_eq!(
+            by_type.iter().map(|(_, n)| n).sum::<i32>(),
+            roll.result.total
+        );
+        assert_eq!(by_type[0].0, attack.damage_type);
+    }
+
+    #[test]
+    fn manual_damage_is_typed_and_doubles_on_a_crit() {
+        let mut c = sable();
+        c.attacks = vec![crate::character::Attack {
+            name: "Claw".into(),
+            damage: "1d6".into(),
+            damage_type: "slashing".into(),
+            bonus: 1,
+            add_ability_to_damage: false,
+            ..Default::default()
+        }];
+        let target = RollTarget::ManualDamage {
+            attack: 0,
+            crit: true,
+        };
+        let roll = roll_check(&c, target, RollMode::Advantage).unwrap();
+        assert_eq!(roll.label, "Claw critical damage");
+        assert_eq!(roll.result.expression, "2d6+1");
+        assert_eq!(roll.result.mode, RollMode::Normal);
+        assert!(
+            roll.result
+                .terms
+                .iter()
+                .all(|t| t.damage_type == "slashing")
+        );
+        let missing = RollTarget::ManualAttack { attack: 5 };
+        assert!(roll_check(&c, missing, RollMode::Normal).is_err());
+    }
+
+    #[test]
+    fn spell_rolls_carry_source_and_type() {
+        let mut c = sable();
+        let cure = spell(&c, "Cure Wounds");
+        c.spells[cure].damage_type = "radiant".into();
+        let played = cast_spell(&mut c, cure, 1).unwrap();
+        let roll = &played.rolls[0];
+        assert!(roll.result.terms.iter().all(|t| t.source == "Cure Wounds"));
+        assert!(roll.result.terms.iter().all(|t| t.damage_type == "radiant"));
+    }
+
+    #[test]
+    fn roll_targets_read_from_json() {
+        let target: RollTarget =
+            serde_json::from_str(r#"{"kind":"skill","skill":"animal_handling"}"#).unwrap();
+        assert_eq!(
+            target,
+            RollTarget::Skill {
+                skill: Skill::AnimalHandling
+            }
+        );
+        let target: RollTarget =
+            serde_json::from_str(r#"{"kind":"manual_damage","attack":1,"crit":false}"#).unwrap();
+        assert_eq!(
+            target,
+            RollTarget::ManualDamage {
+                attack: 1,
+                crit: false
+            }
+        );
+    }
+
+    #[test]
+    fn hit_dice_are_logged_with_their_parts() {
+        let mut c = sable();
+        let played = spend_hit_die(&mut c, 0).unwrap();
+        let roll = &played.rolls[0];
+        assert_eq!(roll.label, "Hit die");
+        assert_eq!(roll.result.terms[0].source, c.classes[0].class.info().name);
+        assert_eq!(sum(roll), roll.result.total);
+        assert_eq!(
+            roll.result.total,
+            roll.result.terms[0].value + c.ability_mod(Ability::Con)
+        );
     }
 
     #[test]

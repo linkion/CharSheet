@@ -815,6 +815,8 @@ mod tests {
             label: label.into(),
             rolls,
             value: 0,
+            source: String::new(),
+            damage_type: String::new(),
         };
         let roll = RollResult {
             expression: String::new(),
