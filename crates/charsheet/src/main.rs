@@ -4,6 +4,7 @@ mod bridge {
     pub mod library;
     pub mod markdown;
     pub mod sheet;
+    pub mod srd;
     pub mod theme;
     pub mod watcher;
 }

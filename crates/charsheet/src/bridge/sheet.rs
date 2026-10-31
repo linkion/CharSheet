@@ -48,6 +48,17 @@ pub mod qobject {
         #[qinvokable]
         fn append(self: Pin<&mut Self>, pointer: &QString, item_json: &QString) -> bool;
 
+        /// What adding an SRD record (an `AddSpec` as JSON) would make, as JSON with `entry`,
+        /// `derived` and `warnings`, or with `error` if something has to be chosen first.
+        #[qinvokable]
+        #[cxx_name = "previewSrd"]
+        fn preview_srd(self: &Self, spec_json: &QString) -> QString;
+
+        /// Adds an SRD record, returning what was added as JSON, or "" if it wasn't.
+        #[qinvokable]
+        #[cxx_name = "addFromSrd"]
+        fn add_from_srd(self: Pin<&mut Self>, spec_json: &QString) -> QString;
+
         #[qinvokable]
         #[cxx_name = "removeAt"]
         fn remove_at(self: Pin<&mut Self>, pointer: &QString, index: i32) -> bool;
@@ -151,6 +162,7 @@ use cxx_qt_lib::QString;
 use dnd_core::dice::{self, RollMode};
 use dnd_core::effects::Effect;
 use dnd_core::play::{self, Played};
+use dnd_core::srd;
 use dnd_core::storage::{MAX_ROLLS, StorageError, StoredRoll};
 use dnd_core::view::{SheetView, catalog};
 use dnd_core::{Character, Library, edit};
@@ -434,6 +446,30 @@ impl qobject::CharacterSheet {
             edit::push(c, &pointer, item.map_err(|e| e.to_string())?).map_err(|e| e.to_string())
         })
         .is_some()
+    }
+
+    pub fn preview_srd(&self, spec_json: &QString) -> QString {
+        let spec = serde_json::from_str::<srd::AddSpec>(&spec_json.to_string());
+        let preview = match (spec, &self.rust().character) {
+            (Ok(spec), Some(c)) => match srd::convert(&spec, c) {
+                Ok(conversion) => serde_json::json!(conversion),
+                Err(e) => serde_json::json!({ "error": e.to_string() }),
+            },
+            (Err(e), _) => serde_json::json!({ "error": e.to_string() }),
+            (_, None) => serde_json::json!({ "error": "No character is open" }),
+        };
+        QString::from(&preview.to_string())
+    }
+
+    pub fn add_from_srd(self: Pin<&mut Self>, spec_json: &QString) -> QString {
+        let spec = serde_json::from_str::<srd::AddSpec>(&spec_json.to_string());
+        let added = self.mutate(|c| {
+            let spec = spec.map_err(|e| e.to_string())?;
+            srd::add(c, &spec).map_err(|e| e.to_string())
+        });
+        added.map_or_else(QString::default, |a| {
+            QString::from(&serde_json::json!(a).to_string())
+        })
     }
 
     pub fn remove_at(self: Pin<&mut Self>, pointer: &QString, index: i32) -> bool {

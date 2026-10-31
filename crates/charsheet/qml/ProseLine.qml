@@ -10,17 +10,18 @@ QQC2.Label {
 
     // Plain text from the app, such as "Weapon · 1d8 slashing".
     property string prefix
+    // StyledText from the app that can carry links, as built by App.ruleLink.
+    property string links
     property string source
 
-    readonly property string styled: [prefix.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
-                                      Markdown.toLine(source)].filter(s => s).join("  —  ")
+    readonly property string styled: [links, App.escaped(prefix), Markdown.toLine(source)].filter(s => s).join("  —  ")
 
     visible: styled.length > 0
     text: styled
     textFormat: Text.StyledText
     elide: Text.ElideRight
     Layout.fillWidth: true
-    onLinkActivated: link => Qt.openUrlExternally(link)
+    onLinkActivated: link => App.openLink(link)
 
     HoverHandler {
         cursorShape: line.hoveredLink ? Qt.PointingHandCursor : undefined

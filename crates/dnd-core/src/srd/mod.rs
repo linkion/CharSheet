@@ -7,6 +7,7 @@
 
 mod convert;
 mod data;
+mod links;
 mod mechanics;
 mod search;
 
@@ -14,6 +15,7 @@ pub use convert::{
     AddSpec, Added, Base, Conversion, Entry, Options, SrdError, add, convert, options,
 };
 pub use data::{attribution, record};
+pub use links::linkify;
 pub use mechanics::Choice;
 pub use search::{Hit, SearchResults, find, search};
 

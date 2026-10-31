@@ -34,7 +34,7 @@ Item {
         wrapMode: TextEdit.Wrap
         font.family: Style.proseFamily
         placeholderText: area.placeholderText || "Click to write…"
-        onLinkActivated: link => Qt.openUrlExternally(link)
+        onLinkActivated: link => App.openLink(link)
 
         HoverHandler {
             cursorShape: view.hoveredLink ? Qt.PointingHandCursor : Qt.IBeamCursor

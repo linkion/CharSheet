@@ -14,7 +14,7 @@ QQC2.Label {
     wrapMode: Text.WordWrap
     font.family: Style.proseFamily
     Layout.fillWidth: true
-    onLinkActivated: link => Qt.openUrlExternally(link)
+    onLinkActivated: link => App.openLink(link)
 
     HoverHandler {
         cursorShape: prose.hoveredLink ? Qt.PointingHandCursor : undefined

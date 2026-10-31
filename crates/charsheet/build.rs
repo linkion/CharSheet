@@ -47,6 +47,7 @@ fn main() {
             QmlFile::from("qml/GridPaper.qml"),
             QmlFile::from("qml/InventoryTab.qml"),
             QmlFile::from("qml/ItemDialog.qml"),
+            QmlFile::from("qml/RulesDialog.qml"),
             QmlFile::from("qml/LibraryPage.qml"),
             QmlFile::from("qml/Main.qml"),
             QmlFile::from("qml/MainTab.qml"),
@@ -89,6 +90,7 @@ fn main() {
             "src/bridge/library.rs",
             "src/bridge/markdown.rs",
             "src/bridge/sheet.rs",
+            "src/bridge/srd.rs",
             "src/bridge/theme.rs",
             "src/bridge/watcher.rs",
         ])

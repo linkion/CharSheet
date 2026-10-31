@@ -61,6 +61,17 @@ Kirigami.ApplicationWindow {
         }
     }
 
+    RulesDialog {
+        id: rulesDialog
+    }
+
+    Connections {
+        target: App
+        function onRuleRequested(id) {
+            rulesDialog.show(id)
+        }
+    }
+
     DiceOverlay {
         id: diceOverlay
         // Above the page and any drawer or dialog, so dice rolled from the roll log show.

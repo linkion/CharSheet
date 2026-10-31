@@ -61,6 +61,8 @@ QtObject {
     signal thrown(var rolls)
     // A short message for a passive notification, e.g. what an action did.
     signal notice(string message)
+    // Asks for a record of the rules to be shown.
+    signal ruleRequested(string id)
 
     function signed(n) {
         return (n >= 0 ? "+" : "") + n
@@ -80,6 +82,25 @@ QtObject {
 
     function roll(expression, label, mode) {
         sheet.roll(expression, label || expression, mode || "normal")
+    }
+
+    // Opens a link from rendered text: srd: links show the rules, others go to the browser.
+    function openLink(link) {
+        if (link.startsWith("srd:"))
+            ruleRequested(link.slice(4))
+        else
+            Qt.openUrlExternally(link)
+    }
+
+    function escaped(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    }
+
+    // A term as StyledText, linked to its rules if the SRD has it.
+    function ruleLink(name, categories, label) {
+        const id = Srd.find(name, JSON.stringify(categories))
+        const shown = escaped(label || name)
+        return id ? "<a href=\"srd:" + id + "\">" + shown + "</a>" : shown
     }
 
     function report(message) {
