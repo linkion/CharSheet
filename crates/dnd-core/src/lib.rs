@@ -10,6 +10,7 @@ pub mod effects;
 pub mod formula;
 pub mod notify;
 pub mod play;
+pub mod srd;
 pub mod storage;
 pub mod view;
 
