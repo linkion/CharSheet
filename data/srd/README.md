@@ -5,6 +5,10 @@ structured JSON. Every part of the book is here: typed records for the things a 
 sheet uses (spells, classes, species, feats, equipment, magic items, monsters) and the rest
 of the rules text as a tree of sections. `index.json` lists all of it for search.
 
+`dnd-core` compiles these files in (`crates/dnd-core/src/srd/`), so rebuild after regenerating.
+`mechanics.json` there holds hand-checked mechanics for records that are only prose. Each
+entry quotes the text it rests on, and a test fails if that text changes.
+
 The files are generated; don't edit them by hand. Regenerate them with `make srd` (see
 [Regenerating](#regenerating)).
 

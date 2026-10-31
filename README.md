@@ -18,6 +18,15 @@ in, including reloading and choosable ammunition. The Combat tab is the play sur
 round counter, active effects and concentration, and every action grouped by Action, Bonus
 Action and Reaction.
 
+The whole SRD 5.2.1 is built in. **From Compendium** on the Spells, Inventory and Features
+tabs searches it and adds an entry with its stats and text. Modifiers and actions are filled
+in only where they're certain: from structured data, or from a hand-checked table that quotes
+the rules. Everything else stays as text. Values that scale, such as proficiency-bonus uses
+and cantrip dice, keep following the character through **formulas**, and items that recharge
+at dawn roll for their charges on a long rest. Conditions, weapon properties, masteries and
+spell names open their rules text, as does any `srd:` link in Markdown, such as
+`[Prone](srd:condition:prone)`.
+
 `examples/sable.json` is a complete level 6 Ronin Ranger built this way; import it from the
 library page to see everything in use.
 
@@ -84,6 +93,8 @@ once.
   `delete_character`, `import_character`, `export_character`
 - **Reading:** `get_character` (the whole sheet with derived values, or one part by JSON
   Pointer such as `/inventory` or `/derived/weapon_attacks`), `get_catalog` (valid choices)
+- **Rules:** `search_srd`, `get_srd`, and `add_from_srd` to put a spell, item or feature on
+  a character
 - **Editing:** `set_field`, `append_item`, `remove_item`, `move_item` by JSON Pointer
   (`/hp/max`, `/skills/stealth`, `/inventory/2/modifiers`), and `apply_edits` for several
   at once, all or nothing
@@ -95,19 +106,24 @@ once.
 ## Layout
 
 - `crates/dnd-core`: the model, rules (SRD 5.2 tables), dice, JSON-pointer edits, play
-  actions and storage. It has no Qt dependency and is unit-tested.
-- `crates/charsheet`: the Qt app. `src/bridge/` exposes `CharacterLibrary` and
-  `CharacterSheet` to QML, and `qml/` holds the Kirigami UI. `cpp/theme.h` applies the
+  actions, storage and the embedded SRD (`src/srd/`). It has no Qt dependency and is
+  unit-tested.
+- `crates/charsheet`: the Qt app. `src/bridge/` exposes `CharacterLibrary`,
+  `CharacterSheet` and `Srd` to QML, and `qml/` holds the Kirigami UI. `cpp/theme.h` applies the
   bundled color schemes in `theme/`, and `qml/SheetFrame.qml` and its neighbours draw the
   sheet decorations. `tools/make_textures.py` generates the background textures.
 - `crates/charsheet-mcp`: the MCP server, built on `dnd-core` with
   [rmcp](https://crates.io/crates/rmcp).
 - `data/srd`: the whole SRD 5.2.1 as structured, searchable JSON (spells, monsters, magic
   items, classes, equipment, rules text and more), generated from the SRD PDF by
-  `tools/srd` with `make srd`. See `data/srd/README.md` for the format.
+  `tools/srd` with `make srd` and compiled into `dnd-core`. See `data/srd/README.md` for
+  the format.
 
-Rules data comes from the System Reference Document 5.2 by Wizards of the Coast,
-licensed under CC-BY-4.0.
+This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by
+Wizards of the Coast LLC, available at <https://www.dndbeyond.com/srd>. The SRD 5.2.1 is
+licensed under the Creative Commons Attribution 4.0 International License, available at
+<https://creativecommons.org/licenses/by/4.0/legalcode>. It has been reformatted as
+structured data, and the app's rules dialogs credit it.
 
 The bundled fonts in `crates/charsheet/fonts/` are Solbera's 5e font imitations (with fixes
 by Ryrok, Ners and LUCASTUCIOUS), licensed under CC-BY-SA-4.0; see the README there.

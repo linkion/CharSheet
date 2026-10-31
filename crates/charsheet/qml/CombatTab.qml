@@ -588,7 +588,7 @@ SheetTab {
     Kirigami.PromptDialog {
         id: longRestDialog
         title: "Take a Long Rest?"
-        subtitle: "Restores all HP, hit dice, spell slots, feature uses, item charges and free casts, ends active effects, and removes one level of Exhaustion."
+        subtitle: "Restores all HP, hit dice, spell slots, feature uses, item charges and free casts, rolls for charges regained at dawn, ends active effects, and removes one level of Exhaustion."
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: App.sheet.longRest()
     }
