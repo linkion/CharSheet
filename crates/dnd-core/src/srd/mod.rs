@@ -7,10 +7,14 @@
 
 mod convert;
 mod data;
+mod mechanics;
 mod search;
 
-pub use convert::{AddSpec, Conversion, Entry, SrdError, add, convert};
+pub use convert::{
+    AddSpec, Added, Base, Conversion, Entry, Options, SrdError, add, convert, options,
+};
 pub use data::{attribution, record};
+pub use mechanics::Choice;
 pub use search::{Hit, SearchResults, find, search};
 
 /// Short credit shown wherever SRD text is.

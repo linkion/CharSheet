@@ -1,0 +1,973 @@
+{
+ "feat:alert": {
+  "quote": "you can add your Proficiency Bonus to the roll",
+  "modifiers": [
+   {
+    "kind": "initiative",
+    "value_formula": "{pb}"
+   }
+  ]
+ },
+ "feat:archery": {
+  "quote": "You gain a +2 bonus to attack rolls you make with Ranged weapons",
+  "modifiers": [
+   {
+    "kind": "attack_roll",
+    "value": 2,
+    "scope": "ranged_weapon"
+   }
+  ]
+ },
+ "magic_item:ammunition-plus-1-plus-2-or-plus-3": {
+  "quote": "You have a bonus to attack rolls and damage rolls made with this piece of magic ammunition",
+  "variant_bonus": true
+ },
+ "magic_item:armor-of-invulnerability": {
+  "quote": "You have Resistance to Bludgeoning, Piercing, and Slashing damage while you wear this armor",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "bludgeoning"
+   },
+   {
+    "kind": "resistance",
+    "damage_type": "piercing"
+   },
+   {
+    "kind": "resistance",
+    "damage_type": "slashing"
+   }
+  ]
+ },
+ "magic_item:armor-of-resistance": {
+  "quote": "You have Resistance to one type of damage while you wear this armor",
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "acid",
+    "bludgeoning",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "piercing",
+    "poison",
+    "psychic",
+    "radiant",
+    "slashing",
+    "thunder"
+   ]
+  },
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "{choice}"
+   }
+  ]
+ },
+ "magic_item:armor-of-vulnerability": {
+  "quote": "you have Resistance to one of the following damage types: Bludgeoning, Piercing",
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "bludgeoning",
+    "piercing",
+    "slashing"
+   ]
+  },
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "{choice}"
+   }
+  ]
+ },
+ "magic_item:armor-plus-1-plus-2-or-plus-3": {
+  "quote": "You have a bonus to Armor Class while wearing this armor",
+  "variant_bonus": true
+ },
+ "magic_item:belt-of-dwarvenkind": {
+  "quote": "You have Resistance to Poison damage",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "poison"
+   }
+  ]
+ },
+ "magic_item:belt-of-giant-strength": {
+  "quote": "| *Belt of Giant Strength* (hill) | 21 | Rare |",
+  "tiers": [
+   {
+    "variant": "Hill",
+    "name": "Belt of Hill Giant Strength"
+   },
+   {
+    "variant": "Frost or Stone",
+    "name": "Belt of Frost or Stone Giant Strength"
+   },
+   {
+    "variant": "Fire",
+    "name": "Belt of Fire Giant Strength"
+   },
+   {
+    "variant": "Cloud",
+    "name": "Belt of Cloud Giant Strength"
+   },
+   {
+    "variant": "Storm",
+    "name": "Belt of Storm Giant Strength"
+   }
+  ]
+ },
+ "magic_item:berserker-axe": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:boots-of-the-winterlands": {
+  "quote": "You have Resistance to Cold damage",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "cold"
+   }
+  ]
+ },
+ "magic_item:brooch-of-shielding": {
+  "quote": "you have Resistance to Force damage",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "force"
+   }
+  ]
+ },
+ "magic_item:cloak-of-arachnida": {
+  "quote": "You have Resistance to Poison damage",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "poison"
+   }
+  ]
+ },
+ "magic_item:cloak-of-protection": {
+  "quote": "+1 bonus to Armor Class and saving throws while you wear this cloak",
+  "modifiers": [
+   {
+    "kind": "armor_class",
+    "value": 1
+   },
+   {
+    "kind": "save",
+    "value": 1
+   }
+  ]
+ },
+ "magic_item:dagger-of-venom": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:defender": {
+  "quote": "+3 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 3
+ },
+ "magic_item:demon-armor": {
+  "quote": "you gain a +1 bonus to Armor Class",
+  "ac_bonus": 1
+ },
+ "magic_item:dragon-scale-mail": {
+  "quote": "you gain a +1 bonus to Armor Class",
+  "ac_bonus": 1,
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "acid",
+    "bludgeoning",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "piercing",
+    "poison",
+    "psychic",
+    "radiant",
+    "slashing",
+    "thunder"
+   ]
+  },
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "{choice}"
+   }
+  ]
+ },
+ "magic_item:dragon-slayer": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:dwarven-plate": {
+  "quote": "you gain a +2 bonus to Armor Class",
+  "ac_bonus": 2
+ },
+ "magic_item:dwarven-thrower": {
+  "quote": "+3 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 3
+ },
+ "magic_item:elven-chain": {
+  "quote": "You gain a +1 bonus to Armor Class while you wear this armor",
+  "ac_bonus": 1
+ },
+ "magic_item:energy-bow": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:eyes-of-charming": {
+  "quote": "They have 3 charges",
+  "charges_max": 3,
+  "recharge": "dawn"
+ },
+ "magic_item:feather-token": {
+  "quote": "| 01–20 | Anchor | Uncommon |",
+  "tiers": [
+   {
+    "variant": "Anchor",
+    "name": "Feather Token (Anchor)"
+   },
+   {
+    "variant": "Bird",
+    "name": "Feather Token (Bird)"
+   },
+   {
+    "variant": "Fan",
+    "name": "Feather Token (Fan)"
+   },
+   {
+    "variant": "Swan Boat",
+    "name": "Feather Token (Swan Boat)"
+   },
+   {
+    "variant": "Tree",
+    "name": "Feather Token (Tree)"
+   },
+   {
+    "variant": "Whip",
+    "name": "Feather Token (Whip)"
+   }
+  ]
+ },
+ "magic_item:figurine-of-wondrous-power": {
+  "quote": "Bronze Griffon (Rare)",
+  "tiers": [
+   {
+    "variant": "Bronze Griffon",
+    "name": "Figurine of Wondrous Power (Bronze Griffon)"
+   },
+   {
+    "variant": "Ebony Fly",
+    "name": "Figurine of Wondrous Power (Ebony Fly)"
+   },
+   {
+    "variant": "Golden Lions",
+    "name": "Figurine of Wondrous Power (Golden Lions)"
+   },
+   {
+    "variant": "Ivory Goats",
+    "name": "Figurine of Wondrous Power (Ivory Goats)"
+   },
+   {
+    "variant": "Marble Elephant",
+    "name": "Figurine of Wondrous Power (Marble Elephant)"
+   },
+   {
+    "variant": "Obsidian Steed",
+    "name": "Figurine of Wondrous Power (Obsidian Steed)"
+   },
+   {
+    "variant": "Onyx Dog",
+    "name": "Figurine of Wondrous Power (Onyx Dog)"
+   },
+   {
+    "variant": "Serpentine Owl",
+    "name": "Figurine of Wondrous Power (Serpentine Owl)"
+   },
+   {
+    "variant": "Silver Raven",
+    "name": "Figurine of Wondrous Power (Silver Raven)"
+   }
+  ]
+ },
+ "magic_item:flame-tongue": {
+  "quote": "While the weapon is ablaze, it deals an extra 2d6 Fire damage on a hit",
+  "modifiers": [
+   {
+    "kind": "damage",
+    "dice": "2d6",
+    "damage_type": "fire",
+    "text": "Ablaze",
+    "toggleable": true,
+    "enabled": false
+   }
+  ]
+ },
+ "magic_item:frost-brand": {
+  "quote": "the target takes an extra 1d6 Cold damage",
+  "modifiers": [
+   {
+    "kind": "damage",
+    "dice": "1d6",
+    "damage_type": "cold"
+   },
+   {
+    "kind": "resistance",
+    "damage_type": "fire"
+   }
+  ]
+ },
+ "magic_item:giant-slayer": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:glamoured-studded-leather": {
+  "quote": "you gain a +1 bonus to Armor Class",
+  "ac_bonus": 1
+ },
+ "magic_item:hammer-of-thunderbolts": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:holy-avenger": {
+  "quote": "+3 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 3
+ },
+ "magic_item:ioun-stone": {
+  "quote": "Absorption (Very Rare)",
+  "tiers": [
+   {
+    "variant": "Absorption",
+    "name": "Ioun Stone (Absorption)"
+   },
+   {
+    "variant": "Agility",
+    "name": "Ioun Stone (Agility)"
+   },
+   {
+    "variant": "Awareness",
+    "name": "Ioun Stone (Awareness)"
+   },
+   {
+    "variant": "Fortitude",
+    "name": "Ioun Stone (Fortitude)"
+   },
+   {
+    "variant": "Greater Absorption",
+    "name": "Ioun Stone (Greater Absorption)"
+   },
+   {
+    "variant": "Insight",
+    "name": "Ioun Stone (Insight)"
+   },
+   {
+    "variant": "Intellect",
+    "name": "Ioun Stone (Intellect)"
+   },
+   {
+    "variant": "Leadership",
+    "name": "Ioun Stone (Leadership)"
+   },
+   {
+    "variant": "Mastery",
+    "name": "Ioun Stone (Mastery)"
+   },
+   {
+    "variant": "Protection",
+    "name": "Ioun Stone (Protection)"
+   },
+   {
+    "variant": "Regeneration",
+    "name": "Ioun Stone (Regeneration)"
+   },
+   {
+    "variant": "Reserve",
+    "name": "Ioun Stone (Reserve)"
+   },
+   {
+    "variant": "Strength",
+    "name": "Ioun Stone (Strength)"
+   },
+   {
+    "variant": "Sustenance",
+    "name": "Ioun Stone (Sustenance)"
+   }
+  ]
+ },
+ "magic_item:luck-blade": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1,
+  "modifiers": [
+   {
+    "kind": "save",
+    "value": 1
+   }
+  ]
+ },
+ "magic_item:mace-of-smiting": {
+  "quote": "+1 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 1
+ },
+ "magic_item:nine-lives-stealer": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 2
+ },
+ "magic_item:periapt-of-health": {
+  "quote": "you can take a Magic action to regain 2d4 + 2 Hit Points",
+  "charges_max": 1,
+  "recharge": "dawn",
+  "actions": [
+   {
+    "name": "Regain Hit Points",
+    "activation": "action",
+    "cost": "charges",
+    "roll": "2d4+2",
+    "roll_effect": "heal"
+   }
+  ]
+ },
+ "magic_item:pipes-of-haunting": {
+  "quote": "These pipes have 3 charges and regain 1d3 expended charges daily at dawn",
+  "charges_max": 3,
+  "recharge": "dawn",
+  "regain": "1d3"
+ },
+ "magic_item:pipes-of-the-sewers": {
+  "quote": "The pipes have 3 charges and regain 1d3 expended charges daily at dawn",
+  "charges_max": 3,
+  "recharge": "dawn",
+  "regain": "1d3"
+ },
+ "magic_item:potion-of-giant-strength": {
+  "quote": "| *Potion of Giant Strength* (hill) | 21 | Uncommon |",
+  "tiers": [
+   {
+    "variant": "Hill",
+    "name": "Potion of Hill Giant Strength"
+   },
+   {
+    "variant": "Frost or Stone",
+    "name": "Potion of Frost or Stone Giant Strength"
+   },
+   {
+    "variant": "Fire",
+    "name": "Potion of Fire Giant Strength"
+   },
+   {
+    "variant": "Cloud",
+    "name": "Potion of Cloud Giant Strength"
+   },
+   {
+    "variant": "Storm",
+    "name": "Potion of Storm Giant Strength"
+   }
+  ]
+ },
+ "magic_item:potion-of-heroism": {
+  "quote": "you gain 10 Temporary Hit Points",
+  "actions": [
+   {
+    "name": "Drink",
+    "activation": "bonus_action",
+    "cost": "quantity",
+    "roll": "10",
+    "roll_effect": "temp_hp",
+    "effect": {
+     "name": "Potion of Heroism",
+     "source": "Potion",
+     "notes": "Under the effect of *Bless* for 1 hour (no Concentration required)."
+    }
+   }
+  ]
+ },
+ "magic_item:potion-of-invulnerability": {
+  "quote": "you have Resistance to all damage",
+  "actions": [
+   {
+    "name": "Drink",
+    "activation": "bonus_action",
+    "cost": "quantity",
+    "effect": {
+     "name": "Potion of Invulnerability",
+     "source": "Potion",
+     "rounds": 10,
+     "modifiers": [
+      {
+       "kind": "resistance",
+       "damage_type": "all"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "magic_item:potion-of-resistance": {
+  "quote": "you have Resistance to one type of damage for 1 hour",
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "acid",
+    "bludgeoning",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "piercing",
+    "poison",
+    "psychic",
+    "radiant",
+    "slashing",
+    "thunder"
+   ]
+  },
+  "actions": [
+   {
+    "name": "Drink",
+    "activation": "bonus_action",
+    "cost": "quantity",
+    "effect": {
+     "name": "Potion of Resistance",
+     "source": "Potion",
+     "modifiers": [
+      {
+       "kind": "resistance",
+       "damage_type": "{choice}"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "magic_item:potions-of-healing": {
+  "quote": "| *Potion of Healing* (supreme) | 10d4 + 20 | Very Rare |",
+  "tiers": [
+   {
+    "variant": "Healing",
+    "name": "Potion of Healing",
+    "roll": "2d4+2"
+   },
+   {
+    "variant": "Greater",
+    "name": "Potion of Greater Healing",
+    "roll": "4d4+4"
+   },
+   {
+    "variant": "Superior",
+    "name": "Potion of Superior Healing",
+    "roll": "8d4+8"
+   },
+   {
+    "variant": "Supreme",
+    "name": "Potion of Supreme Healing",
+    "roll": "10d4+20"
+   }
+  ],
+  "roll_effect": "heal"
+ },
+ "magic_item:quarterstaff-of-the-acrobat": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 2
+ },
+ "magic_item:ring-of-protection": {
+  "quote": "+1 bonus to Armor Class and saving throws while wearing this ring",
+  "modifiers": [
+   {
+    "kind": "armor_class",
+    "value": 1
+   },
+   {
+    "kind": "save",
+    "value": 1
+   }
+  ]
+ },
+ "magic_item:ring-of-resistance": {
+  "quote": "You have Resistance to one damage type while wearing this ring",
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "acid",
+    "bludgeoning",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "piercing",
+    "poison",
+    "psychic",
+    "radiant",
+    "slashing",
+    "thunder"
+   ]
+  },
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "{choice}"
+   }
+  ]
+ },
+ "magic_item:ring-of-three-wishes": {
+  "quote": "expend 1 of its 3 charges",
+  "charges_max": 3
+ },
+ "magic_item:robe-of-stars": {
+  "quote": "+1 bonus to saving throws while you wear it",
+  "modifiers": [
+   {
+    "kind": "save",
+    "value": 1
+   }
+  ]
+ },
+ "magic_item:scarab-of-protection": {
+  "quote": "You gain a +1 bonus to Armor Class",
+  "modifiers": [
+   {
+    "kind": "armor_class",
+    "value": 1
+   }
+  ]
+ },
+ "magic_item:scimitar-of-speed": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 2
+ },
+ "magic_item:shield-of-the-cavalier": {
+  "quote": "you have a +2 bonus to Armor Class",
+  "ac_bonus": 2
+ },
+ "magic_item:shield-plus-1-plus-2-or-plus-3": {
+  "quote": "you have a bonus to Armor Class determined by the Shield’s rarity",
+  "variant_bonus": true
+ },
+ "magic_item:spell-scroll": {
+  "quote": "| 9 | Legendary | 19 | +11 |",
+  "tiers": [
+   {
+    "variant": "Cantrip",
+    "name": "Spell Scroll (Cantrip)"
+   },
+   {
+    "variant": "1",
+    "name": "Spell Scroll (Level 1)"
+   },
+   {
+    "variant": "2",
+    "name": "Spell Scroll (Level 2)"
+   },
+   {
+    "variant": "3",
+    "name": "Spell Scroll (Level 3)"
+   },
+   {
+    "variant": "4",
+    "name": "Spell Scroll (Level 4)"
+   },
+   {
+    "variant": "5",
+    "name": "Spell Scroll (Level 5)"
+   },
+   {
+    "variant": "6",
+    "name": "Spell Scroll (Level 6)"
+   },
+   {
+    "variant": "7",
+    "name": "Spell Scroll (Level 7)"
+   },
+   {
+    "variant": "8",
+    "name": "Spell Scroll (Level 8)"
+   },
+   {
+    "variant": "9",
+    "name": "Spell Scroll (Level 9)"
+   }
+  ]
+ },
+ "magic_item:staff-of-fire": {
+  "quote": "You have Resistance to Fire damage while you hold this staff",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "fire"
+   }
+  ]
+ },
+ "magic_item:staff-of-frost": {
+  "quote": "You have Resistance to Cold damage while you hold this staff",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "cold"
+   }
+  ]
+ },
+ "magic_item:staff-of-power": {
+  "quote": "+2 bonus to Armor Class, saving throws, and spell attack rolls",
+  "as_weapon": "weapon:quarterstaff",
+  "magic_bonus": 2,
+  "modifiers": [
+   {
+    "kind": "armor_class",
+    "value": 2
+   },
+   {
+    "kind": "save",
+    "value": 2
+   }
+  ]
+ },
+ "magic_item:staff-of-striking": {
+  "quote": "+3 bonus to attack rolls and damage rolls made with it",
+  "as_weapon": "weapon:quarterstaff",
+  "magic_bonus": 3
+ },
+ "magic_item:staff-of-the-magi": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with it",
+  "as_weapon": "weapon:quarterstaff",
+  "magic_bonus": 2
+ },
+ "magic_item:staff-of-the-woodlands": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with it",
+  "as_weapon": "weapon:quarterstaff",
+  "magic_bonus": 2
+ },
+ "magic_item:staff-of-thunder-and-lightning": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with it",
+  "as_weapon": "weapon:quarterstaff",
+  "magic_bonus": 2
+ },
+ "magic_item:stone-of-good-luck-luckstone": {
+  "quote": "+1 bonus to ability checks and saving throws",
+  "modifiers": [
+   {
+    "kind": "save",
+    "value": 1
+   },
+   {
+    "kind": "note",
+    "text": "+1 to ability checks"
+   }
+  ]
+ },
+ "magic_item:sun-blade": {
+  "quote": "+2 bonus to attack rolls and damage rolls made with this weapon, which deals Radiant damage instead of Slashing damage",
+  "magic_bonus": 2,
+  "damage_type": "radiant"
+ },
+ "magic_item:vorpal-sword": {
+  "quote": "+3 bonus to attack rolls and damage rolls made with this magic weapon",
+  "magic_bonus": 3
+ },
+ "magic_item:weapon-plus-1-plus-2-or-plus-3": {
+  "quote": "You have a bonus to attack rolls and damage rolls made with this magic weapon",
+  "variant_bonus": true
+ },
+ "magic_item:winged-boots": {
+  "quote": "These boots have 4 charges and regain 1d4 expended charges daily at dawn",
+  "charges_max": 4,
+  "recharge": "dawn",
+  "regain": "1d4"
+ },
+ "species:dragonborn#breath-weapon": {
+  "quote": "This damage increases by 1d10 when you reach character levels 5 (2d10), 11 (3d10), and 17 (4d10)",
+  "uses_formula": "{pb}",
+  "recharge": "long",
+  "actions": [
+   {
+    "name": "Breath Weapon",
+    "activation": "other",
+    "cost": "uses",
+    "roll_formula": "{cantrip}d10"
+   }
+  ]
+ },
+ "species:dragonborn#damage-resistance": {
+  "quote": "You have Resistance to the damage type determined by your Draconic Ancestry trait",
+  "choice": {
+   "what": "damage type",
+   "allowed": [
+    "acid",
+    "cold",
+    "fire",
+    "lightning",
+    "poison"
+   ]
+  },
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "{choice}"
+   }
+  ]
+ },
+ "species:dwarf#dwarven-resilience": {
+  "quote": "You have Resistance to Poison damage",
+  "modifiers": [
+   {
+    "kind": "resistance",
+    "damage_type": "poison"
+   }
+  ]
+ },
+ "species:dwarf#dwarven-toughness": {
+  "quote": "Your Hit Point maximum increases by 1, and it increases by 1 again whenever you gain a level",
+  "modifiers": [
+   {
+    "kind": "max_hp",
+    "value_formula": "{level}"
+   }
+  ]
+ },
+ "species:dwarf#stonecunning": {
+  "quote": "a number of times equal to your Proficiency Bonus, and you regain all expended uses when you finish a Long Rest",
+  "uses_formula": "{pb}",
+  "recharge": "long",
+  "actions": [
+   {
+    "name": "Tremorsense",
+    "activation": "bonus_action",
+    "cost": "uses"
+   }
+  ]
+ },
+ "species:goliath#giant-ancestry": {
+  "quote": "a number of times equal to your Proficiency Bonus, and you regain all expended uses when you finish a Long Rest",
+  "uses_formula": "{pb}",
+  "recharge": "long"
+ },
+ "species:orc#adrenaline-rush": {
+  "quote": "you regain all expended uses when you finish a Short or Long Rest",
+  "uses_formula": "{pb}",
+  "recharge": "short",
+  "actions": [
+   {
+    "name": "Dash",
+    "activation": "bonus_action",
+    "cost": "uses",
+    "roll_formula": "{pb}",
+    "roll_effect": "temp_hp"
+   }
+  ]
+ },
+ "species:orc#relentless-endurance": {
+  "quote": "you can’t do so again until you finish a Long Rest",
+  "uses_max": 1,
+  "recharge": "long"
+ },
+ "spell:blur": {
+  "quote": "any creature has Disadvantage on attack rolls against you",
+  "effect": {
+   "modifiers": [
+    {
+     "kind": "note",
+     "text": "Disadvantage on attack rolls against you"
+    }
+   ]
+  }
+ },
+ "spell:cure-wounds": {
+  "quote": "regains a number of Hit Points equal to 2d8 plus your spellcasting ability modifier",
+  "roll_formula": "2d8+{spell}"
+ },
+ "spell:divine-favor": {
+  "quote": "your attacks with weapons deal an extra 1d4 Radiant damage on a hit",
+  "effect": {
+   "rounds": 10,
+   "modifiers": [
+    {
+     "kind": "damage",
+     "dice": "1d4",
+     "damage_type": "radiant"
+    }
+   ]
+  }
+ },
+ "spell:divine-smite": {
+  "quote": "takes an extra 2d8 Radiant damage",
+  "roll": "2d8"
+ },
+ "spell:false-life": {
+  "quote": "You gain 2d4 + 4 Temporary Hit Points",
+  "roll": "2d4+4",
+  "roll_effect": "temp_hp"
+ },
+ "spell:heal": {
+  "quote": "restoring 70 Hit Points",
+  "roll": "70"
+ },
+ "spell:healing-word": {
+  "quote": "regains Hit Points equal to 2d4 plus your spellcasting ability modifier",
+  "roll_formula": "2d4+{spell}"
+ },
+ "spell:hex": {
+  "quote": "you deal an extra 1d6 Necrotic damage to the target whenever you hit it with an attack roll",
+  "effect": {
+   "modifiers": [
+    {
+     "kind": "damage",
+     "dice": "1d6",
+     "damage_type": "necrotic"
+    }
+   ]
+  }
+ },
+ "spell:hunters-mark": {
+  "quote": "you deal an extra 1d6 Force damage to the target whenever you hit it with an attack roll",
+  "effect": {
+   "modifiers": [
+    {
+     "kind": "damage",
+     "dice": "1d6",
+     "damage_type": "force"
+    }
+   ]
+  }
+ },
+ "spell:mass-cure-wounds": {
+  "quote": "regains Hit Points equal to 5d8 plus your spellcasting ability modifier",
+  "roll_formula": "5d8+{spell}"
+ },
+ "spell:mass-healing-word": {
+  "quote": "regain Hit Points equal to 2d4 plus your spellcasting ability modifier",
+  "roll_formula": "2d4+{spell}"
+ },
+ "spell:prayer-of-healing": {
+  "quote": "also regain 2d8 Hit Points",
+  "roll": "2d8"
+ },
+ "spell:regenerate": {
+  "quote": "regains 4d8 + 15 Hit Points",
+  "roll": "4d8+15"
+ },
+ "spell:searing-smite": {
+  "quote": "it takes an extra 1d6 Fire damage",
+  "roll": "1d6"
+ },
+ "spell:shield": {
+  "quote": "you have a +5 bonus to AC",
+  "effect": {
+   "rounds": 1,
+   "modifiers": [
+    {
+     "kind": "armor_class",
+     "value": 5
+    }
+   ]
+  }
+ }
+}
