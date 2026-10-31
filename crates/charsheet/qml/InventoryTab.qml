@@ -241,6 +241,7 @@ SheetTab {
             { label: "Charges", type: "section" },
             { key: "charges_max", label: "Charges (0 = none)", type: "int", from: 0, to: 100 },
             { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges, visibleWhen: item => item.charges_max > 0 },
+            { key: "regain", label: "Regains", type: "text", placeholder: "e.g. 1d6+1; empty regains all", visibleWhen: item => item.charges_max > 0 && item.recharge === "dawn" },
 
             { label: "Modifiers (while equipped; ammunition: when fired)", type: "section" },
             { key: "modifiers", label: "Modifiers", type: "modifiers" },

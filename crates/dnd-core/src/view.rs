@@ -464,6 +464,7 @@ pub fn catalog() -> Catalog {
             (Recharge::None, "Doesn't recharge"),
             (Recharge::Short, "Short or Long Rest"),
             (Recharge::Long, "Long Rest"),
+            (Recharge::Dawn, "Next dawn"),
         ]),
     }
 }

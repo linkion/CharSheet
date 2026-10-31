@@ -490,11 +490,9 @@ impl qobject::CharacterSheet {
         });
     }
 
-    pub fn long_rest(self: Pin<&mut Self>) {
-        self.mutate(|c| {
-            c.long_rest();
-            Ok(())
-        });
+    pub fn long_rest(mut self: Pin<&mut Self>) {
+        let played = self.as_mut().mutate(|c| Ok(play::long_rest(c)));
+        self.finish(played);
     }
 
     pub fn roll(

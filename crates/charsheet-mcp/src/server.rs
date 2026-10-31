@@ -698,13 +698,10 @@ impl CharSheetServer {
 
     #[tool(
         description = "Take a long rest: full HP, all slots, uses and hit dice back, effects \
-        end and Exhaustion drops by one."
+        end, Exhaustion drops by one, and items that recharge at dawn roll for their charges."
     )]
     async fn long_rest(&self, Parameters(a): Parameters<CharacterArg>) -> ToolResult {
-        self.play(&a.character, |c| {
-            c.long_rest();
-            Ok(())
-        })
+        self.played(&a.character, |c| Ok(play::long_rest(c)))
     }
 
     // --- Dice ---------------------------------------------------------------------------

@@ -52,6 +52,21 @@ fn resolve(c: &mut Character, outcome: Outcome) -> Result<Played, PlayError> {
     })
 }
 
+/// Takes a long rest, then rolls the charges items regain at dawn.
+pub fn long_rest(c: &mut Character) -> Played {
+    c.long_rest();
+    let mut parts = vec!["Long rest".to_owned()];
+    let mut rolls = Vec::new();
+    for (name, roll, left) in c.dawn(&mut rand::rng()) {
+        parts.push(format!("{name} has {left} charges"));
+        rolls.push(StoredRoll::new(format!("{name} regains charges"), roll));
+    }
+    Played {
+        message: parts.join(" · "),
+        rolls,
+    }
+}
+
 pub fn use_item_action(c: &mut Character, item: usize, action: usize) -> Result<Played, PlayError> {
     transact(c, |c| {
         let outcome = c.use_item_action(item, action)?;
@@ -235,5 +250,27 @@ mod tests {
             spend_hit_die(&mut c, 9),
             Err(PlayError::NotFound("class"))
         ));
+    }
+
+    #[test]
+    fn long_rest_logs_dawn_rolls() {
+        let mut c = sable();
+        c.inventory.push(crate::character::Item {
+            name: "Wand".into(),
+            charges_max: 7,
+            charges_spent: 7,
+            recharge: crate::character::Recharge::Dawn,
+            regain: "1d6+1".into(),
+            ..Default::default()
+        });
+        let played = long_rest(&mut c);
+        assert_eq!(played.rolls.len(), 1);
+        assert_eq!(played.rolls[0].label, "Wand regains charges");
+        let last = c.inventory.last().unwrap();
+        assert_eq!(
+            last.charges_max - last.charges_spent,
+            played.rolls[0].result.total as u32
+        );
+        assert!(played.message.contains("Wand has"));
     }
 }

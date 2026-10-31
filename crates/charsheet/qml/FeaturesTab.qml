@@ -126,7 +126,7 @@ SheetTab {
             { key: "description", label: "Description", type: "area" },
             { key: "uses_max", label: "Uses (0 = untracked)", type: "int", from: 0, to: 20, visibleWhen: feature => !feature.uses_formula },
             { key: "uses_formula", label: "Uses formula", type: "text", placeholder: "e.g. {pb}" },
-            { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges },
+            { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges.filter(o => o.key !== "dawn") },
             { label: "Always on", type: "section" },
             { key: "modifiers", label: "Modifiers", type: "modifiers" },
             { label: "Actions", type: "section" },

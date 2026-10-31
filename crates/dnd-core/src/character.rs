@@ -1,10 +1,12 @@
 use crate::abilities::{Ability, Proficiency, Skill, modifier, proficiency_bonus};
 use crate::armor::ArmorKind;
 use crate::classes::{self, CasterKind, ClassId};
+use crate::dice::{self, RollMode, RollResult};
 use crate::effects::{
     Action, Activation, Cost, Effect, Modifier, ModifierKind, Outcome, RollEffect,
 };
 use crate::formula::{self, FormulaError, Vars};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -258,6 +260,8 @@ pub enum Recharge {
     None,
     Short,
     Long,
+    /// Regains `regain` dice of charges at dawn, which is taken as the end of a long rest.
+    Dawn,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1424,6 +1428,31 @@ impl Character {
         self.exhaustion = self.exhaustion.saturating_sub(1);
     }
 
+    /// Regains charges on items that recharge at dawn, returning each item's name, roll and
+    /// the charges it now has. Items with no charges spent don't roll.
+    pub fn dawn(&mut self, rng: &mut impl Rng) -> Vec<(String, RollResult, u32)> {
+        let mut rolled = Vec::new();
+        for item in &mut self.inventory {
+            if item.recharge != Recharge::Dawn || item.charges_spent == 0 {
+                continue;
+            }
+            if item.regain.trim().is_empty() {
+                item.charges_spent = 0;
+                continue;
+            }
+            // Edits reject bad dice, so one here came from a hand-edited import.
+            let Ok(roll) = dice::roll_with(&item.regain, RollMode::Normal, rng) else {
+                continue;
+            };
+            item.charges_spent = item
+                .charges_spent
+                .saturating_sub(roll.total.max(0).unsigned_abs());
+            let left = item.charges_max - item.charges_spent;
+            rolled.push((item.name.clone(), roll, left));
+        }
+        rolled
+    }
+
     /// Recomputes every value that has a formula, returning the first bad formula. A bad one
     /// leaves its value alone, so a character with one still loads.
     pub fn resolve_formulas(&mut self) -> Result<(), FormulaError> {
@@ -1442,6 +1471,9 @@ impl Character {
             note(resolve_actions(&mut f.actions, &vars));
         }
         for item in &mut self.inventory {
+            if !item.regain.trim().is_empty() {
+                note(formula::dice(&item.regain, &vars).map(|_| ()));
+            }
             note(resolve_modifiers(&mut item.modifiers, &vars));
             note(resolve_actions(&mut item.actions, &vars));
         }
@@ -2153,5 +2185,62 @@ mod tests {
         c.classes[0].class = ClassId::Barbarian;
         c.classes[1].class = ClassId::Fighter;
         assert_eq!(c.main_spell_ability(), None);
+    }
+
+    fn wand(spent: u32, regain: &str) -> Item {
+        Item {
+            name: "Wand".into(),
+            charges_max: 7,
+            charges_spent: spent,
+            recharge: Recharge::Dawn,
+            regain: regain.into(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn dawn_regains_rolled_charges_up_to_the_maximum() {
+        let mut rng = rand::rng();
+        for _ in 0..50 {
+            let mut c = Character::new("A");
+            c.inventory.push(wand(7, "1d6+1"));
+            let rolled = c.dawn(&mut rng);
+            assert_eq!(rolled.len(), 1);
+            let (name, roll, left) = &rolled[0];
+            assert_eq!(name, "Wand");
+            assert!((2..=7).contains(&roll.total));
+            assert_eq!(*left as i32, roll.total);
+            assert_eq!(c.inventory[0].charges_spent, 7 - roll.total as u32);
+
+            c.inventory[0].charges_spent = 1;
+            c.dawn(&mut rng);
+            assert_eq!(c.inventory[0].charges_spent, 0);
+        }
+    }
+
+    #[test]
+    fn dawn_skips_full_items_and_refills_without_dice() {
+        let mut c = Character::new("A");
+        c.inventory.push(wand(0, "1d6"));
+        c.inventory.push(wand(3, ""));
+        assert!(c.dawn(&mut rand::rng()).is_empty());
+        assert_eq!(c.inventory[1].charges_spent, 0);
+    }
+
+    #[test]
+    fn long_rest_leaves_dawn_charges_to_the_dawn() {
+        let mut c = Character::new("A");
+        c.inventory.push(wand(3, "1d6"));
+        c.long_rest();
+        assert_eq!(c.inventory[0].charges_spent, 3);
+    }
+
+    #[test]
+    fn bad_regain_dice_are_rejected() {
+        let mut c = Character::new("A");
+        c.inventory.push(wand(3, "1d6"));
+        let bad = crate::edit::set(&mut c, "/inventory/0/regain", serde_json::json!("lots"));
+        assert!(bad.is_err());
+        assert_eq!(c.inventory[0].regain, "1d6");
     }
 }
