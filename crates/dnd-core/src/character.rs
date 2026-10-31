@@ -173,6 +173,38 @@ pub struct WeaponStats {
     pub loaded: u32,
     /// Name of the ammunition item fired and used up; empty for untracked ammunition.
     pub ammo: String,
+    /// Damage dice when used with two hands (the Versatile property), e.g. `1d10`.
+    pub versatile: String,
+    /// The properties as printed, e.g. `Versatile (1d10)`. Empty on weapons entered by hand,
+    /// which show the ones the fields above record.
+    pub properties: Vec<String>,
+}
+
+impl WeaponStats {
+    /// The weapon's properties as printed.
+    pub fn property_labels(&self) -> Vec<String> {
+        if !self.properties.is_empty() {
+            return self.properties.clone();
+        }
+        let range = |name: &str| match self.range.as_str() {
+            "" => name.to_owned(),
+            range => format!("{name} ({range})"),
+        };
+        let mut labels = Vec::new();
+        if self.finesse {
+            labels.push("Finesse".to_owned());
+        }
+        if self.light {
+            labels.push("Light".to_owned());
+        }
+        if self.thrown {
+            labels.push(range("Thrown"));
+        }
+        if !self.versatile.is_empty() {
+            labels.push(format!("Versatile ({})", self.versatile));
+        }
+        labels
+    }
 }
 
 impl Default for WeaponStats {
@@ -191,6 +223,8 @@ impl Default for WeaponStats {
             capacity: 0,
             loaded: 0,
             ammo: String::new(),
+            versatile: String::new(),
+            properties: Vec::new(),
         }
     }
 }
@@ -350,6 +384,8 @@ pub struct WeaponAttack {
     pub damage_type: String,
     pub range: String,
     pub mastery: String,
+    /// The weapon's properties as printed, e.g. `Versatile (1d10)`.
+    pub properties: Vec<String>,
     pub riders: Vec<Rider>,
     /// Modifiers on or off for this attack that can be switched, such as a Fire mode.
     pub toggles: Vec<Toggle>,
@@ -360,6 +396,14 @@ pub struct WeaponAttack {
     pub ammo: String,
     /// How many of the tracked ammunition are left, if it's tracked.
     pub ammo_left: Option<u32>,
+}
+
+/// The ways of using one weapon that get an attack of their own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Grip {
+    Normal,
+    Thrown,
+    TwoHanded,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -827,9 +871,12 @@ impl Character {
             let Some(weapon) = item.weapon.as_ref().filter(|_| item.active()) else {
                 continue;
             };
-            out.push(self.weapon_attack(index, item, weapon, false));
+            out.push(self.weapon_attack(index, item, weapon, Grip::Normal));
             if weapon.thrown && !weapon.ranged {
-                out.push(self.weapon_attack(index, item, weapon, true));
+                out.push(self.weapon_attack(index, item, weapon, Grip::Thrown));
+            }
+            if !weapon.versatile.trim().is_empty() {
+                out.push(self.weapon_attack(index, item, weapon, Grip::TwoHanded));
             }
         }
         out
@@ -840,8 +887,9 @@ impl Character {
         index: usize,
         item: &Item,
         weapon: &WeaponStats,
-        thrown: bool,
+        grip: Grip,
     ) -> WeaponAttack {
+        let thrown = grip == Grip::Thrown;
         let ranged_attack = weapon.ranged || thrown;
         let (str_mod, dex_mod) = (
             self.ability_mod(Ability::Str),
@@ -961,10 +1009,14 @@ impl Character {
                 _ => {}
             }
         }
+        let dice = match grip {
+            Grip::TwoHanded => &weapon.versatile,
+            _ => &weapon.damage,
+        };
         let damage = match flat {
-            0 => weapon.damage.clone(),
-            n if n > 0 => format!("{}+{n}", weapon.damage),
-            n => format!("{}{n}", weapon.damage),
+            0 => dice.clone(),
+            n if n > 0 => format!("{dice}+{n}"),
+            n => format!("{dice}{n}"),
         };
         let range = if ranged_attack {
             weapon.range.clone()
@@ -973,10 +1025,10 @@ impl Character {
         };
         WeaponAttack {
             item: index,
-            name: if thrown {
-                format!("{} (thrown)", item.name)
-            } else {
-                item.name.clone()
+            name: match grip {
+                Grip::Normal => item.name.clone(),
+                Grip::Thrown => format!("{} (thrown)", item.name),
+                Grip::TwoHanded => format!("{} (two-handed)", item.name),
             },
             thrown,
             ranged: ranged_attack,
@@ -986,6 +1038,7 @@ impl Character {
             damage_type: weapon.damage_type.clone(),
             range,
             mastery: weapon.mastery.clone(),
+            properties: weapon.property_labels(),
             riders,
             toggles,
             notes,
@@ -2242,5 +2295,32 @@ mod tests {
         let bad = crate::edit::set(&mut c, "/inventory/0/regain", serde_json::json!("lots"));
         assert!(bad.is_err());
         assert_eq!(c.inventory[0].regain, "1d6");
+    }
+
+    #[test]
+    fn versatile_weapons_get_a_two_handed_attack() {
+        let mut c = Character::new("A");
+        c.base_scores[Ability::Str.index()] = 16;
+        c.inventory.push(Item {
+            name: "Spear".into(),
+            kind: ItemKind::Weapon,
+            equipped: true,
+            weapon: Some(WeaponStats {
+                damage: "1d6".into(),
+                versatile: "1d8".into(),
+                thrown: true,
+                range: "20/60".into(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        let attacks = c.weapon_attacks();
+        let names: Vec<&str> = attacks.iter().map(|a| a.name.as_str()).collect();
+        assert_eq!(names, ["Spear", "Spear (thrown)", "Spear (two-handed)"]);
+        assert_eq!(attacks[0].damage, "1d6+3");
+        assert_eq!(attacks[2].damage, "1d8+3");
+        assert_eq!(attacks[2].to_hit, attacks[0].to_hit);
+        assert_eq!(attacks[2].range, "melee");
+        assert_eq!(attacks[0].properties, ["Thrown (20/60)", "Versatile (1d8)"]);
     }
 }

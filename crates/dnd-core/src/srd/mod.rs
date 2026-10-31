@@ -5,9 +5,11 @@
 //! so anything that isn't a structured field comes from the hand-checked `mechanics.json` and
 //! never from reading the text.
 
+mod convert;
 mod data;
 mod search;
 
+pub use convert::{AddSpec, Conversion, Entry, SrdError, add, convert};
 pub use data::{attribution, record};
 pub use search::{Hit, SearchResults, find, search};
 
