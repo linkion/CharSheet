@@ -1,6 +1,7 @@
 //! Ranked search over the index, plus the parts of records the index doesn't list.
 
-use super::data::{parts, records};
+use super::convert::options;
+use super::data::{parts, record, records};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
@@ -9,7 +10,7 @@ use std::sync::OnceLock;
 /// Gear entries that repeat a magic item, which is the one to add.
 const HIDDEN: [&str; 2] = ["gear:potion-of-healing", "gear:spell-scroll"];
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct Hit {
     pub id: String,
     pub name: String,
@@ -17,6 +18,14 @@ pub struct Hit {
     pub summary: String,
     /// Short facts for filtering by eye, e.g. `level 3`, `evocation`.
     pub facets: Vec<String>,
+    /// What has to be chosen before adding it: `base`, `variant` or `choice`.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub needs: Vec<String>,
+    /// Filled in by a query such as `+1 longsword`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub variant: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -92,6 +101,7 @@ fn rows() -> &'static [Row] {
                     category: r.category,
                     summary: r.summary,
                     facets: r.keywords,
+                    ..Default::default()
                 };
                 Row::new(hit, &r.aliases)
             })
@@ -113,6 +123,7 @@ fn part_row(part: &Value) -> Row {
         category: text("category"),
         summary: text("summary"),
         facets: vec![text("source")],
+        ..Default::default()
     };
     Row::new(hit, &[])
 }
@@ -144,8 +155,8 @@ fn rank(row: &Row, query: &str, tokens: &[&str]) -> Option<u8> {
 
 /// Searches names, then keywords, then summaries. An empty query lists everything by name.
 /// `categories` limits the search, and breaks ties in the order given.
-pub fn search(query: &str, categories: &[&str], limit: usize) -> SearchResults {
-    let query = fold(query);
+pub fn search(raw: &str, categories: &[&str], limit: usize) -> SearchResults {
+    let query = fold(raw);
     let tokens: Vec<&str> = query.split_whitespace().collect();
     let order = |category: &str| {
         categories
@@ -178,14 +189,61 @@ pub fn search(query: &str, categories: &[&str], limit: usize) -> SearchResults {
     }
     let mut seen = HashSet::new();
     matches.retain(|(_, _, r)| seen.insert(&r.hit.id));
+    let shorthand = plus_item(raw, categories);
     SearchResults {
-        total: matches.len(),
-        results: matches
+        total: matches.len() + usize::from(shorthand.is_some()),
+        results: shorthand
             .into_iter()
+            .chain(matches.into_iter().map(|(_, _, r)| r.hit.clone()))
             .take(limit)
-            .map(|(_, _, r)| r.hit.clone())
+            .map(|mut hit| {
+                hit.needs = needs(&hit);
+                hit
+            })
             .collect(),
     }
+}
+
+/// `+1 longsword` as the magic item it means, with its base and variant filled in.
+fn plus_item(query: &str, categories: &[&str]) -> Option<Hit> {
+    let (bonus, name) = query.trim().split_once(' ')?;
+    if !matches!(bonus, "+1" | "+2" | "+3")
+        || !(categories.is_empty() || categories.contains(&"magic_item"))
+    {
+        return None;
+    }
+    let base = find(name, &["weapon", "armor"])?;
+    let family = match base {
+        "armor:shield" => "magic_item:shield-plus-1-plus-2-or-plus-3",
+        id if id.starts_with("armor:") => "magic_item:armor-plus-1-plus-2-or-plus-3",
+        _ => "magic_item:weapon-plus-1-plus-2-or-plus-3",
+    };
+    let row = rows().iter().find(|r| r.hit.id == family)?;
+    let title = record(base)?["name"].as_str()?.to_owned();
+    Some(Hit {
+        name: format!("{bonus} {title}"),
+        base: (base != "armor:shield").then(|| base.to_owned()),
+        variant: Some(bonus.to_owned()),
+        ..row.hit.clone()
+    })
+}
+
+/// What's left to choose before a hit can be added.
+fn needs(hit: &Hit) -> Vec<String> {
+    let Ok(open) = options(&hit.id) else {
+        return Vec::new();
+    };
+    let mut needs = Vec::new();
+    if open.bases.len() > 1 && hit.base.is_none() {
+        needs.push("base".to_owned());
+    }
+    if open.variants.len() > 1 && hit.variant.is_none() {
+        needs.push("variant".to_owned());
+    }
+    if open.choice.is_some() {
+        needs.push("choice".to_owned());
+    }
+    needs
 }
 
 /// The id of the record with exactly this name or alias, for looking up what a sheet entry is.
@@ -204,7 +262,6 @@ pub fn find(name: &str, categories: &[&str]) -> Option<&'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::data::record;
     use super::*;
 
     fn first(query: &str, categories: &[&str]) -> String {
@@ -289,6 +346,33 @@ mod tests {
         );
         assert_eq!(find("hunter", &["spell"]), None);
         assert_eq!(find("", &["spell"]), None);
+    }
+
+    #[test]
+    fn plus_shorthand_prefills_the_magic_item() {
+        let hit = &search("+1 longsword", &[], 5).results[0];
+        assert_eq!(hit.id, "magic_item:weapon-plus-1-plus-2-or-plus-3");
+        assert_eq!(hit.name, "+1 Longsword");
+        assert_eq!(hit.base.as_deref(), Some("weapon:longsword"));
+        assert_eq!(hit.variant.as_deref(), Some("+1"));
+        assert!(hit.needs.is_empty());
+
+        let plate = &search("+3 plate armor", &["magic_item"], 5).results[0];
+        assert_eq!(plate.id, "magic_item:armor-plus-1-plus-2-or-plus-3");
+        let shield = &search("+2 shield", &[], 5).results[0];
+        assert_eq!(shield.id, "magic_item:shield-plus-1-plus-2-or-plus-3");
+        assert!(shield.needs.is_empty());
+        assert!(search("+1 nonsense", &[], 5).results.is_empty());
+    }
+
+    #[test]
+    fn hits_say_what_they_need() {
+        let hit = &search("flame tongue", &["magic_item"], 1).results[0];
+        assert_eq!(hit.needs, ["base"]);
+        let hit = &search("ring of resistance", &["magic_item"], 1).results[0];
+        assert_eq!(hit.needs, ["choice"]);
+        let hit = &search("fireball", &["spell"], 1).results[0];
+        assert!(hit.needs.is_empty());
     }
 
     #[test]

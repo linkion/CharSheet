@@ -8,6 +8,7 @@ use dnd_core::dice::{self, RollMode};
 use dnd_core::effects::Effect;
 use dnd_core::notify::Notifier;
 use dnd_core::play::{self, Played};
+use dnd_core::srd::{self, AddSpec};
 use dnd_core::storage::{StoredRoll, Summary};
 use dnd_core::view::{SheetView, catalog};
 use dnd_core::{Character, Library, edit};
@@ -50,7 +51,18 @@ the app renders: use **bold**, lists and links where they help.
 For play, prefer the play tools to raw edits, since they follow the rules (temp HP absorbs \
 damage first, rests recharge uses, casting spends the right slot) and log their dice rolls: \
 indices are positions in character.inventory, character.features, character.spells, \
-character.classes, character.effects, and derived.weapon_attacks.";
+character.classes, character.effects, and derived.weapon_attacks.
+
+To add a spell, item or feature from the rules, use search_srd then add_from_srd rather than \
+writing the entry yourself. get_srd reads a record's full text; the text is authoritative, and \
+only mechanics that are certain get filled in. Links such as [Prone](srd:condition:prone) in \
+free text open the app's rules lookup.
+
+A field ending in _formula (uses_formula, roll_formula, value_formula) keeps the field beside \
+it following the character, so it changes on level-up: {pb}, {level}, {cantrip} (1 to 4 by \
+level), {spell} (spellcasting modifier), {str} to {cha}, as in {cantrip}d10 or 2d8+{spell}. \
+Clear it to set the value by hand. An item with recharge dawn rolls its regain dice on a long \
+rest.";
 
 #[derive(Deserialize, JsonSchema)]
 pub struct CharacterArg {
@@ -95,6 +107,55 @@ pub struct SetArg {
     pub pointer: String,
     /// The new value. Use null to clear an optional field such as /armor.
     pub value: Value,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct SearchSrdArg {
+    /// Words to search for, e.g. `fireball`, `level 3 wizard` or `+1 longsword`.
+    pub query: String,
+    /// Limits the search, e.g. spell, weapon, armor, gear, tool, magic_item, feat,
+    /// species_trait, class_feature, subclass_feature, class_option, condition,
+    /// weapon_property, mastery_property, glossary, rule, monster.
+    #[serde(default)]
+    pub categories: Vec<String>,
+    /// How many results to return: 10 by default, 25 at most.
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct GetSrdArg {
+    /// A record id from search_srd, e.g. spell:fireball or species:dwarf#stonecunning.
+    pub id: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct AddFromSrdArg {
+    /// Character id or name (case-insensitive).
+    pub character: String,
+    /// A record id from search_srd.
+    pub id: String,
+    /// The weapon or armor a magic item is made from, e.g. weapon:longsword, or Arrows for
+    /// ammunition. search_srd's needs lists when this is required.
+    #[serde(default)]
+    pub base: Option<String>,
+    /// e.g. +1, or Greater for a potion.
+    #[serde(default)]
+    pub variant: Option<String>,
+    /// A choice the record leaves open, such as a damage type.
+    #[serde(default)]
+    pub choice: Option<String>,
+    #[serde(default)]
+    pub quantity: Option<u32>,
+    /// Defaults to true when there's a free slot and the item does something when worn.
+    #[serde(default)]
+    pub equipped: Option<bool>,
+    /// Defaults to false, as a character can attune to three items.
+    #[serde(default)]
+    pub attuned: Option<bool>,
+    /// For spells; defaults to true so they can be cast.
+    #[serde(default)]
+    pub prepared: Option<bool>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -582,6 +643,69 @@ impl CharSheetServer {
         self.update(&a.character, |c| {
             edit::set(c, &a.pointer, a.value).map_err(err)?;
             Ok((value_at(c, &a.pointer)?, Vec::new()))
+        })
+    }
+
+    #[tool(
+        description = "Search the System Reference Document 5.2.1: spells, weapons, armor, \
+        gear, tools, magic items, feats, species traits, class features, conditions, rules and \
+        monsters. Returns short results; use get_srd for the full text and add_from_srd to put \
+        one on a character.",
+        annotations(read_only_hint = true)
+    )]
+    async fn search_srd(&self, Parameters(a): Parameters<SearchSrdArg>) -> ToolResult {
+        let categories: Vec<&str> = a.categories.iter().map(String::as_str).collect();
+        let found = srd::search(&a.query, &categories, a.limit.unwrap_or(10).clamp(1, 25));
+        let results: Vec<Value> = found
+            .results
+            .into_iter()
+            .map(|mut hit| {
+                if let Some((end, _)) = hit.summary.char_indices().nth(120) {
+                    hit.summary.truncate(end);
+                    hit.summary.push('…');
+                }
+                json!(hit)
+            })
+            .collect();
+        to_json(&json!({ "source": srd::SOURCE, "total": found.total, "results": results }))
+    }
+
+    #[tool(
+        description = "One SRD record's full rules text, by id from search_srd.",
+        annotations(read_only_hint = true)
+    )]
+    async fn get_srd(&self, Parameters(a): Parameters<GetSrdArg>) -> ToolResult {
+        let rec = srd::record(&a.id).ok_or_else(|| format!("no SRD record {}", a.id))?;
+        to_json(&json!({
+            "id": rec["id"],
+            "name": rec["name"],
+            "category": rec["category"],
+            "page": rec["page"],
+            "markdown": rec["markdown"],
+            "attribution": srd::attribution(),
+        }))
+    }
+
+    #[tool(
+        description = "Add an SRD spell, item or feature to a character, filling in its \
+        stats, text, modifiers and actions. Values that scale follow the character. Returns \
+        the entry, what was derived, and warnings such as an item still needing attunement. \
+        An item already carried stacks; a spell or feature already there is refused."
+    )]
+    async fn add_from_srd(&self, Parameters(a): Parameters<AddFromSrdArg>) -> ToolResult {
+        let spec = AddSpec {
+            id: a.id,
+            base: a.base,
+            variant: a.variant,
+            choice: a.choice,
+            quantity: a.quantity,
+            equipped: a.equipped,
+            attuned: a.attuned,
+            prepared: a.prepared,
+        };
+        self.update(&a.character, |c| {
+            let added = srd::add(c, &spec).map_err(err)?;
+            Ok((to_json(&added)?, Vec::new()))
         })
     }
 
@@ -1088,6 +1212,98 @@ mod tests {
 
     #[test]
     fn every_tool_is_listed() {
-        assert_eq!(server().tool_router.list_all().len(), 32);
+        assert_eq!(server().tool_router.list_all().len(), 35);
+    }
+
+    #[tokio::test]
+    async fn search_results_stay_short() {
+        let s = server();
+        let found = parse(
+            s.search_srd(Parameters(SearchSrdArg {
+                query: "fire".into(),
+                categories: vec!["spell".into()],
+                limit: None,
+            }))
+            .await,
+        );
+        let results = found["results"].as_array().unwrap();
+        assert_eq!(results.len(), 10);
+        assert!(found["total"].as_u64().unwrap() >= 10);
+        assert_eq!(found["source"], srd::SOURCE);
+        assert!(results[0].get("markdown").is_none());
+        assert!(
+            results
+                .iter()
+                .all(|r| { r["summary"].as_str().unwrap().chars().count() <= 121 })
+        );
+    }
+
+    #[tokio::test]
+    async fn get_srd_returns_the_rules_text() {
+        let s = server();
+        let rec = parse(
+            s.get_srd(Parameters(GetSrdArg {
+                id: "condition:prone".into(),
+            }))
+            .await,
+        );
+        assert_eq!(rec["name"], "Prone");
+        assert!(rec["markdown"].as_str().unwrap().contains("Restricted Movement"));
+        assert!(rec["attribution"].as_str().unwrap().contains("SRD 5.2.1"));
+        assert!(
+            s.get_srd(Parameters(GetSrdArg {
+                id: "spell:nope".into()
+            }))
+            .await
+            .is_err()
+        );
+    }
+
+    fn add_arg(id: &str) -> AddFromSrdArg {
+        AddFromSrdArg {
+            character: "Sable".into(),
+            id: id.into(),
+            base: None,
+            variant: None,
+            choice: None,
+            quantity: None,
+            equipped: None,
+            attuned: None,
+            prepared: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn add_from_srd_saves_the_entry() {
+        let s = server();
+        import_sable(&s).await;
+        let added = parse(
+            s.add_from_srd(Parameters(AddFromSrdArg {
+                base: Some("weapon:longsword".into()),
+                variant: Some("+1".into()),
+                ..add_arg("magic_item:weapon-plus-1-plus-2-or-plus-3")
+            }))
+            .await,
+        );
+        assert_eq!(added["entry"]["name"], "+1 Longsword");
+        assert_eq!(added["entry"]["weapon"]["magic_bonus"], 1);
+        let pointer = added["pointer"].as_str().unwrap();
+        let stored = get(&s, &format!("{pointer}/name")).await;
+        assert_eq!(stored, "+1 Longsword");
+    }
+
+    #[tokio::test]
+    async fn add_from_srd_says_what_it_needs_and_changes_nothing() {
+        let s = server();
+        import_sable(&s).await;
+        let before = sheet(&s).await;
+        let error = s
+            .add_from_srd(Parameters(add_arg(
+                "magic_item:weapon-plus-1-plus-2-or-plus-3",
+            )))
+            .await
+            .unwrap_err();
+        assert!(error.contains("weapon:longsword"), "{error}");
+        assert_eq!(before, sheet(&s).await);
     }
 }
