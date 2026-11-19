@@ -1,7 +1,7 @@
 pragma Singleton
 import QtCore
 import QtQuick
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Shared state: the library, the open sheet, its parsed view and edit helpers.
 QtObject {

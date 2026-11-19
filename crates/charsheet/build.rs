@@ -25,7 +25,7 @@ const THEME_FILES: &[&str] = &[
 
 fn main() {
     let builder =
-        CxxQtBuilder::new_qml_module(QmlModule::new("io.github.porave.charsheet").qml_files([
+        CxxQtBuilder::new_qml_module(QmlModule::new("io.github.linkion.charsheet").qml_files([
             QmlFile::from("qml/App.qml").singleton(true),
             QmlFile::from("qml/Style.qml").singleton(true),
             QmlFile::from("qml/AbilityBox.qml"),

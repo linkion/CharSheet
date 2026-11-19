@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick3D
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Throws 3D dice across the window for new rolls, announces them as they land, then fades.
 // A click anywhere dismisses it and still reaches the sheet underneath.

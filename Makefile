@@ -3,7 +3,7 @@
 PREFIX ?= $(HOME)/.local
 DESTDIR ?=
 
-APP_ID := io.github.porave.CharSheet
+APP_ID := io.github.linkion.CharSheet
 BIN := target/release/charsheet
 MCP_BIN := target/release/charsheet-mcp
 

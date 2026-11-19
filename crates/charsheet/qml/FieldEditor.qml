@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The control for one field of an ItemDialog (see there for the field format), bound to the
 // entry's value and saving every change straight away.

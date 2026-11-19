@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Opens the rules for a sheet entry, showing only when the SRD has an entry of that name.
 QQC2.ToolButton {

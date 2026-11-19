@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A check box bound to a boolean character field.
 QQC2.CheckBox {

@@ -1,6 +1,6 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A card that is drawn as a character sheet box in the decorated themes, and as a plain
 // Kirigami card in the System theme.

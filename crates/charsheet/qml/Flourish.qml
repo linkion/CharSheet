@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Curving ribbon lines down both sides of a stat box, like the curtain-shaped strokes
 // behind the numbers on the character sheet. Purely decorative.

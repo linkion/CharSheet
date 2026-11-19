@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A text field bound to a character field, saved when editing finishes.
 QQC2.TextField {

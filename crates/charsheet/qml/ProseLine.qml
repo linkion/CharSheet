@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A one-line summary: generated text, then the first paragraph of the player's Markdown,
 // with inline styling kept so it can still be cut short.

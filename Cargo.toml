@@ -6,6 +6,9 @@ members = ["crates/dnd-core", "crates/charsheet", "crates/charsheet-mcp"]
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
+authors = ["linkion"]
+repository = "https://github.com/linkion/ttrpg-character-app"
+description = "Build, track and play D&D 5e (2024) characters"
 
 [workspace.dependencies]
 dnd-core = { path = "crates/dnd-core" }

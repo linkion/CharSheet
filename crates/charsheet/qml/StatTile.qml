@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A small labelled number; if `rollModifier` is set the number rolls a d20.
 SheetCard {

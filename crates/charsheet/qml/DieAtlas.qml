@@ -1,5 +1,5 @@
 import QtQuick
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The numbers of one kind of die, a grid cell per face, for a die's texture. `mesh` is
 // DiceTable.mesh(): each face's UVs cover its cell, and `cells` holds the labels to draw.

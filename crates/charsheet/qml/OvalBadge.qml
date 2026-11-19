@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The upright oval that holds the character's level, with a small notch at the top.
 Item {

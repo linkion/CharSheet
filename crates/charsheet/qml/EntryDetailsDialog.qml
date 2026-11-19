@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Everything about one entry of a list (spell, item, feature, attack, effect): a summary line,
 // its attacks, the switches you flip in play, its other mechanics, its full text and what it

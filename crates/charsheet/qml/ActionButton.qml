@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Uses an entry of derived.actions. Spells that need a slot open a menu of the slots (and
 // free casts) they can use.

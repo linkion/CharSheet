@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The character sheet's box outline: a heavy line with a hairline just inside it, the top
 // corners scooped out (one of them holding a small knob) and the bottom corners cut off.

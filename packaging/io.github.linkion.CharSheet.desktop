@@ -2,10 +2,10 @@
 Type=Application
 Name=CharSheet
 GenericName=D&D Character Sheet
-Comment=Keep your D&D 5e (2024) character sheets
+Comment=Build, track and play D&D 5e (2024) characters
 Exec=charsheet
-Icon=io.github.porave.CharSheet
+Icon=io.github.linkion.CharSheet
 Terminal=false
 Categories=Game;RolePlaying;
-Keywords=dnd;d&d;dungeons;dragons;rpg;ttrpg;character;sheet;dice;
+Keywords=dnd;d&d;dungeons;dragons;5e;rpg;ttrpg;character;sheet;dice;srd;
 StartupWMClass=charsheet

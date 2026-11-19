@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A row of a list whose buttons sit at the far end: striped every other row and lit up
 // under the pointer, so it's clear which entry a button belongs to.

@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Free text the player wrote, rendered as Markdown in the book face.
 QQC2.Label {

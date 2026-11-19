@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Searches the SRD and adds what's chosen to the sheet. `categories` are the kinds of record a
 // tab can hold, as [{ key, name }]. Stays open after adding, as spells tend to come in groups.

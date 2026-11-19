@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Edits the list of actions at `pointer`, e.g. "/inventory/2/actions". `owner` is "item" or
 // "feature" and decides which costs make sense.

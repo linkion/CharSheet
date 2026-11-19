@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The Armor Class shield outline: notched top corners, straight sides and a pointed base,
 // drawn double like the sheet's boxes.

@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A stack of roll results that stay on screen until dismissed. It is only as large as its
 // cards, so clicks around them reach the sheet.

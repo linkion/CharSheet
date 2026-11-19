@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Shows a signed modifier; clicking rolls `target`, a play::RollTarget, which adds it to a d20.
 QQC2.Button {

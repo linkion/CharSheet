@@ -3,7 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // One ability as the character sheet lays it out: the modifier in a circle with the score
 // in a tab beside it, then the saving throw and the skills that use the ability.

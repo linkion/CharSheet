@@ -1,5 +1,5 @@
 import QtQuick
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Faint graph-paper lines, like the free-writing boxes on the sheet. Place it behind a
 // text area; it only shows in the decorated themes.

@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Edits the list of modifiers at `pointer`, e.g. "/inventory/2/modifiers". Only the fields
 // that matter for each modifier's kind are shown.

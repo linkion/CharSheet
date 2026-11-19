@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Adds or edits one entry of a list (attack, spell, item, feature, effect). Fields are described as
 // [{ key, label, type, options, from, to, placeholder, visibleWhen, owner }] where type is one of

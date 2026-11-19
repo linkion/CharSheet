@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The sheet's divider banner: a long tapered band on each side of a title, capped with a
 // round end on the left and a ball on the right.

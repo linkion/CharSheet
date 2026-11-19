@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // An entry of derived.actions: what it is, what it has left, and a button to use it. Clicking
 // it shows the details of the spell, item or feature it belongs to.

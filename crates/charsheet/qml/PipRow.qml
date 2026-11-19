@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A row of check boxes for tracking expended resources (slots, uses, death saves), drawn
 // as the sheet's diamonds in the decorated themes.

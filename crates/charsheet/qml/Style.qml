@@ -1,6 +1,6 @@
 pragma Singleton
 import QtQuick
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // The decorated themes' colors and fonts. The color scheme (cpp/theme.h) already covers
 // text, controls and backgrounds; these are the extras the sheet decorations need.

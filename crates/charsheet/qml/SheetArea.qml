@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // A multi-line text box bound to a character field. Shows the text rendered as Markdown;
 // clicking it opens the source for editing, saved when it loses focus. Written on graph

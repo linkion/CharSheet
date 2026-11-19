@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import io.github.porave.charsheet
+import io.github.linkion.charsheet
 
 // Where a roll's total came from: a line per term with its source, and for damage a heading
 // and subtotal per type. Free-form dice and rolls logged before sources were kept have only

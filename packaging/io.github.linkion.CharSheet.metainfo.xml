@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.linkion.CharSheet</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later AND CC-BY-4.0</project_license>
+  <name>CharSheet</name>
+  <summary>Build, track and play D&amp;D 5e (2024) characters</summary>
+  <developer id="io.github.linkion">
+    <name>linkion</name>
+  </developer>
+  <description>
+    <p>
+      A character sheet for Dungeons &amp; Dragons fifth edition (2024 rules) that does the
+      math for you. Enter ability scores, classes and gear, and the sheet works out
+      modifiers, saving throws, skills, armor class, initiative, attacks, spell save DC and
+      spell slots, and shows where every number comes from.
+    </p>
+    <ul>
+      <li>Click any modifier to roll it, with 3D dice that land on the result and a roll log that breaks each total down by source and damage type</li>
+      <li>A Combat tab with the round counter, active effects and concentration, and every action grouped by Action, Bonus Action and Reaction</li>
+      <li>Items, features and spells carry modifiers and actions: damage riders, toggles, ammunition, reloading, charges and healing</li>
+      <li>The whole SRD 5.2.1 built in: add spells, items and features from the compendium with their stats and rules text</li>
+      <li>Track hit points, hit dice, death saves, spell slots, feature uses, conditions and Exhaustion, with short and long rests that restore the right resources</li>
+      <li>Multiclassing, Pact Magic and Weapon Mastery</li>
+      <li>Themes styled after the 2024 character sheet and the Player's Handbook, or your desktop colors</li>
+      <li>An MCP server so an AI assistant can read, edit and play your characters</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.linkion.CharSheet.desktop</launchable>
+  <provides>
+    <binary>charsheet</binary>
+    <binary>charsheet-mcp</binary>
+  </provides>
+  <url type="homepage">https://github.com/linkion/ttrpg-character-app</url>
+  <url type="bugtracker">https://github.com/linkion/ttrpg-character-app/issues</url>
+  <url type="vcs-browser">https://github.com/linkion/ttrpg-character-app</url>
+  <categories>
+    <category>Game</category>
+    <category>RolePlaying</category>
+  </categories>
+  <keywords>
+    <keyword>dnd</keyword>
+    <keyword>D&amp;D</keyword>
+    <keyword>dungeons and dragons</keyword>
+    <keyword>5e</keyword>
+    <keyword>ttrpg</keyword>
+    <keyword>character sheet</keyword>
+    <keyword>dice</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The main sheet, with the breakdown behind a saving throw</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/main-sheet.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The Combat tab: attacks with their riders, effects and actions</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/combat.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The roll log, splitting each total by source and damage type</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/roll-log.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Spells with slots, casting and the compendium</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/spells.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Inventory with currency, carrying capacity and usable items</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/inventory.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Features and traits with their modifiers and uses</caption>
+      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/features.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-21"/>
+  </releases>
+</component>
