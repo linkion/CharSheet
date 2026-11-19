@@ -182,6 +182,11 @@ once.
   `tools/srd` with `make srd` and compiled into `dnd-core`. See `data/srd/README.md` for
   the format.
 
+## License
+
+CharSheet is free software, licensed under the GNU General Public License, version 3 or
+(at your option) any later version. See [LICENSE](LICENSE).
+
 This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by
 Wizards of the Coast LLC, available at <https://www.dndbeyond.com/srd>. The SRD 5.2.1 is
 licensed under the Creative Commons Attribution 4.0 International License, available at
