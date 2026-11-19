@@ -14,7 +14,7 @@ METADIR := $(DESTDIR)$(PREFIX)/share/metainfo
 
 SRD_PDF ?= SRD_CC_v5.2.1.pdf
 
-.PHONY: all build install uninstall refresh-caches run test clean srd
+.PHONY: all build install uninstall refresh-caches run test clean srd changes release release-notes
 
 all: build
 
@@ -64,3 +64,19 @@ clean:
 srd:
 	python3 -I tools/srd/build.py $(SRD_PDF) data/srd
 	python3 -I tools/srd/check.py data/srd $(SRD_PDF)
+
+# Releases (see tools/release.sh). Needs gh, logged in.
+#   make changes                                  commits since the last release
+#   make release VERSION=0.2.0 [NOTES=notes.md]   open a release PR; merging it
+#                                                 tags and publishes the release
+#   make release-notes VERSION=0.2.0 NOTES=notes.md
+#                                                 replace the summary on the PR
+#                                                 or the published release
+changes:
+	@tools/release.sh changes
+
+release:
+	@tools/release.sh open "$(VERSION)" "$(NOTES)"
+
+release-notes:
+	@tools/release.sh notes "$(VERSION)" "$(NOTES)"

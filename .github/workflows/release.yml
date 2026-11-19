@@ -1,0 +1,49 @@
+# Tags and publishes a release when a release PR from `make release` merges.
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          tag="${HEAD_REF#release/}"
+          start='<!-- release-notes:start -->'
+          end='<!-- release-notes:end -->'
+
+          prev="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$MERGE_SHA^" 2>/dev/null || true)"
+          {
+            echo "$start"
+            printf '%s\n' "$PR_BODY" | tr -d '\r' \
+              | awk -v s="$start" -v e="$end" '$0 == e { f = 0 } f; $0 == s { f = 1 }'
+            echo "$end"
+            echo
+            echo "## Changelog"
+            echo
+            git log --no-merges --invert-grep --grep='^Release v[0-9]' \
+              --pretty='- %s (%h)' "${prev:+$prev..}$MERGE_SHA"
+            echo
+          } > notes.md
+          cat notes.md
+
+          # GitHub appends its own generated notes (merged PRs, compare link).
+          gh release create "$tag" --target "$MERGE_SHA" --title "$tag" \
+            --notes-file notes.md --generate-notes
