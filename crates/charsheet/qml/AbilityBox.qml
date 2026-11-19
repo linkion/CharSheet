@@ -80,6 +80,7 @@ SheetCard {
                     modifier: box.ability.modifier
                     target: ({ kind: "ability", ability: box.ability.key })
                     rollLabel: box.ability.name + " check"
+                    parts: box.ability.modifier_parts
                     textScale: 2.3
                 }
             }
@@ -91,6 +92,16 @@ SheetCard {
                 font.family: Style.displayFamily
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.6
                 horizontalAlignment: Text.AlignHCenter
+
+                HoverHandler {
+                    id: scoreHover
+                }
+                BreakdownTip {
+                    visible: scoreHover.hovered
+                    parts: box.ability.score_parts
+                    total: box.ability.score
+                    title: box.ability.name + " score"
+                }
             }
             QQC2.Label {
                 id: caption
@@ -123,6 +134,7 @@ SheetCard {
                 modifier: box.ability.modifier
                 target: ({ kind: "ability", ability: box.ability.key })
                 rollLabel: box.ability.name + " check"
+                parts: box.ability.modifier_parts
                 textScale: 1.8
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -131,6 +143,16 @@ SheetCard {
                 opacity: 0.7
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
+
+                HoverHandler {
+                    id: plainScoreHover
+                }
+                BreakdownTip {
+                    visible: plainScoreHover.hovered
+                    parts: box.ability.score_parts
+                    total: box.ability.score
+                    title: box.ability.name + " score"
+                }
             }
         }
 
@@ -160,12 +182,17 @@ SheetCard {
                 modifier: box.ability.save
                 target: ({ kind: "save", ability: box.ability.key })
                 rollLabel: box.ability.name + " save"
+                parts: box.ability.save_parts
+                showBreakdown: saveHover.hovered
             }
             QQC2.Label {
                 text: "Saving Throw"
                 font.bold: true
                 elide: Text.ElideRight
                 Layout.fillWidth: true
+                HoverHandler {
+                    id: saveHover
+                }
             }
         }
 
@@ -195,11 +222,16 @@ SheetCard {
                     modifier: modelData.modifier
                     target: ({ kind: "skill", skill: modelData.key })
                     rollLabel: modelData.name
+                    parts: modelData.parts
+                    showBreakdown: skillHover.hovered
                 }
                 QQC2.Label {
                     text: modelData.name
                     elide: Text.ElideRight
                     Layout.fillWidth: true
+                    HoverHandler {
+                        id: skillHover
+                    }
                 }
             }
         }

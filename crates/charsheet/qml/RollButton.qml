@@ -12,6 +12,11 @@ QQC2.Button {
     property string rollLabel
     // Text size relative to the default font.
     property real textScale: 1
+    // Where the modifier comes from, as bonuses from the derived view; when set, hovering
+    // shows them instead of a plain "Roll …" tooltip.
+    property var parts
+    // Set by a label beside the button to show the breakdown while it's hovered too.
+    property bool showBreakdown: false
 
     // The desktop style paints `text` itself, under the label below, so it stays empty.
     readonly property string label: App.signed(modifier)
@@ -20,8 +25,20 @@ QQC2.Button {
     Accessible.name: label
     onClicked: App.rollCheck(target)
     QQC2.ToolTip.text: "Roll " + rollLabel
-    QQC2.ToolTip.visible: hovered
+    QQC2.ToolTip.visible: hovered && !parts
     QQC2.ToolTip.delay: 600
+
+    HoverHandler {
+        id: hover
+    }
+    BreakdownTip {
+        visible: !!button.parts && (hover.hovered || button.showBreakdown)
+        parts: button.parts ?? []
+        total: button.modifier
+        mode: "modifier"
+        title: button.rollLabel
+        hint: "Click to roll"
+    }
 
     // The desktop style ignores font changes on buttons, so draw the label ourselves.
     contentItem: QQC2.Label {

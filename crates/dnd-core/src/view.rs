@@ -4,6 +4,7 @@ use crate::abilities::{Ability, Proficiency, Skill};
 use crate::armor::ArmorKind;
 use crate::character::{Character, Condition, ItemKind, Recharge, Toggle, WeaponAttack};
 use crate::classes::ClassId;
+use crate::dice::Bonus;
 use crate::effects::{Activation, Cost, Modifier, ModifierKind, RollEffect, Scope};
 use serde::Serialize;
 
@@ -17,6 +18,9 @@ pub struct AbilityView {
     pub save: i32,
     pub save_proficient: bool,
     pub save_from_class: bool,
+    pub score_parts: Vec<Bonus>,
+    pub modifier_parts: Vec<Bonus>,
+    pub save_parts: Vec<Bonus>,
 }
 
 #[derive(Serialize)]
@@ -26,6 +30,7 @@ pub struct SkillView {
     pub ability: &'static str,
     pub modifier: i32,
     pub proficiency: Proficiency,
+    pub parts: Vec<Bonus>,
 }
 
 #[derive(Serialize)]
@@ -99,6 +104,16 @@ pub struct Derived {
     pub passive_insight: i32,
     pub passive_investigation: i32,
     pub d20_penalty: i32,
+    /// What each headline number is made of, each piece with its source.
+    pub level_parts: Vec<Bonus>,
+    pub proficiency_parts: Vec<Bonus>,
+    pub armor_class_parts: Vec<Bonus>,
+    pub initiative_parts: Vec<Bonus>,
+    pub speed_parts: Vec<Bonus>,
+    pub max_hp_parts: Vec<Bonus>,
+    pub passive_perception_parts: Vec<Bonus>,
+    pub passive_insight_parts: Vec<Bonus>,
+    pub passive_investigation_parts: Vec<Bonus>,
     pub casting: Vec<CastingView>,
     pub spell_slots: [u8; 9],
     pub pact_slots: u8,
@@ -285,6 +300,12 @@ impl<'a> SheetView<'a> {
                     save: c.save_mod(a),
                     save_proficient: c.save_proficient(a),
                     save_from_class: has_class && first_class_saves.contains(&a),
+                    score_parts: c.score_parts(a),
+                    modifier_parts: vec![Bonus::new(
+                        c.ability_mod(a),
+                        format!("Score {}", c.score(a)),
+                    )],
+                    save_parts: c.save_parts(a),
                 })
                 .collect(),
             skills: Skill::ALL
@@ -295,6 +316,7 @@ impl<'a> SheetView<'a> {
                     ability: s.ability().abbrev(),
                     modifier: c.skill_mod(s),
                     proficiency: c.skill_proficiency(s),
+                    parts: c.skill_parts(s),
                 })
                 .collect(),
             armor_class: c.armor_class(),
@@ -304,6 +326,18 @@ impl<'a> SheetView<'a> {
             passive_insight: c.passive(Skill::Insight),
             passive_investigation: c.passive(Skill::Investigation),
             d20_penalty: c.d20_penalty(),
+            level_parts: c.level_parts(),
+            proficiency_parts: vec![Bonus::new(
+                c.proficiency_bonus(),
+                format!("Level {}", c.total_level()),
+            )],
+            armor_class_parts: c.armor_class_parts(),
+            initiative_parts: c.initiative_parts(),
+            speed_parts: c.speed_parts(),
+            max_hp_parts: c.max_hp_parts(),
+            passive_perception_parts: c.passive_parts(Skill::Perception),
+            passive_insight_parts: c.passive_parts(Skill::Insight),
+            passive_investigation_parts: c.passive_parts(Skill::Investigation),
             casting: c
                 .spellcasting_abilities()
                 .into_iter()

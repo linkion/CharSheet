@@ -15,6 +15,11 @@ SheetCard {
     property var rollTarget
     // "box", or "shield" (Armor Class) or "oval" (Level) in the decorated themes.
     property string shape: "box"
+    // Where the number comes from, shown on hover; see BreakdownTip for `partsMode`.
+    property var parts
+    property var partsTotal: value
+    property string partsMode: "value"
+    property string partsUnit
 
     Layout.fillWidth: true
     Layout.minimumWidth: Kirigami.Units.gridUnit * 5
@@ -44,6 +49,18 @@ SheetCard {
         anchors.centerIn: parent
         height: parent.height
         width: tile.shapeWidth
+    }
+
+    HoverHandler {
+        id: hover
+    }
+    BreakdownTip {
+        visible: hover.hovered && !tile.rollable && !!tile.parts
+        parts: tile.parts ?? []
+        total: tile.partsTotal
+        mode: tile.partsMode
+        unit: tile.partsUnit
+        title: tile.label
     }
 
     contentItem: ColumnLayout {
@@ -93,6 +110,7 @@ SheetCard {
                 modifier: tile.rollModifier
                 target: tile.rollTarget
                 rollLabel: tile.label
+                parts: tile.parts
                 textScale: Style.decorated ? 2.1 : 1.6
             }
         }

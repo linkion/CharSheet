@@ -33,6 +33,7 @@ fn main() {
             QmlFile::from("qml/ActionListEditor.qml"),
             QmlFile::from("qml/ActionRow.qml"),
             QmlFile::from("qml/BannerRule.qml"),
+            QmlFile::from("qml/BreakdownTip.qml"),
             QmlFile::from("qml/BuildTab.qml"),
             QmlFile::from("qml/CombatTab.qml"),
             QmlFile::from("qml/CompendiumDialog.qml"),

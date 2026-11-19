@@ -104,7 +104,7 @@ impl RollPart {
 }
 
 /// A flat number added to a roll and what it comes from.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Bonus {
     pub value: i32,
     pub source: String,

@@ -1,5 +1,5 @@
 use crate::abilities::{Ability, Proficiency, Skill, modifier, proficiency_bonus};
-use crate::armor::ArmorKind;
+use crate::armor::{ArmorCategory, ArmorKind};
 use crate::classes::{self, CasterKind, ClassId};
 use crate::dice::{self, Bonus, RollMode, RollPart, RollResult};
 use crate::effects::{
@@ -334,9 +334,12 @@ impl Default for Feature {
 }
 
 /// A modifier's name in a breakdown: what it comes from, and its own label if it has one.
+/// A label that already names the source, like `Alert` on Alert, is used alone.
 fn modifier_name(source: &str, m: &Modifier) -> String {
     if m.text.is_empty() {
         source.to_owned()
+    } else if m.text.starts_with(source) {
+        m.text.clone()
     } else {
         format!("{source} ({})", m.text)
     }
@@ -708,9 +711,21 @@ impl Character {
         Bonus::total(&self.skill_parts(skill))
     }
 
-    /// Passive score: 10 + skill modifier (Exhaustion only affects actual d20 rolls).
+    /// What makes up a passive score: 10 plus the skill modifier, leaving out Exhaustion,
+    /// which only affects actual d20 rolls.
+    pub fn passive_parts(&self, skill: Skill) -> Vec<Bonus> {
+        let exhaustion = self.exhaustion_bonus();
+        let mut parts = vec![Bonus::new(10, "Base")];
+        parts.extend(
+            self.skill_parts(skill)
+                .into_iter()
+                .filter(|b| *b != exhaustion),
+        );
+        parts
+    }
+
     pub fn passive(&self, skill: Skill) -> i32 {
-        10 + self.skill_mod(skill) - self.d20_penalty()
+        Bonus::total(&self.passive_parts(skill))
     }
 
     /// What's added to an initiative roll.
@@ -737,12 +752,24 @@ impl Character {
         Bonus::total(&self.initiative_parts())
     }
 
-    pub fn speed(&self) -> i32 {
-        let bonus = self.modifier_total(ModifierKind::Speed);
-        (self.speed + bonus - 5 * self.exhaustion as i32).max(0)
+    /// What makes up the walking speed, before it's kept from going below 0.
+    pub fn speed_parts(&self) -> Vec<Bonus> {
+        let mut parts = vec![Bonus::new(self.speed, "Base speed")];
+        parts.extend(
+            self.modifier_bonuses(ModifierKind::Speed)
+                .map(|(bonus, _)| bonus),
+        );
+        parts.push(Bonus::new(-5 * self.exhaustion as i32, "Exhaustion"));
+        parts
     }
 
-    pub fn armor_class(&self) -> i32 {
+    pub fn speed(&self) -> i32 {
+        Bonus::total(&self.speed_parts()).max(0)
+    }
+
+    /// What makes up Armor Class: the armor (or unarmored base) with its Dexterity, then
+    /// shield, bonuses and modifiers.
+    pub fn armor_class_parts(&self) -> Vec<Bonus> {
         let dex = self.ability_mod(Ability::Dex);
         let worn = self
             .inventory
@@ -753,27 +780,75 @@ impl Character {
             .iter()
             .find(|i| i.kind == ItemKind::Shield && i.active());
         let has_shield = self.shield || shield_item.is_some();
-        let shield = if has_shield {
-            2 + shield_item.map_or(0, |i| i.ac_bonus)
-        } else {
-            0
+        let armored = |name: &str, armor: ArmorKind| {
+            let info = armor.info();
+            let mut parts = vec![Bonus::new(info.base_ac, name)];
+            match info.category {
+                ArmorCategory::Light => parts.push(Bonus::new(dex, "DEX")),
+                ArmorCategory::Medium if dex > 2 => parts.push(Bonus::new(2, "DEX (max 2)")),
+                ArmorCategory::Medium => parts.push(Bonus::new(dex, "DEX")),
+                ArmorCategory::Heavy => {}
+            }
+            parts
         };
-        let base = match (worn, self.armor) {
-            (Some(item), _) => item.armor.map_or(10 + dex, |a| a.ac(dex)) + item.ac_bonus,
-            (None, Some(armor)) => armor.ac(dex),
+        let mut parts = match (worn, self.armor) {
+            (Some(item), _) => {
+                let mut parts = match item.armor {
+                    Some(armor) => armored(&item.name, armor),
+                    None => vec![Bonus::new(10, item.name.as_str()), Bonus::new(dex, "DEX")],
+                };
+                parts.push(Bonus::new(item.ac_bonus, format!("{} bonus", item.name)));
+                parts
+            }
+            (None, Some(armor)) => armored(armor.info().name, armor),
             (None, None) => {
-                let mut best = 10 + dex;
+                let mut best = vec![Bonus::new(10, "Unarmored"), Bonus::new(dex, "DEX")];
+                let mut unarmored_defense = |ability: Ability| {
+                    let candidate = vec![
+                        Bonus::new(10, "Unarmored Defense"),
+                        Bonus::new(dex, "DEX"),
+                        self.ability_bonus(ability),
+                    ];
+                    if Bonus::total(&candidate) > Bonus::total(&best) {
+                        best = candidate;
+                    }
+                };
                 if self.class_level(ClassId::Barbarian) > 0 {
-                    best = best.max(10 + dex + self.ability_mod(Ability::Con));
+                    unarmored_defense(Ability::Con);
                 }
                 // Monk Unarmored Defense requires no shield.
                 if self.class_level(ClassId::Monk) > 0 && !has_shield {
-                    best = best.max(10 + dex + self.ability_mod(Ability::Wis));
+                    unarmored_defense(Ability::Wis);
                 }
                 best
             }
         };
-        base + shield + self.ac_bonus + self.modifier_total(ModifierKind::ArmorClass)
+        if has_shield {
+            let name = shield_item.map_or("Shield", |i| i.name.as_str());
+            parts.push(Bonus::new(2, name));
+            if let Some(item) = shield_item {
+                parts.push(Bonus::new(item.ac_bonus, format!("{} bonus", item.name)));
+            }
+        }
+        parts.push(Bonus::new(self.ac_bonus, "AC bonus"));
+        parts.extend(
+            self.modifier_bonuses(ModifierKind::ArmorClass)
+                .map(|(bonus, _)| bonus),
+        );
+        parts
+    }
+
+    pub fn armor_class(&self) -> i32 {
+        Bonus::total(&self.armor_class_parts())
+    }
+
+    /// What makes up an ability score.
+    pub fn score_parts(&self, ability: Ability) -> Vec<Bonus> {
+        let i = ability.index();
+        vec![
+            Bonus::new(self.base_scores[i], "Base score"),
+            Bonus::new(self.score_bonuses[i], "Score bonus"),
+        ]
     }
 
     // --- Modifiers and effects --------------------------------------------------------
@@ -844,13 +919,19 @@ impl Character {
             .filter(move |m| m.kind == kind)
     }
 
-    fn modifier_total(&self, kind: ModifierKind) -> i32 {
-        self.modifiers_of(kind).map(|m| m.value).sum()
-    }
-
     /// Hit point maximum including effects such as Aid.
     pub fn max_hp(&self) -> i32 {
-        (self.hp.max + self.modifier_total(ModifierKind::MaxHp)).max(1)
+        Bonus::total(&self.max_hp_parts()).max(1)
+    }
+
+    /// What makes up the hit point maximum, before it's kept from going below 1.
+    pub fn max_hp_parts(&self) -> Vec<Bonus> {
+        let mut parts = vec![Bonus::new(self.hp.max, "Hit point maximum")];
+        parts.extend(
+            self.modifier_bonuses(ModifierKind::MaxHp)
+                .map(|(bonus, _)| bonus),
+        );
+        parts
     }
 
     /// Damage types resisted, without duplicates, in the order they were found.
@@ -1520,18 +1601,27 @@ impl Character {
     }
 
     pub fn class_summary(&self) -> String {
+        self.level_parts()
+            .iter()
+            .map(|b| format!("{} {}", b.source, b.value))
+            .collect::<Vec<_>>()
+            .join(" / ")
+    }
+
+    /// Each class's levels, named with its subclass, e.g. `Ranger (Ronin)`.
+    pub fn level_parts(&self) -> Vec<Bonus> {
         self.classes
             .iter()
             .map(|c| {
                 let name = c.class.info().name;
-                if c.subclass.is_empty() {
-                    format!("{name} {}", c.level)
+                let source = if c.subclass.is_empty() {
+                    name.to_owned()
                 } else {
-                    format!("{name} ({}) {}", c.subclass, c.level)
-                }
+                    format!("{name} ({})", c.subclass)
+                };
+                Bonus::new(c.level as i32, source)
             })
-            .collect::<Vec<_>>()
-            .join(" / ")
+            .collect()
     }
 
     // --- Hit points -----------------------------------------------------------------
@@ -1819,6 +1909,82 @@ mod tests {
         assert_eq!(monk.armor_class(), 16);
         monk.shield = true;
         assert_eq!(monk.armor_class(), 15);
+    }
+
+    #[test]
+    fn breakdowns_name_their_sources() {
+        let sources = |parts: &[Bonus]| -> Vec<(String, i32)> {
+            parts
+                .iter()
+                .filter(|b| b.value != 0)
+                .map(|b| (b.source.clone(), b.value))
+                .collect()
+        };
+        let own = |s: &str, v: i32| (s.to_owned(), v);
+
+        let mut c = fighter_wizard();
+        c.base_scores[1] = 18;
+        c.armor = Some(ArmorKind::HalfPlate);
+        c.shield = true;
+        assert_eq!(
+            sources(&c.armor_class_parts()),
+            [
+                own("Half Plate Armor", 15),
+                own("DEX (max 2)", 2),
+                own("Shield", 2)
+            ]
+        );
+        assert_eq!(c.armor_class(), 19);
+
+        c.features.push(Feature {
+            name: "Cloak of Protection".into(),
+            modifiers: vec![
+                Modifier {
+                    kind: ModifierKind::Save,
+                    value: 1,
+                    ..Default::default()
+                },
+                Modifier {
+                    kind: ModifierKind::ArmorClass,
+                    value: 1,
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        });
+        c.exhaustion = 1;
+        let save = c.save_parts(Ability::Wis);
+        assert!(sources(&save).contains(&own("Cloak of Protection", 1)));
+        c.features.last_mut().unwrap().modifiers[0].text = "Cloak of Protection (attuned)".into();
+        let save = c.save_parts(Ability::Wis);
+        assert!(sources(&save).contains(&own("Cloak of Protection (attuned)", 1)));
+        assert!(sources(&save).contains(&own("Exhaustion", -2)));
+        assert!(sources(&c.armor_class_parts()).contains(&own("Cloak of Protection", 1)));
+        assert_eq!(Bonus::total(&c.speed_parts()), c.speed());
+        assert_eq!(
+            sources(&c.speed_parts()).last(),
+            Some(&own("Exhaustion", -5))
+        );
+        // Passive scores leave Exhaustion out.
+        let passive = c.passive_parts(Skill::Perception);
+        assert!(passive.iter().all(|b| b.source != "Exhaustion"));
+        assert_eq!(Bonus::total(&passive), c.passive(Skill::Perception));
+
+        let monk = Character {
+            classes: vec![ClassLevel {
+                class: ClassId::Monk,
+                level: 1,
+                subclass: "Open Hand".into(),
+                ..Default::default()
+            }],
+            base_scores: [10, 16, 12, 10, 16, 8],
+            ..Default::default()
+        };
+        assert_eq!(
+            sources(&monk.armor_class_parts()),
+            [own("Unarmored Defense", 10), own("DEX", 3), own("WIS", 3)]
+        );
+        assert_eq!(sources(&monk.level_parts()), [own("Monk (Open Hand)", 1)]);
     }
 
     #[test]

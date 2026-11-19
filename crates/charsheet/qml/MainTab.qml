@@ -74,6 +74,8 @@ SheetTab {
         StatTile {
             label: "Level"
             value: App.d.total_level ?? ""
+            parts: App.d.level_parts
+            partsMode: "sum"
             shape: "oval"
             Layout.fillWidth: false
             Layout.preferredWidth: Kirigami.Units.gridUnit * 6
@@ -82,6 +84,7 @@ SheetTab {
         StatTile {
             label: "Armor Class"
             value: App.d.armor_class ?? ""
+            parts: App.d.armor_class_parts
             shape: "shield"
             Layout.fillWidth: false
             Layout.preferredWidth: Kirigami.Units.gridUnit * 6.5
@@ -91,6 +94,9 @@ SheetTab {
             label: "Hit Points"
             value: (App.c.hp?.current ?? 0) + " / " + (App.d.max_hp ?? 0)
                    + ((App.c.hp?.temp ?? 0) > 0 ? "  +" + App.c.hp.temp : "")
+            parts: (App.d.max_hp_parts ?? []).concat(
+                       (App.c.hp?.temp ?? 0) > 0 ? [{ value: App.c.hp.temp, source: "Temporary" }] : [])
+            partsTotal: (App.d.max_hp ?? 0) + (App.c.hp?.temp ?? 0)
             Layout.preferredWidth: Kirigami.Units.gridUnit * 9
             Layout.fillHeight: true
         }
@@ -109,12 +115,30 @@ SheetTab {
         columnSpacing: Kirigami.Units.largeSpacing
         rowSpacing: Kirigami.Units.largeSpacing
 
-        StatTile { label: "Proficiency"; value: App.signed(App.d.proficiency_bonus ?? 0) }
-        StatTile { label: "Initiative"; rollable: true; rollModifier: App.d.initiative ?? 0; rollTarget: ({ kind: "initiative" }) }
-        StatTile { label: "Speed"; value: (App.d.speed ?? 0) + " ft" }
-        StatTile { label: "Passive Perception"; value: App.d.passive_perception ?? "" }
-        StatTile { label: "Passive Insight"; value: App.d.passive_insight ?? "" }
-        StatTile { label: "Passive Investigation"; value: App.d.passive_investigation ?? "" }
+        StatTile {
+            label: "Proficiency"
+            value: App.signed(App.d.proficiency_bonus ?? 0)
+            parts: App.d.proficiency_parts
+            partsMode: "modifier"
+            partsTotal: App.d.proficiency_bonus ?? 0
+        }
+        StatTile {
+            label: "Initiative"
+            rollable: true
+            rollModifier: App.d.initiative ?? 0
+            rollTarget: ({ kind: "initiative" })
+            parts: App.d.initiative_parts
+        }
+        StatTile {
+            label: "Speed"
+            value: (App.d.speed ?? 0) + " ft"
+            parts: App.d.speed_parts
+            partsTotal: App.d.speed ?? 0
+            partsUnit: " ft"
+        }
+        StatTile { label: "Passive Perception"; value: App.d.passive_perception ?? ""; parts: App.d.passive_perception_parts }
+        StatTile { label: "Passive Insight"; value: App.d.passive_insight ?? ""; parts: App.d.passive_insight_parts }
+        StatTile { label: "Passive Investigation"; value: App.d.passive_investigation ?? ""; parts: App.d.passive_investigation_parts }
         SheetCard {
             Layout.fillWidth: true
             Layout.fillHeight: true
