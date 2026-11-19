@@ -152,101 +152,113 @@ Kirigami.Dialog {
         }
     ]
 
-    ColumnLayout {
-        spacing: Kirigami.Units.largeSpacing
+    // Reports no width of its own: the dialog's scroll view would otherwise let the content,
+    // as wide as its longest unwrapped line, be scrolled sideways. It takes the width the
+    // dialog hands it, and the text wraps to that.
+    Item {
+        implicitWidth: 0
+        implicitHeight: column.implicitHeight
 
-        Kirigami.FormLayout {
-            visible: dialog.facts.length > 0
-            Layout.fillWidth: true
+        ColumnLayout {
+            id: column
+            width: parent.width
+            spacing: Kirigami.Units.largeSpacing
 
-            Repeater {
-                model: dialog.facts
+            Kirigami.FormLayout {
+                visible: dialog.facts.length > 0
+                Layout.fillWidth: true
 
-                Loader {
-                    id: fact
-                    required property var modelData
-                    Kirigami.FormData.label: modelData.label + ":"
-                    sourceComponent: modelData.pips ? pipsFact : textFact
+                Repeater {
+                    model: dialog.facts
 
-                    Component {
-                        id: textFact
-                        QQC2.Label {
-                            text: fact.modelData.value
-                            textFormat: Text.StyledText
-                            wrapMode: Text.WordWrap
-                            onLinkActivated: link => App.openLink(link)
-                            HoverHandler {
-                                cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : undefined
+                    Loader {
+                        id: fact
+                        required property var modelData
+                        Kirigami.FormData.label: modelData.label + ":"
+                        // Long values, such as a list of modifiers, wrap within the dialog.
+                        Layout.maximumWidth: column.width * 0.6
+                        sourceComponent: modelData.pips ? pipsFact : textFact
+
+                        Component {
+                            id: textFact
+                            QQC2.Label {
+                                text: fact.modelData.value
+                                textFormat: Text.StyledText
+                                wrapMode: Text.WordWrap
+                                onLinkActivated: link => App.openLink(link)
+                                HoverHandler {
+                                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : undefined
+                                }
                             }
                         }
-                    }
-                    Component {
-                        id: pipsFact
-                        PipRow {
-                            total: fact.modelData.total
-                            used: fact.modelData.used
-                            onUsedEdited: count => App.set(dialog.entryPointer + "/" + fact.modelData.key, count)
+                        Component {
+                            id: pipsFact
+                            PipRow {
+                                total: fact.modelData.total
+                                used: fact.modelData.used
+                                onUsedEdited: count => App.set(dialog.entryPointer + "/" + fact.modelData.key, count)
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Kirigami.Separator {
-            visible: dialog.facts.length > 0 && dialog.body.length > 0
-            Layout.fillWidth: true
-        }
+            Kirigami.Separator {
+                visible: dialog.facts.length > 0 && dialog.body.length > 0
+                Layout.fillWidth: true
+            }
 
-        Prose {
-            visible: dialog.body.length > 0
-            source: dialog.body
-        }
+            Prose {
+                visible: dialog.body.length > 0
+                source: dialog.body
+            }
 
-        QQC2.Label {
-            visible: dialog.facts.length === 0 && dialog.body.length === 0 && dialog.actions.length === 0
-            text: "Nothing written down yet. Use Edit to add details."
-            opacity: 0.7
-        }
+            QQC2.Label {
+                visible: dialog.facts.length === 0 && dialog.body.length === 0 && dialog.actions.length === 0
+                text: "Nothing written down yet. Use Edit to add details."
+                opacity: 0.7
+            }
 
-        Kirigami.Heading {
-            visible: dialog.actions.length > 0
-            text: dialog.owner === "spell" ? "Cast" : "Actions"
-            level: 4
-        }
+            Kirigami.Heading {
+                visible: dialog.actions.length > 0
+                text: dialog.owner === "spell" ? "Cast" : "Actions"
+                level: 4
+            }
 
-        Repeater {
-            model: dialog.actions
+            Repeater {
+                model: dialog.actions
 
-            SheetRow {
-                id: actionRow
-                required property var modelData
-                required property int index
-                alternate: index % 2 === 1
+                SheetRow {
+                    id: actionRow
+                    required property var modelData
+                    required property int index
+                    alternate: index % 2 === 1
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-                    QQC2.Label {
-                        text: actionRow.modelData.name + "  ·  " + App.nameOf(App.catalog.activations, actionRow.modelData.activation)
-                              + (actionRow.modelData.roll ? "  ·  Rolls " + actionRow.modelData.roll : "")
-                        font.bold: true
-                        wrapMode: Text.WordWrap
+                    ColumnLayout {
                         Layout.fillWidth: true
+                        spacing: 0
+                        QQC2.Label {
+                            text: actionRow.modelData.name + "  ·  " + App.nameOf(App.catalog.activations, actionRow.modelData.activation)
+                                  + (actionRow.modelData.roll ? "  ·  Rolls " + actionRow.modelData.roll : "")
+                            font.bold: true
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                        Prose {
+                            visible: dialog.owner !== "spell" && source.length > 0
+                            source: actionRow.modelData.description ?? ""
+                            opacity: 0.85
+                        }
                     }
-                    Prose {
-                        visible: dialog.owner !== "spell" && source.length > 0
-                        source: actionRow.modelData.description ?? ""
-                        opacity: 0.85
+                    QQC2.Label {
+                        visible: !!actionRow.modelData.resource
+                        text: actionRow.modelData.resource ? actionRow.modelData.resource.left + (actionRow.modelData.resource.label === "left" ? " left" : " / " + actionRow.modelData.resource.max) : ""
+                        font.bold: true
+                        color: actionRow.modelData.available ? Kirigami.Theme.textColor : Kirigami.Theme.negativeTextColor
                     }
-                }
-                QQC2.Label {
-                    visible: !!actionRow.modelData.resource
-                    text: actionRow.modelData.resource ? actionRow.modelData.resource.left + (actionRow.modelData.resource.label === "left" ? " left" : " / " + actionRow.modelData.resource.max) : ""
-                    font.bold: true
-                    color: actionRow.modelData.available ? Kirigami.Theme.textColor : Kirigami.Theme.negativeTextColor
-                }
-                ActionButton {
-                    entry: actionRow.modelData
+                    ActionButton {
+                        entry: actionRow.modelData
+                    }
                 }
             }
         }
