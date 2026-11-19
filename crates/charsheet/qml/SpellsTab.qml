@@ -113,10 +113,7 @@ SheetTab {
             Kirigami.Action {
                 text: "Add Spell"
                 icon.name: "list-add"
-                onTriggered: {
-                    if (App.append("/spells", {}))
-                        spellDialog.edit("/spells", App.c.spells.length - 1)
-                }
+                onTriggered: spellDialog.create("/spells")
             }
         ]
 
@@ -213,22 +210,27 @@ SheetTab {
     }
     ItemDialog {
         id: spellDialog
-        title: "Spell"
+        noun: "Spell"
         fields: [
-            { key: "name", label: "Name", type: "text" },
-            { key: "level", label: "Level (0 = cantrip)", type: "int", from: 0, to: 9 },
-            { key: "prepared", label: "Prepared", type: "bool" },
-            { key: "concentration", label: "Concentration", type: "bool" },
-            { key: "ritual", label: "Ritual", type: "bool" },
-            { key: "casting_time", label: "Casting time", type: "choice", options: App.catalog.activations },
-            { key: "notes", label: "Notes", type: "area" },
+            { key: "name", label: "Name", type: "text", placeholder: "e.g. Fire Bolt" },
+            { type: "row", fields: [
+                { key: "level", label: "Level (0 = cantrip)", type: "int", from: 0, to: 9 },
+                { key: "casting_time", label: "Casting time", type: "choice", options: App.catalog.activations }
+            ] },
+            { label: "", type: "flags", flags: [
+                { key: "prepared", label: "Prepared", visibleWhen: spell => spell.level > 0 },
+                { key: "concentration", label: "Concentration" },
+                { key: "ritual", label: "Ritual" }
+            ] },
+            { label: "Description", type: "section" },
+            { key: "notes", label: "", type: "area" },
             { label: "Casting", type: "section" },
             { key: "free_uses_max", label: "Free casts per long rest", type: "int", from: 0, to: 20 },
             { key: "roll", label: "Roll when cast", type: "text", placeholder: "e.g. 2d8+3", visibleWhen: spell => !spell.roll_formula },
             { key: "roll_formula", label: "Roll formula", type: "text", placeholder: "e.g. {cantrip}d10 or 2d8+{spell}" },
             { key: "roll_effect", label: "With the roll", type: "choice", options: App.catalog.roll_effects, visibleWhen: spell => (spell.roll || "").length > 0 },
             { key: "damage_type", label: "Damage type", type: "text", visibleWhen: spell => (spell.roll || "").length > 0 },
-            { label: "Effect on you", type: "section" },
+            { label: "Effect on you", type: "section", collapsedWhen: spell => !spell.effect, badge: spell => spell.effect ? spell.effect.name : "" },
             { key: "effect", label: "Effect", type: "effect" }
         ]
     }

@@ -10,6 +10,8 @@ ColumnLayout {
     id: row
 
     required property int attackIndex
+    // Draws the weapon's on/off modes; off where they are switched elsewhere, as in its details.
+    property bool showToggles: true
     readonly property var a: (App.d.weapon_attacks || [])[attackIndex] || ({ riders: [], notes: [] })
     readonly property var weapon: App.c.inventory?.[a.item]?.weapon ?? ({})
     readonly property bool firesAmmo: a.ranged && !a.thrown
@@ -73,7 +75,7 @@ ColumnLayout {
 
     // Modes that stay on or off until switched, such as a Fire mode; saved with the sheet.
     Flow {
-        visible: (row.a.toggles || []).length > 0
+        visible: row.showToggles && (row.a.toggles || []).length > 0
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 

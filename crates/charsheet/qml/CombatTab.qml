@@ -182,10 +182,7 @@ SheetTab {
                 text: "Add Effect"
                 icon.name: "list-add"
                 tooltip: "Add an effect by hand, such as a Bless an ally cast on you"
-                onTriggered: {
-                    if (App.append("/effects", {}))
-                        effectDialog.edit("/effects", App.c.effects.length - 1)
-                }
+                onTriggered: effectDialog.create("/effects")
             }
         ]
 
@@ -324,10 +321,7 @@ SheetTab {
                 text: "Add Attack"
                 icon.name: "list-add"
                 tooltip: "Add an attack by hand. Equipped weapons in the Inventory show up here on their own."
-                onTriggered: {
-                    if (App.append("/attacks", {}))
-                        attackDialog.edit("/attacks", App.c.attacks.length - 1)
-                }
+                onTriggered: attackDialog.create("/attacks")
             }
         ]
 
@@ -557,29 +551,38 @@ SheetTab {
 
     ItemDialog {
         id: attackDialog
-        title: "Attack"
+        noun: "Attack"
         fields: [
-            { key: "name", label: "Name", type: "text" },
-            { key: "ability", label: "Ability", type: "choice", options: App.catalog.abilities },
-            { key: "proficient", label: "Proficient", type: "bool" },
-            { key: "damage", label: "Damage dice", type: "text" },
-            { key: "add_ability_to_damage", label: "Add ability modifier to damage", type: "bool" },
-            { key: "bonus", label: "Magic bonus", type: "int", from: -10, to: 10 },
-            { key: "damage_type", label: "Damage type", type: "text" },
+            { key: "name", label: "Name", type: "text", placeholder: "e.g. Unarmed Strike" },
+            { type: "row", fields: [
+                { key: "ability", label: "Ability", type: "choice", options: App.catalog.abilities },
+                { key: "bonus", label: "Magic bonus", type: "int", from: -10, to: 10 }
+            ] },
+            { type: "row", fields: [
+                { key: "damage", label: "Damage", type: "text", placeholder: "1d6" },
+                { key: "damage_type", label: "Type", type: "text", placeholder: "bludgeoning" }
+            ] },
+            { label: "", type: "flags", flags: [
+                { key: "proficient", label: "Proficient" },
+                { key: "add_ability_to_damage", label: "Add ability modifier to damage" }
+            ] },
             { key: "mastery", label: "Weapon mastery", type: "choice", options: App.masteryOptions },
-            { key: "notes", label: "Notes", type: "area" }
+            { label: "Notes", type: "section" },
+            { key: "notes", label: "", type: "area" }
         ]
     }
 
     ItemDialog {
         id: effectDialog
-        title: "Effect"
+        noun: "Effect"
         fields: [
             { key: "name", label: "Name", type: "text" },
             { key: "source", label: "Source", type: "text", placeholder: "e.g. Bless from the cleric" },
-            { key: "concentration", label: "Concentration", type: "bool" },
             { key: "rounds", label: "Turns left (0 = until removed)", type: "int", from: 0, to: 1000 },
-            { key: "notes", label: "Notes", type: "area" },
+            { key: "concentration", label: "Concentration", type: "bool" },
+            { label: "Notes", type: "section" },
+            { key: "notes", label: "", type: "area" },
+            { label: "Modifiers", type: "section", badge: count("modifiers") },
             { key: "modifiers", label: "Modifiers", type: "modifiers" }
         ]
     }

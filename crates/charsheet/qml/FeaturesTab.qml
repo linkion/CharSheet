@@ -20,10 +20,7 @@ SheetTab {
             Kirigami.Action {
                 text: "Add Feature"
                 icon.name: "list-add"
-                onTriggered: {
-                    if (App.append("/features", {}))
-                        featureDialog.edit("/features", App.c.features.length - 1)
-                }
+                onTriggered: featureDialog.create("/features")
             }
         ]
 
@@ -139,17 +136,23 @@ SheetTab {
     }
     ItemDialog {
         id: featureDialog
-        title: "Feature"
+        noun: "Feature"
         fields: [
             { key: "name", label: "Name", type: "text" },
-            { key: "source", label: "Source", type: "text" },
-            { key: "description", label: "Description", type: "area" },
-            { key: "uses_max", label: "Uses (0 = untracked)", type: "int", from: 0, to: 20, visibleWhen: feature => !feature.uses_formula },
+            { key: "source", label: "Source", type: "text", placeholder: "e.g. Rogue 3" },
+            { label: "Description", type: "section" },
+            { key: "description", label: "", type: "area" },
+            { label: "Uses", type: "section", collapsedWhen: feature => !(feature.uses_max > 0) && !feature.uses_formula,
+              badge: feature => feature.uses_max > 0 ? feature.uses_max + " max" : "" },
+            { type: "row", fields: [
+                { key: "uses_max", label: "Uses (0 = untracked)", type: "int", from: 0, to: 20, visibleWhen: feature => !feature.uses_formula },
+                { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges.filter(o => o.key !== "dawn") }
+            ] },
             { key: "uses_formula", label: "Uses formula", type: "text", placeholder: "e.g. {pb}" },
-            { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges.filter(o => o.key !== "dawn") },
-            { label: "Always on", type: "section" },
+            { label: "Modifiers", type: "section", collapsedWhen: feature => !(feature.modifiers || []).length, badge: count("modifiers") },
+            { label: "Always on while you have the feature.", type: "hint" },
             { key: "modifiers", label: "Modifiers", type: "modifiers" },
-            { label: "Actions", type: "section" },
+            { label: "Actions", type: "section", collapsedWhen: feature => !(feature.actions || []).length, badge: count("actions") },
             { key: "actions", label: "Actions", type: "actions", owner: "feature" }
         ]
     }

@@ -78,10 +78,7 @@ SheetTab {
             Kirigami.Action {
                 text: "Add Item"
                 icon.name: "list-add"
-                onTriggered: {
-                    if (App.append("/inventory", {}))
-                        itemDialog.edit("/inventory", App.c.inventory.length - 1)
-                }
+                onTriggered: itemDialog.create("/inventory")
             }
         ]
 
@@ -224,48 +221,67 @@ SheetTab {
     }
     ItemDialog {
         id: itemDialog
-        title: "Item"
+        noun: "Item"
 
         readonly property var isWeapon: item => item.kind === "weapon"
         readonly property var ammoOptions: () => [{ key: "", name: "Standard (not tracked)" }].concat(
             (App.c.inventory || []).filter(i => i.kind === "ammunition").map(i => ({ key: i.name, name: i.name })))
 
         fields: [
-            { key: "name", label: "Name", type: "text" },
+            { key: "name", label: "Name", type: "text", placeholder: "e.g. Longsword" },
             { key: "kind", label: "Kind", type: "choice", options: App.catalog.item_kinds },
-            { key: "quantity", label: "Quantity", type: "int", from: 0, to: 9999 },
-            { key: "weight", label: "Weight each (lb)", type: "number" },
-            { key: "equipped", label: "Equipped", type: "bool" },
-            { key: "requires_attunement", label: "Requires attunement", type: "bool" },
-            { key: "notes", label: "Notes", type: "area" },
+            { type: "row", fields: [
+                { key: "quantity", label: "Quantity", type: "int", from: 0, to: 9999 },
+                { key: "weight", label: "Weight each (lb)", type: "number" }
+            ] },
+            { label: "", type: "flags", flags: [
+                { key: "equipped", label: "Equipped" },
+                { key: "requires_attunement", label: "Requires attunement" },
+                { key: "attuned", label: "Attuned", visibleWhen: item => item.requires_attunement }
+            ] },
 
             { label: "Weapon", type: "section", visibleWhen: isWeapon },
-            { key: "weapon/damage", label: "Damage dice", type: "text", visibleWhen: isWeapon },
-            { key: "weapon/damage_type", label: "Damage type", type: "text", visibleWhen: isWeapon },
-            { key: "weapon/magic_bonus", label: "Magic bonus", type: "int", from: -5, to: 10, visibleWhen: isWeapon },
-            { key: "weapon/mastery", label: "Mastery", type: "choice", options: App.masteryOptions, visibleWhen: isWeapon },
-            { key: "weapon/proficient", label: "Proficient", type: "bool", visibleWhen: isWeapon },
-            { key: "weapon/finesse", label: "Finesse", type: "bool", visibleWhen: isWeapon },
-            { key: "weapon/light", label: "Light", type: "bool", visibleWhen: isWeapon },
-            { key: "weapon/ranged", label: "Ranged weapon", type: "bool", visibleWhen: isWeapon },
-            { key: "weapon/thrown", label: "Thrown", type: "bool", visibleWhen: isWeapon },
-            { key: "weapon/range", label: "Range", type: "text", placeholder: "e.g. 60/240", visibleWhen: item => isWeapon(item) && (item.weapon?.ranged || item.weapon?.thrown) },
-            { key: "weapon/capacity", label: "Shots before reload (0 = none)", type: "int", from: 0, to: 100, visibleWhen: item => isWeapon(item) && item.weapon?.ranged },
-            { key: "weapon/ammo", label: "Ammunition", type: "choice", options: ammoOptions, visibleWhen: item => isWeapon(item) && item.weapon?.ranged },
+            { type: "row", fields: [
+                { key: "weapon/damage", label: "Damage", type: "text", placeholder: "1d8" },
+                { key: "weapon/damage_type", label: "Type", type: "text", placeholder: "slashing" }
+            ] },
+            { type: "row", fields: [
+                { key: "weapon/magic_bonus", label: "Magic bonus", type: "int", from: -5, to: 10 },
+                { key: "weapon/mastery", label: "Mastery", type: "choice", options: App.masteryOptions }
+            ] },
+            { label: "Properties", type: "flags", flags: [
+                { key: "weapon/proficient", label: "Proficient", tip: "Add your proficiency bonus to hit" },
+                { key: "weapon/finesse", label: "Finesse" },
+                { key: "weapon/light", label: "Light" },
+                { key: "weapon/ranged", label: "Ranged" },
+                { key: "weapon/thrown", label: "Thrown" }
+            ] },
+            { key: "weapon/range", label: "Range", type: "text", placeholder: "e.g. 60/240", visibleWhen: item => item.weapon?.ranged || item.weapon?.thrown },
+            { type: "row", visibleWhen: item => item.weapon?.ranged, fields: [
+                { key: "weapon/capacity", label: "Shots before reload", type: "int", from: 0, to: 100 },
+                { key: "weapon/ammo", label: "Ammunition", type: "choice", options: ammoOptions }
+            ] },
 
             { label: "Armor", type: "section", visibleWhen: item => item.kind === "armor" || item.kind === "shield" },
             { key: "armor", label: "Armor", type: "choice", options: [{ key: null, name: "None" }].concat(App.catalog.armor), visibleWhen: item => item.kind === "armor" },
-            { key: "ac_bonus", label: "Magic AC bonus", type: "int", from: 0, to: 5, visibleWhen: item => item.kind === "armor" || item.kind === "shield" },
+            { key: "ac_bonus", label: "Magic AC bonus", type: "int", from: 0, to: 5 },
 
-            { label: "Charges", type: "section" },
-            { key: "charges_max", label: "Charges (0 = none)", type: "int", from: 0, to: 100 },
-            { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges, visibleWhen: item => item.charges_max > 0 },
+            { label: "Notes", type: "section" },
+            { key: "notes", label: "", type: "area", placeholder: "Description, history, anything worth remembering. Markdown supported." },
+
+            { label: "Charges", type: "section", collapsedWhen: item => !(item.charges_max > 0),
+              badge: item => item.charges_max > 0 ? item.charges_max + " max" : "" },
+            { type: "row", fields: [
+                { key: "charges_max", label: "Charges (0 = none)", type: "int", from: 0, to: 100 },
+                { key: "recharge", label: "Recharge", type: "choice", options: App.catalog.recharges, visibleWhen: item => item.charges_max > 0 }
+            ] },
             { key: "regain", label: "Regains", type: "text", placeholder: "e.g. 1d6+1; empty regains all", visibleWhen: item => item.charges_max > 0 && item.recharge === "dawn" },
 
-            { label: "Modifiers (while equipped; ammunition: when fired)", type: "section" },
+            { label: "Modifiers", type: "section", collapsedWhen: item => !(item.modifiers || []).length, badge: count("modifiers") },
+            { label: "Active while equipped; ammunition applies them when fired.", type: "hint" },
             { key: "modifiers", label: "Modifiers", type: "modifiers" },
 
-            { label: "Actions", type: "section" },
+            { label: "Actions", type: "section", collapsedWhen: item => !(item.actions || []).length, badge: count("actions") },
             { key: "actions", label: "Actions", type: "actions", owner: "item" }
         ]
     }
