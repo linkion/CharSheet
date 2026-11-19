@@ -28,16 +28,17 @@ QQC2.Control {
              : !row.alternate ? "transparent"
              : Style.decorated ? Style.faint
              : Kirigami.Theme.alternateBackgroundColor
+    }
 
-        // Under the content, so controls and links in the row take their clicks first.
-        TapHandler {
-            enabled: row.clickable
-            onTapped: row.clicked()
-        }
-        HoverHandler {
-            enabled: row.clickable
-            cursorShape: Qt.PointingHandCursor
-        }
+    // On the row itself: the background sits below the Control, which would take the press
+    // first. The row's controls and links still get their clicks before this handler.
+    TapHandler {
+        enabled: row.clickable
+        onTapped: row.clicked()
+    }
+    HoverHandler {
+        enabled: row.clickable
+        cursorShape: Qt.PointingHandCursor
     }
 
     contentItem: RowLayout {
