@@ -36,10 +36,13 @@ ColumnLayout {
         QQC2.TextField {
             text: editor.effect?.name ?? ""
             Layout.fillWidth: true
+            Layout.preferredWidth: 1
             onEditingFinished: if (text !== editor.effect.name) editor.save("name", text)
         }
         QQC2.Label { text: "Lasts:" }
         RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
             QQC2.SpinBox {
                 from: 0
                 to: 1000
@@ -50,6 +53,8 @@ ColumnLayout {
             QQC2.Label {
                 text: (editor.effect?.rounds ?? 0) === 0 ? "until removed" : "turns (ends at the start of your turn)"
                 opacity: 0.7
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
             }
         }
         Item { width: 1 }
@@ -62,6 +67,7 @@ ColumnLayout {
         QQC2.TextField {
             text: editor.effect?.notes ?? ""
             Layout.fillWidth: true
+            Layout.preferredWidth: 1
             onEditingFinished: if (text !== editor.effect.notes) editor.save("notes", text)
         }
     }

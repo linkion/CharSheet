@@ -31,14 +31,21 @@ ColumnLayout {
 
             Layout.fillWidth: true
 
+            // The second column takes the width the card is given rather than asking for its
+            // contents' natural width, so nothing runs past the dialog's edge; the roll's
+            // fields wrap onto a second line when they don't fit.
             contentItem: GridLayout {
                 columns: 2
 
                 QQC2.Label { text: "Name:" }
                 RowLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     QQC2.TextField {
                         text: card.a.name ?? ""
                         Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        Layout.minimumWidth: Kirigami.Units.gridUnit * 5
                         onEditingFinished: if (text !== card.a.name) card.save("name", text)
                     }
                     QQC2.ComboBox {
@@ -74,14 +81,19 @@ ColumnLayout {
                     }
                 }
                 QQC2.Label { text: "Roll:" }
-                RowLayout {
+                Flow {
+                    spacing: Kirigami.Units.smallSpacing
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     QQC2.TextField {
+                        implicitWidth: Kirigami.Units.gridUnit * 7
                         placeholderText: "e.g. 2d4+2"
                         text: card.a.roll ?? ""
                         enabled: !(card.a.roll_formula ?? "")
                         onEditingFinished: if (text !== card.a.roll) card.save("roll", text)
                     }
                     QQC2.TextField {
+                        implicitWidth: Kirigami.Units.gridUnit * 8
                         placeholderText: "Formula, e.g. {pb}d6"
                         text: card.a.roll_formula ?? ""
                         onEditingFinished: if (text !== card.a.roll_formula) card.save("roll_formula", text)
@@ -98,6 +110,7 @@ ColumnLayout {
                     }
                     QQC2.TextField {
                         visible: (card.a.roll ?? "").length > 0
+                        implicitWidth: Kirigami.Units.gridUnit * 7
                         placeholderText: "Damage type"
                         text: card.a.damage_type ?? ""
                         onEditingFinished: if (text !== (card.a.damage_type ?? "")) card.save("damage_type", text)
@@ -112,6 +125,7 @@ ColumnLayout {
                     wrapMode: TextEdit.Wrap
                     placeholderText: "Markdown supported"
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     onEditingFinished: if (text !== card.a.description) card.save("description", text)
                 }
                 QQC2.Label {
@@ -120,6 +134,7 @@ ColumnLayout {
                 }
                 EffectEditor {
                     pointer: card.base + "/effect"
+                    Layout.preferredWidth: 1
                 }
             }
         }
