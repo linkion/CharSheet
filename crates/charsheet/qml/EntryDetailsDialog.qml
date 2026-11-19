@@ -120,7 +120,11 @@ Kirigami.Dialog {
 
     title: entry.name ?? ""
     standardButtons: Kirigami.Dialog.Close
-    preferredWidth: Kirigami.Units.gridUnit * 32
+    // Wrapped text has no width of its own, so the dialog would grow to fit each paragraph
+    // on one line: hold it to a reading width that follows the window, and all of a narrow one.
+    preferredWidth: Math.min(absoluteMaximumWidth,
+        Math.max(Kirigami.Units.gridUnit * 30, Math.min(Kirigami.Units.gridUnit * 44, (parent?.width ?? 0) * 0.6)))
+    maximumWidth: preferredWidth
     padding: Kirigami.Units.largeSpacing
 
     customFooterActions: [
