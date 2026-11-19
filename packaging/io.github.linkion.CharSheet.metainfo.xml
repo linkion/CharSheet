@@ -31,9 +31,9 @@
     <binary>charsheet</binary>
     <binary>charsheet-mcp</binary>
   </provides>
-  <url type="homepage">https://github.com/linkion/ttrpg-character-app</url>
-  <url type="bugtracker">https://github.com/linkion/ttrpg-character-app/issues</url>
-  <url type="vcs-browser">https://github.com/linkion/ttrpg-character-app</url>
+  <url type="homepage">https://github.com/linkion/CharSheet</url>
+  <url type="bugtracker">https://github.com/linkion/CharSheet/issues</url>
+  <url type="vcs-browser">https://github.com/linkion/CharSheet</url>
   <categories>
     <category>Game</category>
     <category>RolePlaying</category>
@@ -50,27 +50,27 @@
   <screenshots>
     <screenshot type="default">
       <caption>The main sheet, with the breakdown behind a saving throw</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/main-sheet.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/main-sheet.png</image>
     </screenshot>
     <screenshot>
       <caption>The Combat tab: attacks with their riders, effects and actions</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/combat.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/combat.png</image>
     </screenshot>
     <screenshot>
       <caption>The roll log, splitting each total by source and damage type</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/roll-log.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/roll-log.png</image>
     </screenshot>
     <screenshot>
       <caption>Spells with slots, casting and the compendium</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/spells.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/spells.png</image>
     </screenshot>
     <screenshot>
       <caption>Inventory with currency, carrying capacity and usable items</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/inventory.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/inventory.png</image>
     </screenshot>
     <screenshot>
       <caption>Features and traits with their modifiers and uses</caption>
-      <image>https://raw.githubusercontent.com/linkion/ttrpg-character-app/master/docs/screenshots/features.png</image>
+      <image>https://raw.githubusercontent.com/linkion/CharSheet/master/docs/screenshots/features.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
