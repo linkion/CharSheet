@@ -63,6 +63,10 @@ QtObject {
     signal notice(string message)
     // Asks for a record of the rules to be shown.
     signal ruleRequested(string id)
+    // Asks for the details of an entry of a list, such as ("/spells", 2), to be shown.
+    signal detailsRequested(string listPointer, int index)
+    // Asks the tab that owns the list to open its edit dialog for the entry.
+    signal editRequested(string listPointer, int index)
 
     function signed(n) {
         return (n >= 0 ? "+" : "") + n

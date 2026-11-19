@@ -30,68 +30,65 @@ SheetTab {
         Repeater {
             model: App.c.features
 
-            ColumnLayout {
+            SheetRow {
+                id: featureRow
                 required property var modelData
                 required property int index
                 readonly property string summary: (App.d.feature_summaries || [])[index] ?? ""
                 readonly property var actions: (App.d.actions || []).filter(a => a.owner === "feature" && a.index === index)
-                Layout.fillWidth: true
-                spacing: 0
+                alternate: index % 2 === 1
+                clickable: true
+                onClicked: App.detailsRequested("/features", index)
 
-                RowLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    QQC2.Label {
-                        text: modelData.name
-                        font.bold: true
+                    spacing: 0
+
+                    RowLayout {
                         Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-                    QQC2.Label {
-                        visible: modelData.source.length > 0
-                        text: modelData.source
-                        opacity: 0.7
-                    }
-                    PipRow {
-                        visible: modelData.uses_max > 0
-                        total: Math.min(modelData.uses_max, 20)
-                        used: modelData.uses_spent
-                        onUsedEdited: count => App.set("/features/" + index + "/uses_spent", count)
-                    }
-                    Repeater {
-                        model: actions
-                        ActionButton {
-                            required property var modelData
-                            entry: modelData
+                        QQC2.Label {
+                            text: featureRow.modelData.name
+                            font.bold: true
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                        QQC2.Label {
+                            visible: featureRow.modelData.source.length > 0
+                            text: featureRow.modelData.source
+                            opacity: 0.7
+                        }
+                        PipRow {
+                            visible: featureRow.modelData.uses_max > 0
+                            total: Math.min(featureRow.modelData.uses_max, 20)
+                            used: featureRow.modelData.uses_spent
+                            onUsedEdited: count => App.set("/features/" + featureRow.index + "/uses_spent", count)
+                        }
+                        Repeater {
+                            model: featureRow.actions
+                            ActionButton {
+                                required property var modelData
+                                entry: modelData
+                            }
                         }
                     }
-                    QQC2.ToolButton {
-                        icon.name: "document-edit"
-                        onClicked: featureDialog.edit("/features", index)
-                        QQC2.ToolTip.text: "Edit"
-                        QQC2.ToolTip.visible: hovered
+                    Prose {
+                        visible: featureRow.modelData.description.length > 0
+                        source: featureRow.modelData.description
+                        opacity: 0.85
                     }
-                }
-                Prose {
-                    visible: modelData.description.length > 0
-                    source: modelData.description
-                    opacity: 0.85
-                }
-                QQC2.Label {
-                    visible: summary.length > 0
-                    text: summary
-                    wrapMode: Text.WordWrap
-                    color: Kirigami.Theme.positiveTextColor
-                    Layout.fillWidth: true
-                }
-                QQC2.Label {
-                    visible: modelData.uses_max > 0 && modelData.recharge !== "none"
-                    text: "Recharges on a " + (modelData.recharge === "short" ? "Short or Long Rest" : "Long Rest")
-                    font: Kirigami.Theme.smallFont
-                    opacity: 0.6
-                }
-                Kirigami.Separator {
-                    Layout.fillWidth: true
-                    Layout.topMargin: Kirigami.Units.smallSpacing
+                    QQC2.Label {
+                        visible: featureRow.summary.length > 0
+                        text: featureRow.summary
+                        wrapMode: Text.WordWrap
+                        color: Kirigami.Theme.positiveTextColor
+                        Layout.fillWidth: true
+                    }
+                    QQC2.Label {
+                        visible: featureRow.modelData.uses_max > 0 && featureRow.modelData.recharge !== "none"
+                        text: "Recharges on a " + (featureRow.modelData.recharge === "short" ? "Short or Long Rest" : "Long Rest")
+                        font: Kirigami.Theme.smallFont
+                        opacity: 0.6
+                    }
                 }
             }
         }
@@ -122,6 +119,13 @@ SheetTab {
         }
     }
 
+    Connections {
+        target: App
+        function onEditRequested(listPointer, index) {
+            if (listPointer === "/features")
+                featureDialog.edit(listPointer, index)
+        }
+    }
     CompendiumDialog {
         id: compendium
         title: "Add a Feature"

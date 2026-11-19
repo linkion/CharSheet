@@ -4,11 +4,15 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import io.github.porave.charsheet
 
-// An entry of derived.actions: what it is, what it has left, and a button to use it.
+// An entry of derived.actions: what it is, what it has left, and a button to use it. Clicking
+// it shows the details of the spell, item or feature it belongs to.
 SheetRow {
     id: row
 
     required property var action
+
+    clickable: true
+    onClicked: App.detailsRequested("/" + ({ spell: "spells", item: "inventory", feature: "features" })[action.owner], action.index)
 
     ColumnLayout {
         Layout.fillWidth: true

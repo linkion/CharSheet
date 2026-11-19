@@ -42,6 +42,7 @@ fn main() {
             QmlFile::from("qml/Die3D.qml"),
             QmlFile::from("qml/DieAtlas.qml"),
             QmlFile::from("qml/EffectEditor.qml"),
+            QmlFile::from("qml/EntryDetailsDialog.qml"),
             QmlFile::from("qml/FeaturesTab.qml"),
             QmlFile::from("qml/FrameTitle.qml"),
             QmlFile::from("qml/Flourish.qml"),

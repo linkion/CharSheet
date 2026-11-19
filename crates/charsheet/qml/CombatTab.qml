@@ -249,10 +249,12 @@ SheetTab {
         Repeater {
             model: App.c.effects
 
-            RowLayout {
+            SheetRow {
                 required property var modelData
                 required property int index
-                Layout.fillWidth: true
+                alternate: index % 2 === 1
+                clickable: true
+                onClicked: App.detailsRequested("/effects", index)
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -279,12 +281,6 @@ SheetTab {
                         font.family: Style.uiFamily
                         opacity: 0.8
                     }
-                }
-                QQC2.ToolButton {
-                    icon.name: "document-edit"
-                    onClicked: effectDialog.edit("/effects", index)
-                    QQC2.ToolTip.text: "Edit"
-                    QQC2.ToolTip.visible: hovered
                 }
                 QQC2.ToolButton {
                     icon.name: "dialog-close"
@@ -339,22 +335,25 @@ SheetTab {
         Repeater {
             model: (App.d.weapon_attacks || []).length
 
-            ColumnLayout {
+            SheetRow {
                 required property int index
-                Layout.fillWidth: true
+                alternate: index % 2 === 1
+                clickable: true
+                onClicked: App.detailsRequested("/inventory", App.d.weapon_attacks[index].item)
                 WeaponAttackRow { attackIndex: index }
-                Kirigami.Separator { Layout.fillWidth: true }
             }
         }
 
         Repeater {
             model: App.c.attacks
 
-            RowLayout {
+            SheetRow {
                 required property var modelData
                 required property int index
                 readonly property var derived: App.d.attacks[index]
-                Layout.fillWidth: true
+                alternate: ((App.d.weapon_attacks || []).length + index) % 2 === 1
+                clickable: true
+                onClicked: App.detailsRequested("/attacks", index)
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -389,12 +388,6 @@ SheetTab {
                     text: "Crit"
                     onClicked: App.rollCheck({ kind: "manual_damage", attack: index, crit: true })
                     QQC2.ToolTip.text: "Roll critical damage (dice doubled)"
-                    QQC2.ToolTip.visible: hovered
-                }
-                QQC2.ToolButton {
-                    icon.name: "document-edit"
-                    onClicked: attackDialog.edit("/attacks", index)
-                    QQC2.ToolTip.text: "Edit"
                     QQC2.ToolTip.visible: hovered
                 }
             }
@@ -549,6 +542,16 @@ SheetTab {
             links: App.catalog.conditions
                    .filter(c => (App.c.conditions || []).includes(c.key))
                    .map(c => App.ruleLink(c.name, ["condition"])).join(" · ")
+        }
+    }
+
+    Connections {
+        target: App
+        function onEditRequested(listPointer, index) {
+            if (listPointer === "/attacks")
+                attackDialog.edit(listPointer, index)
+            else if (listPointer === "/effects")
+                effectDialog.edit(listPointer, index)
         }
     }
 

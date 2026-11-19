@@ -142,6 +142,8 @@ SheetTab {
                         required property var modelData
                         required property int index
                         alternate: index % 2 === 1
+                        clickable: true
+                        onClicked: App.detailsRequested("/spells", modelData.index)
 
                         QQC2.CheckBox {
                             visible: levelGroup.index > 0
@@ -185,12 +187,6 @@ SheetTab {
                                 entry: modelData
                             }
                         }
-                        QQC2.ToolButton {
-                            icon.name: "document-edit"
-                            onClicked: spellDialog.edit("/spells", modelData.index)
-                            QQC2.ToolTip.text: "Edit"
-                            QQC2.ToolTip.visible: hovered
-                        }
                     }
                 }
             }
@@ -203,6 +199,13 @@ SheetTab {
         }
     }
 
+    Connections {
+        target: App
+        function onEditRequested(listPointer, index) {
+            if (listPointer === "/spells")
+                spellDialog.edit(listPointer, index)
+        }
+    }
     CompendiumDialog {
         id: compendium
         title: "Add a Spell"

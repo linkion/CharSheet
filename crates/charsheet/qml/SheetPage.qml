@@ -97,6 +97,17 @@ Kirigami.Page {
         BuildTab {}
     }
 
+    EntryDetailsDialog {
+        id: details
+    }
+
+    Connections {
+        target: App
+        function onDetailsRequested(listPointer, index) {
+            details.show(listPointer, index)
+        }
+    }
+
     Kirigami.PromptDialog {
         id: longRestDialog
         title: "Take a Long Rest?"

@@ -118,6 +118,8 @@ SheetTab {
 
                         SheetRow {
                             alternate: entry.index % 2 === 1
+                            clickable: true
+                            onClicked: App.detailsRequested("/inventory", entry.itemIndex)
 
                             QQC2.CheckBox {
                                 visible: entry.equippable
@@ -189,12 +191,6 @@ SheetTab {
                                     entry: modelData
                                 }
                             }
-                            QQC2.ToolButton {
-                                icon.name: "document-edit"
-                                onClicked: itemDialog.edit("/inventory", entry.itemIndex)
-                                QQC2.ToolTip.text: "Edit"
-                                QQC2.ToolTip.visible: hovered
-                            }
                         }
                     }
                 }
@@ -208,6 +204,13 @@ SheetTab {
         }
     }
 
+    Connections {
+        target: App
+        function onEditRequested(listPointer, index) {
+            if (listPointer === "/inventory")
+                itemDialog.edit(listPointer, index)
+        }
+    }
     CompendiumDialog {
         id: compendium
         title: "Add an Item"

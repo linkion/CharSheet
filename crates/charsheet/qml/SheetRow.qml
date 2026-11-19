@@ -11,6 +11,9 @@ QQC2.Control {
 
     // Every other row gets the stripe.
     property bool alternate
+    // Clicking the row's empty space or plain text emits clicked; its buttons keep their own.
+    property bool clickable
+    signal clicked()
     default property alias content: layout.data
 
     Layout.fillWidth: true
@@ -25,6 +28,16 @@ QQC2.Control {
              : !row.alternate ? "transparent"
              : Style.decorated ? Style.faint
              : Kirigami.Theme.alternateBackgroundColor
+
+        // Under the content, so controls and links in the row take their clicks first.
+        TapHandler {
+            enabled: row.clickable
+            onTapped: row.clicked()
+        }
+        HoverHandler {
+            enabled: row.clickable
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     contentItem: RowLayout {
